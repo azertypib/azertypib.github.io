@@ -35,7 +35,7 @@ function Get-Text($resp) {
     [Text.Encoding]::UTF8.GetString($ms.ToArray())
 }
 function Get-Web($url, $body) {
-    $p = @{ Uri = $url; WebSession = $script:S; UseBasicParsing = $true; TimeoutSec = 60 }
+    $p = @{ Uri = $url; WebSession = $script:GpuSession; UseBasicParsing = $true; TimeoutSec = 60 }
     if ($body) { $p.Method = 'Post'; $p.Body = $body }
     Get-Text (Invoke-WebRequest @p)
 }
@@ -132,8 +132,8 @@ function ConvertFrom-Vcs([string]$text) {
 }
 
 # ---------- connexion ----------
-$null = Invoke-WebRequest -UseBasicParsing -Uri $LoginUrl -SessionVariable S
-$script:S = $S
+$null = Invoke-WebRequest -UseBasicParsing -Uri $LoginUrl -SessionVariable GpuSession
+$script:GpuSession = $GpuSession
 $null = Get-Web $LoginUrl @{ modeconnect = 'connect'; util = $login; acct_pass = $pass }
 if ((Get-Web $StudUrl) -notmatch 'Inscrit dans les groupes') { throw 'Connexion GPU refusee' }
 Write-Host 'Connecte a GPU'
@@ -166,9 +166,9 @@ foreach ($td in $Groups.Keys) {
         # semaines anciennes deja connues
         if ($old -and $old.events -and $old.events.$tp) {
             foreach ($e in $old.events.$tp) {
-                $s = Get-Iso $e.start
-                if ([string]::CompareOrdinal($s, (ConvertTo-UtcIso $firstFetched)) -lt 0) {
-                    $list.Add([ordered]@{ id=$e.id; start=$s; end=(Get-Iso $e.end); code=$e.code; type=$e.type; group=$e.group; room=$e.room; prof=$e.prof; memo=$e.memo })
+                $st = Get-Iso $e.start
+                if ([string]::CompareOrdinal($st, (ConvertTo-UtcIso $firstFetched)) -lt 0) {
+                    $list.Add([ordered]@{ id=$e.id; start=$st; end=(Get-Iso $e.end); code=$e.code; type=$e.type; group=$e.group; room=$e.room; prof=$e.prof; memo=$e.memo })
                 }
             }
         }
