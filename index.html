@@ -3,7 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="refresh" content="1800">
 <title>EDT</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,241 +13,444 @@
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="icon" type="image/png" href="icon.png">
 <style>
-  :root{
-    --bg:#f4f2ee; --panel:#ffffff; --ink:#1d1b18; --muted:#77716a; --line:#e6e1da;
-    --accent:#e0533d; --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.05);
-    --hour:64px;
-  }
-  @media (prefers-color-scheme:dark){
-    :root{ --bg:#141312; --panel:#1d1c1a; --ink:#f1ede7; --muted:#9a948c; --line:#2d2b28; --shadow:none; }
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);
-       font:15px/1.4 "Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;}
-  .wrap{max-width:1240px;margin:0 auto;padding:28px 24px 48px}
+:root{
+  --bg:#f4f2ee; --panel:#fff; --ink:#1d1b18; --muted:#77716a; --line:#e6e1da; --soft:#efebe5;
+  --accent:#e0533d; --ok:#2f9e5b; --todo:#e08a1e; --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.06);
+  --hour:56px; --top:env(safe-area-inset-top); --bot:env(safe-area-inset-bottom);
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#141312; --panel:#1d1c1a; --ink:#f1ede7; --muted:#9a948c; --line:#2d2b28; --soft:#262422; --shadow:none; }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}
+.wrap{max-width:1180px;margin:0 auto;padding:calc(14px + var(--top)) 12px calc(40px + var(--bot))}
 
-  header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
-  .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
-  h1{margin:4px 0 0;font-size:30px;font-weight:700;letter-spacing:-.02em}
-  h1 small{font-size:16px;font-weight:500;color:var(--muted);margin-left:8px;letter-spacing:0}
-  .nav{display:flex;gap:6px;align-items:center}
-  .nav button{border:1px solid var(--line);background:var(--panel);color:var(--ink);height:36px;min-width:36px;
-              padding:0 12px;border-radius:10px;font:inherit;font-weight:600;cursor:pointer}
-  .nav button:hover{border-color:var(--muted)}
-  .nav button.today{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+/* ---------- en-tete ---------- */
+header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.ttl{flex:1;min-width:160px}
+.ttl h1{margin:0;font-size:24px;letter-spacing:-.02em}
+.ttl div{color:var(--muted);font-size:13px}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 12px;font-weight:650;font-size:14px}
+.bar{display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--panel);height:36px;min-width:36px;padding:0 12px;border-radius:10px;font-weight:600}
+.btn.dark{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-left:auto}
+.seg button{border:0;background:var(--panel);height:34px;padding:0 12px;font-weight:600;color:var(--muted)}
+.seg button.on{background:var(--ink);color:var(--bg)}
 
-  .next{display:flex;align-items:center;gap:16px;background:var(--panel);border-radius:14px;padding:14px 18px;
-        box-shadow:var(--shadow);margin-bottom:18px;border-left:5px solid var(--c,var(--accent))}
-  .next .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600}
-  .next .what{font-size:17px;font-weight:650}
-  .next .when{margin-left:auto;text-align:right;font-weight:600;white-space:nowrap}
-  .next .when span{display:block;font-size:13px;color:var(--muted);font-weight:500}
+/* ---------- prochain cours ---------- */
+.next{display:flex;align-items:center;gap:12px;background:var(--panel);border-radius:14px;padding:12px 14px;
+  box-shadow:var(--shadow);margin-bottom:12px;border-left:5px solid var(--c,var(--accent))}
+.next .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700}
+.next .what{font-weight:700}
+.next .sub{color:var(--muted);font-size:13px}
+.next .when{margin-left:auto;text-align:right;font-weight:700;white-space:nowrap}
+.next .when span{display:block;font-size:12px;color:var(--muted);font-weight:500}
 
-  /* ----- grille semaine ----- */
-  .grid{display:grid;grid-template-columns:52px repeat(var(--days),1fr);background:var(--panel);
-        border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
-  .dayhead{padding:12px 10px;border-bottom:1px solid var(--line);border-left:1px solid var(--line)}
-  .dayhead b{display:block;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-  .dayhead span{font-size:22px;font-weight:700}
-  .dayhead.is-today span{background:var(--accent);color:#fff;border-radius:8px;padding:0 7px}
-  .corner{border-bottom:1px solid var(--line)}
-  .times{position:relative}
-  .times div{position:absolute;right:8px;font-size:11px;color:var(--muted);transform:translateY(-50%)}
-  .col{position:relative;border-left:1px solid var(--line);
-       background-image:linear-gradient(var(--line) 1px,transparent 1px);background-size:100% var(--hour)}
-  .col.is-today{background-color:color-mix(in srgb,var(--accent) 4%,transparent)}
-  .ev{position:absolute;left:4px;right:4px;border-radius:9px;padding:6px 8px;overflow:hidden;
-      background:var(--bgc);color:var(--fg);border-left:4px solid var(--c);font-size:12.5px;line-height:1.3}
-  .ev .t{font-weight:700;font-size:13.5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-  .badge{font-size:10px;font-weight:700;letter-spacing:.05em;padding:1px 5px;border-radius:4px;background:var(--c);color:#fff}
-  .ev .n{opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .ev .m{margin-top:2px;font-weight:600}
-  .ev .h{opacity:.7;font-variant-numeric:tabular-nums}
-  .ev.exam{box-shadow:inset 0 0 0 2px var(--c)}
-  .ev.past{opacity:.45}
-  .now{position:absolute;left:0;right:0;height:2px;background:var(--accent);z-index:3}
-  .now::before{content:"";position:absolute;left:-5px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--accent)}
+/* ---------- grille semaine ---------- */
+.grid{display:grid;grid-template-columns:30px repeat(var(--days),1fr);background:var(--panel);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.dh{padding:8px 4px;text-align:center;border-left:1px solid var(--line);border-bottom:1px solid var(--line)}
+.dh b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.dh span{font-size:17px;font-weight:700}
+.dh.today span{background:var(--accent);color:#fff;border-radius:7px;padding:0 6px}
+.corner{border-bottom:1px solid var(--line)}
+.times{position:relative}
+.times div{position:absolute;right:4px;font-size:10px;color:var(--muted);transform:translateY(-50%)}
+.col{position:relative;border-left:1px solid var(--line);background-image:linear-gradient(var(--line) 1px,transparent 1px);background-size:100% var(--hour)}
+.ev{position:absolute;left:2px;right:2px;border-radius:7px;padding:4px 5px;overflow:hidden;cursor:pointer;
+  background:var(--bgc);color:var(--fg);border-left:3px solid var(--c);font-size:11px;line-height:1.25}
+.ev .t{font-weight:800;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev .r{font-weight:600;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev .x{opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev.exam{box-shadow:inset 0 0 0 2px var(--c)}
+.ev.past{opacity:.5}
+.now{position:absolute;left:0;right:0;height:2px;background:var(--accent);z-index:3}
+.now::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
 
-  /* ----- liste (téléphone) ----- */
-  .list{display:none}
-  .day{margin-bottom:18px}
-  .day h2{font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 8px}
-  .day.is-today h2{color:var(--accent)}
-  .item{display:flex;gap:12px;background:var(--panel);border-radius:12px;padding:12px 14px;margin-bottom:8px;
-        box-shadow:var(--shadow);border-left:5px solid var(--c)}
-  .item .hrs{font-variant-numeric:tabular-nums;font-weight:650;min-width:54px}
-  .item .hrs span{display:block;color:var(--muted);font-weight:500}
-  .item .t{font-weight:700}
-  .item .n{color:var(--muted);font-size:13.5px}
-  .item .m{font-size:13.5px;margin-top:2px}
-  .empty{color:var(--muted);font-style:italic;padding:6px 2px}
+/* pastille devoir */
+.hw{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:800;border-radius:5px;padding:1px 4px;color:#fff;white-space:nowrap}
+.hw.todo{background:var(--todo)} .hw.ok{background:var(--ok)}
+.ev .hw{position:absolute;right:3px;bottom:3px}
+.badge{font-size:10px;font-weight:800;letter-spacing:.04em;padding:1px 5px;border-radius:4px;background:var(--c);color:#fff;vertical-align:1px}
 
-  footer{margin-top:18px;color:var(--muted);font-size:12.5px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-  .legend{display:flex;gap:12px;flex-wrap:wrap}
-  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--c);margin-right:5px;vertical-align:-1px}
+/* ---------- vue jour ---------- */
+.days{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto}
+.days button{flex:1;min-width:54px;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:6px 0;text-align:center}
+.days button b{display:block;font-size:11px;color:var(--muted);text-transform:uppercase}
+.days button span{font-size:18px;font-weight:700}
+.days button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)} .days button.on b{color:var(--bg)}
+.days button.today span{color:var(--accent)} .days button.on.today span{color:var(--bg)}
+.card{display:flex;gap:12px;background:var(--panel);border-radius:14px;padding:12px 14px;margin-bottom:8px;box-shadow:var(--shadow);border-left:5px solid var(--c);cursor:pointer}
+.card .hrs{font-variant-numeric:tabular-nums;font-weight:700;min-width:50px}
+.card .hrs span{display:block;color:var(--muted);font-weight:500}
+.card .t{font-weight:800}
+.card .n{color:var(--muted);font-size:13.5px}
+.card .m{font-size:13.5px;margin-top:2px}
+.card .memo{font-size:13px;margin-top:4px;color:var(--muted);font-style:italic}
+.card .hwl{margin-top:6px;display:flex;flex-direction:column;gap:4px}
+.card .hwl div{font-size:13.5px;display:flex;gap:6px;align-items:flex-start}
+.card .hwl .done{text-decoration:line-through;color:var(--muted)}
+.empty{color:var(--muted);font-style:italic;padding:14px 4px}
 
-  @media (max-width:760px){
-    .wrap{padding:calc(18px + env(safe-area-inset-top)) 14px calc(40px + env(safe-area-inset-bottom))}
-    h1{font-size:24px}
-    .grid{display:none}
-    .list{display:block}
-    .next{flex-wrap:wrap}
-    .next .when{margin-left:0;text-align:left}
-  }
+/* ---------- devoirs (bas de page) ---------- */
+.sect{margin-top:22px}
+.sect h2{font-size:18px;margin:0 0 8px;display:flex;align-items:center;gap:10px}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tabs button{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 14px;font-weight:650}
+.tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.hwitem{display:flex;gap:10px;align-items:flex-start;background:var(--panel);border-radius:12px;padding:10px 12px;margin-bottom:6px;box-shadow:var(--shadow);border-left:4px solid var(--c)}
+.hwitem .tx{flex:1;cursor:pointer;white-space:pre-wrap;word-break:break-word}
+.hwitem .meta{font-size:12px;color:var(--muted);margin-top:2px}
+.ck{appearance:none;-webkit-appearance:none;width:22px;height:22px;flex:none;border:2px solid var(--muted);border-radius:6px;margin:0;cursor:pointer;display:grid;place-content:center;background:var(--panel)}
+.ck:checked{background:var(--ok);border-color:var(--ok)}
+.ck:checked::after{content:"✓";color:#fff;font-weight:900;font-size:14px}
+
+/* ---------- fiche cours (bottom sheet) ---------- */
+.veil{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:none}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--panel);border-radius:18px 18px 0 0;max-height:88vh;overflow:auto;
+  padding:10px 16px calc(20px + var(--bot));transform:translateY(105%);transition:transform .22s ease;max-width:640px;margin:0 auto;box-shadow:0 -8px 30px rgba(0,0,0,.25)}
+.sheet.open{transform:none}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 10px}
+.sheet h3{margin:0;font-size:20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sheet .info{color:var(--muted);margin:4px 0 0;font-size:14px}
+.sheet .memo{margin-top:8px;background:var(--soft);border-radius:10px;padding:8px 10px;font-size:14px}
+.sheet h4{margin:16px 0 8px;font-size:15px;display:flex;justify-content:space-between;align-items:baseline}
+.sheet h4 small{font-weight:500;color:var(--muted);font-size:12px}
+.hwrow{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line)}
+.hwrow .tx{flex:1;white-space:pre-wrap;word-break:break-word}
+.hwrow .tx.done{text-decoration:line-through;color:var(--muted)}
+.hwrow .meta{font-size:12px;color:var(--muted)}
+.hwrow .act{display:flex;gap:4px}
+.hwrow .act button{border:0;background:var(--soft);border-radius:8px;padding:4px 8px;font-size:12.5px}
+textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;background:var(--bg);color:var(--ink);resize:vertical}
+.row{display:flex;gap:8px;margin-top:8px}
+.row .btn{flex:1}
+.note{font-size:12.5px;color:var(--muted);margin-top:6px}
+
+/* ---------- choix du groupe ---------- */
+.pick{max-width:420px;margin:12vh auto 0;text-align:center}
+.pick h1{font-size:28px;margin:12px 0 4px}
+.pick p{color:var(--muted);margin:0 0 20px}
+.pick .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.pick .opts button{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:18px 10px;font-size:20px;font-weight:800;box-shadow:var(--shadow)}
+.pick .back{margin-top:18px;border:0;background:none;color:var(--muted);text-decoration:underline}
+
+footer{margin-top:22px;color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:calc(20px + var(--bot));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:10px;font-size:14px;z-index:30;display:none}
+
+@media (min-width:800px){
+  :root{--hour:64px}
+  .grid{grid-template-columns:48px repeat(var(--days),1fr)}
+  .ev{font-size:12.5px;padding:6px 8px;left:4px;right:4px}
+  .ev .t{font-size:13.5px}
+  .times div{font-size:11px;right:8px}
+  .sheet{bottom:auto;top:50%;border-radius:18px;transform:translate(0,-40%) scale(.98);opacity:0;pointer-events:none;transition:.18s}
+  .sheet.open{transform:translate(0,-50%);opacity:1;pointer-events:auto}
+}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div>
-      <div class="eyebrow" id="sub">IUT La Rochelle</div>
-      <h1 id="title">Emploi du temps</h1>
-    </div>
-    <div class="nav">
-      <button id="prev" title="Semaine précédente (←)">‹</button>
-      <button id="today" class="today">Aujourd'hui</button>
-      <button id="next" title="Semaine suivante (→)">›</button>
-    </div>
-  </header>
-  <div id="nextcard"></div>
-  <div class="grid" id="grid"></div>
-  <div class="list" id="list"></div>
-  <footer>
-    <div class="legend" id="legend"></div>
-    <div id="upd"></div>
-  </footer>
-</div>
+<div class="wrap" id="app"></div>
+<div class="veil" id="veil"></div>
+<div class="sheet" id="sheet"></div>
+<div class="toast" id="toast"></div>
 
 <script>
-const DATA = {"updated":"2026-11-21T22:40:18Z","groups":["S1","S1A","S1TP1"],"events":[{"start":"2026-11-02T07:00:00Z","end":"2026-11-02T08:00:00Z","code":"MS1","type":"COURS","group":"S1","room":"GC-009","prof":"KAM","name":"mécanique des structures 1"},{"start":"2026-11-02T08:00:00Z","end":"2026-11-02T09:00:00Z","code":"TTP1","type":"DS","group":"S1","room":"GC-007/GC-009","prof":"FMAR","name":"Technologie des travaux publics 1"},{"start":"2026-11-02T09:15:00Z","end":"2026-11-02T11:15:00Z","code":"DESSIN1","type":"TP","group":"S1TP1","room":"GC-201","prof":"JPM","name":"Dessin/Lecture plan"},{"start":"2026-11-02T12:45:00Z","end":"2026-11-02T14:45:00Z","code":"SAE1.1","type":"TD","group":"S1A","room":"GC-108","prof":"FGAUF","name":"Études d’exécution d’un"},{"start":"2026-11-02T15:00:00Z","end":"2026-11-02T17:00:00Z","code":"MS1","type":"TD","group":"S1A","room":"GC-001","prof":"KAM","name":"mécanique des structures 1"},{"start":"2026-11-03T07:00:00Z","end":"2026-11-03T09:00:00Z","code":"SUIVI","type":"","group":"S1","room":"GC-009/GC-107/GC-202/GC-210","prof":"FMAR/CAU/NCA/JPM","name":"Intervenants et ouvrages dans environnement"},{"start":"2026-11-03T09:15:00Z","end":"2026-11-03T11:15:00Z","code":"TOPO1","type":"DS","group":"S1","room":"GC-009/GC-007","prof":"FMAR","name":"Topographie 1"},{"start":"2026-11-03T15:00:00Z","end":"2026-11-03T17:00:00Z","code":"COM 1","type":"TD","group":"S1A","room":"GC-101","prof":"WLG","name":"Communication 1"},{"start":"2026-11-04T07:00:00Z","end":"2026-11-04T11:00:00Z","code":"TOPO1","type":"TP","group":"S1TP1","room":"HALL STRUCT","prof":"CAU","name":"Topographie 1"},{"start":"2026-11-04T12:45:00Z","end":"2026-11-04T14:45:00Z","code":"MGM1","type":"TD","group":"S1A","room":"GC-001","prof":"FMAR","name":"Méthodes, Gestion et Management 1"},{"start":"2026-11-04T15:00:00Z","end":"2026-11-04T17:00:00Z","code":"SAE1.6","type":"TP","group":"S1TP1","room":"HALL ETB F","prof":"NCA","name":"Etats des lieux d\u0027un ouvrage existant"},{"start":"2026-11-05T07:00:00Z","end":"2026-11-05T09:00:00Z","code":"MAT1","type":"TP","group":"S1TP1","room":"GC-005","prof":"CCOU","name":"Mathématiques 1"},{"start":"2026-11-05T09:15:00Z","end":"2026-11-05T11:15:00Z","code":"REMED","type":"TD","group":"S1","room":"GC-005/GC-101","prof":"CCOU/WLG","name":"REMEDIATION"},{"start":"2026-11-05T12:30:00Z","end":"2026-11-05T16:30:00Z","code":"TOPO1","type":"TP","group":"S1TP1","room":"HALL STRUCT","prof":"CAU","name":"Topographie 1"},{"start":"2026-11-06T07:00:00Z","end":"2026-11-06T11:00:00Z","code":"MX1","type":"TP","group":"S1TP1","room":"HALL MAT","prof":"JLU","name":"Connaissances matériaux"},{"start":"2026-11-06T12:45:00Z","end":"2026-11-06T14:45:00Z","code":"ANG1","type":"TP","group":"S1TP1","room":"GC-102","prof":"NCO","name":"Anglais"},{"start":"2026-11-09T12:45:00Z","end":"2026-11-09T14:45:00Z","code":"MS1","type":"TD","group":"S1A","room":"GC-001","prof":"KAM","name":"mécanique des structures 1"},{"start":"2026-11-09T15:00:00Z","end":"2026-11-09T17:00:00Z","code":"MGM1","type":"TD","group":"S1A","room":"GC-006","prof":"FMAR","name":"Méthodes, Gestion et Management 1"},{"start":"2026-11-10T07:00:00Z","end":"2026-11-10T11:00:00Z","code":"TASP","type":"TP","group":"S1TP1","room":"GC-108","prof":"FGAUF","name":"Technologie et analyse des structures porteuses"},{"start":"2026-11-10T12:45:00Z","end":"2026-11-10T14:45:00Z","code":"FCB","type":"TD","group":"S1A","room":"GC-001","prof":"COB","name":"Principales fonctions et équipement"},{"start":"2026-11-10T15:00:00Z","end":"2026-11-10T17:00:00Z","code":"MAT1","type":"TD","group":"S1A","room":"GC-005","prof":"CCOU","name":"Mathématiques 1"},{"start":"2026-11-12T07:00:00Z","end":"2026-11-12T11:00:00Z","code":"SAE1.1","type":"TD","group":"S1A","room":"GC-108","prof":"FGAUF","name":"Études d’exécution d’un"},{"start":"2026-11-12T12:45:00Z","end":"2026-11-12T16:45:00Z","code":"RES","type":"TP","group":"S1TP1","room":"GC-MECAFLU","prof":"AHA","name":"Réseaux"},{"start":"2026-11-13T07:00:00Z","end":"2026-11-13T09:00:00Z","code":"SAE1.3","type":"TP","group":"S1TP1","room":"GC-104","prof":"KAR","name":"Modélisation structure + chargement"},{"start":"2026-11-13T09:00:00Z","end":"2026-11-13T11:00:00Z","code":"SAE1.3","type":"PRTUT2","group":"S1TP1","room":"GC-104","prof":"KAR","name":"Modélisation structure + chargement"},{"start":"2026-11-13T12:45:00Z","end":"2026-11-13T14:45:00Z","code":"COM 1","type":"TD","group":"S1A","room":"GC-101","prof":"WLG","name":"Communication 1"},{"start":"2026-11-13T15:00:00Z","end":"2026-11-13T17:00:00Z","code":"DESSIN1","type":"TP","group":"S1TP1","room":"GC-201","prof":"JPM","name":"Dessin/Lecture plan"},{"start":"2026-11-16T07:00:00Z","end":"2026-11-16T09:00:00Z","code":"MAT1","type":"TP","group":"S1TP1","room":"GC-005","prof":"CCOU","name":"Mathématiques 1"},{"start":"2026-11-16T09:15:00Z","end":"2026-11-16T11:15:00Z","code":"DESSIN1","type":"TP","group":"S1TP1","room":"GC-201","prof":"JPM","name":"Dessin/Lecture plan"},{"start":"2026-11-16T12:45:00Z","end":"2026-11-16T14:45:00Z","code":"SAE1.1","type":"TD","group":"S1A","room":"GC-108","prof":"FGAUF","name":"Études d’exécution d’un"},{"start":"2026-11-16T15:00:00Z","end":"2026-11-16T17:00:00Z","code":"RES","type":"TD","group":"S1A","room":"GC-210","prof":"NCA","name":"Réseaux"},{"start":"2026-11-17T07:00:00Z","end":"2026-11-17T11:00:00Z","code":"SAE1.1","type":"PRTUT1","group":"S1A","room":"GC-108","prof":"FGAUF","name":"Études d’exécution d’un"},{"start":"2026-11-17T12:45:00Z","end":"2026-11-17T14:45:00Z","code":"MAT1","type":"TD","group":"S1A","room":"GC-005","prof":"CCOU","name":"Mathématiques 1"},{"start":"2026-11-17T15:00:00Z","end":"2026-11-17T17:00:00Z","code":"MTUOI","type":"TP","group":"S1TP1","room":"GC-202","prof":"SRE","name":"Méthodologie de Travail Universitaire"},{"start":"2026-11-18T08:00:00Z","end":"2026-11-18T10:00:00Z","code":"SAE1.6","type":"TP","group":"S1TP1","room":"GC-001","prof":"COB","name":"Etats des lieux d\u0027un ouvrage existant"},{"start":"2026-11-18T13:00:00Z","end":"2026-11-18T15:00:00Z","code":"SAE1.3","type":"PRTUT2","group":"S1TP1","room":"GC-104","prof":"KAR","name":"Modélisation structure + chargement"},{"start":"2026-11-18T15:00:00Z","end":"2026-11-18T17:00:00Z","code":"SAE1.3","type":"TP","group":"S1TP1","room":"GC-104","prof":"KAR","name":"Modélisation structure + chargement"},{"start":"2026-11-19T07:00:00Z","end":"2026-11-19T08:00:00Z","code":"PPP1","type":"","group":"S1","room":"GC-009","prof":"","name":"Projet Professionel Personnalisé 1"},{"start":"2026-11-19T09:15:00Z","end":"2026-11-19T11:15:00Z","code":"REMED","type":"TD","group":"S1","room":"GC-006/GC-102","prof":"CCOU/DEM","name":"REMEDIATION"},{"start":"2026-11-20T07:30:00Z","end":"2026-11-20T08:30:00Z","code":"MS1","type":"DS","group":"S1","room":"GC-009","prof":"KAM","name":"mécanique des structures 1"},{"start":"2026-11-20T09:15:00Z","end":"2026-11-20T11:15:00Z","code":"MGM1","type":"TD","group":"S1A","room":"GC-001","prof":"FMAR","name":"Méthodes, Gestion et Management 1"},{"start":"2026-11-20T12:45:00Z","end":"2026-11-20T14:45:00Z","code":"ANG1","type":"TD","group":"S1A","room":"GC-005","prof":"NCO","name":"Anglais"},{"start":"2026-11-20T15:00:00Z","end":"2026-11-20T17:00:00Z","code":"COM 1","type":"TD","group":"S1A","room":"GC-101","prof":"WLG","name":"Communication 1"},{"start":"2026-11-23T07:00:00Z","end":"2026-11-23T09:00:00Z","code":"MTUOI","type":"TD","group":"S1A","room":"GC-009","prof":"CCOU","name":"Méthodologie de Travail Universitaire"},{"start":"2026-11-23T09:15:00Z","end":"2026-11-23T11:15:00Z","code":"SAE1.1","type":"TD","group":"S1A","room":"GC-005","prof":"CAU","name":"Études d’exécution d’un"},{"start":"2026-11-23T12:45:00Z","end":"2026-11-23T14:45:00Z","code":"TASP","type":"TD","group":"S1A","room":"GC-001","prof":"SGRA","name":"Technologie et analyse des structures porteuses"},{"start":"2026-11-23T15:00:00Z","end":"2026-11-23T17:00:00Z","code":"PPP1","type":"TP","group":"S1TP1","room":"GC-003","prof":"FMAR","name":"Projet Professionel Personnalisé 1"},{"start":"2026-11-24T07:00:00Z","end":"2026-11-24T09:00:00Z","code":"DESSIN1","type":"TP","group":"S1TP1","room":"GC-201","prof":"JPM","name":"Dessin/Lecture plan"},{"start":"2026-11-24T09:15:00Z","end":"2026-11-24T11:15:00Z","code":"REMED","type":"TD","group":"S1","room":"GC-102/GC-101","prof":"WLG/DEM","name":"REMEDIATION"},{"start":"2026-11-24T12:45:00Z","end":"2026-11-24T14:45:00Z","code":"SAE1.1","type":"PRTUT1","group":"S1A","room":"GC-108","prof":"CAU","name":"Études d’exécution d’un"},{"start":"2026-11-24T15:00:00Z","end":"2026-11-24T17:00:00Z","code":"MAT1","type":"TD","group":"S1A","room":"GC-005","prof":"CCOU","name":"Mathématiques 1"},{"start":"2026-11-25T07:00:00Z","end":"2026-11-25T09:00:00Z","code":"DESSIN1","type":"TP","group":"S1TP1","room":"GC-105","prof":"JPM","name":"Dessin/Lecture plan"},{"start":"2026-11-25T09:15:00Z","end":"2026-11-25T11:15:00Z","code":"DESSIN1","type":"TP","group":"S1TP1","room":"GC-105","prof":"JPM","name":"Dessin/Lecture plan"},{"start":"2026-11-25T12:45:00Z","end":"2026-11-25T14:45:00Z","code":"MGM1","type":"TD","group":"S1A","room":"GC-001","prof":"FMAR","name":"Méthodes, Gestion et Management 1"},{"start":"2026-11-25T15:00:00Z","end":"2026-11-25T17:00:00Z","code":"SAE1.5","type":"TD","group":"S1A","room":"GC-001","prof":"FMAR","name":"Devis ouvrage"},{"start":"2026-11-26T07:00:00Z","end":"2026-11-26T09:00:00Z","code":"ANG1","type":"TD","group":"S1A","room":"GC-006","prof":"NCO","name":"Anglais"},{"start":"2026-11-26T09:15:00Z","end":"2026-11-26T11:15:00Z","code":"SAE1.4","type":"TD","group":"S1A","room":"GC-210","prof":"NCA","name":"Dimensionnement réseaux secs et humides"},{"start":"2026-11-26T12:45:00Z","end":"2026-11-26T16:45:00Z","code":"MGM1","type":"TP","group":"S1TP1","room":"GC-203","prof":"FMAR","name":"Méthodes, Gestion et Management 1"},{"start":"2026-11-27T07:00:00Z","end":"2026-11-27T11:00:00Z","code":"SAE1.2","type":"TD","group":"S1A","room":"GC-108","prof":"SGRA","name":"Projet ouvrage d\u0027art"},{"start":"2026-11-27T12:15:00Z","end":"2026-11-27T12:45:00Z","code":"ACC S1","type":"","group":"S1","room":"GC-009","prof":"JPM","name":"Accueil S1"},{"start":"2026-11-27T12:45:00Z","end":"2026-11-27T14:45:00Z","code":"SAE1.3","type":"TP","group":"S1TP1","room":"GC-104","prof":"KAR","name":"Modélisation structure + chargement"},{"start":"2026-11-27T15:00:00Z","end":"2026-11-27T17:00:00Z","code":"SAE1.3","type":"PRTUT2","group":"S1TP1","room":"GC-104","prof":"KAR","name":"Modélisation structure + chargement"},{"start":"2026-11-30T07:00:00Z","end":"2026-11-30T09:00:00Z","code":"MAT1","type":"TD","group":"S1A","room":"GC-202","prof":"CCOU","name":"Mathématiques 1"},{"start":"2026-11-30T09:15:00Z","end":"2026-11-30T11:15:00Z","code":"COM 1","type":"TD","group":"S1A","room":"GC-101","prof":"WLG","name":"Communication 1"},{"start":"2026-11-30T12:45:00Z","end":"2026-11-30T14:45:00Z","code":"TASP","type":"TD","group":"S1A","room":"GC-001","prof":"SGRA","name":"Technologie et analyse des structures porteuses"},{"start":"2026-11-30T15:00:00Z","end":"2026-11-30T17:00:00Z","code":"SAE1.1","type":"TD","group":"S1A","room":"GC-108","prof":"CAU","name":"Études d’exécution d’un"},{"start":"2026-12-01T07:00:00Z","end":"2026-12-01T09:00:00Z","code":"DESSIN1","type":"TP","group":"S1TP1","room":"GC-201","prof":"JPM","name":"Dessin/Lecture plan"},{"start":"2026-12-01T09:15:00Z","end":"2026-12-01T11:15:00Z","code":"SAE1.5","type":"TD","group":"S1A","room":"GC-001","prof":"FMAR","name":"Devis ouvrage"},{"start":"2026-12-01T12:45:00Z","end":"2026-12-01T14:45:00Z","code":"FCB","type":"TD","group":"S1A","room":"GC-009","prof":"NCA","name":"Principales fonctions et équipement"},{"start":"2026-12-01T15:00:00Z","end":"2026-12-01T17:00:00Z","code":"SAE1.2","type":"TD","group":"S1A","room":"GC-001","prof":"SGRA","name":"Projet ouvrage d\u0027art"},{"start":"2026-12-02T07:00:00Z","end":"2026-12-02T09:00:00Z","code":"FCB","type":"TD","group":"S1A","room":"GC-009","prof":"NCA","name":"Principales fonctions et équipement"},{"start":"2026-12-02T09:15:00Z","end":"2026-12-02T11:15:00Z","code":"SAE1.4","type":"TD","group":"S1A","room":"GC-202","prof":"NCA","name":"Dimensionnement réseaux secs et humides"},{"start":"2026-12-02T12:45:00Z","end":"2026-12-02T14:45:00Z","code":"MGM1","type":"TD","group":"S1A","room":"GC-001","prof":"FMAR","name":"Méthodes, Gestion et Management 1"},{"start":"2026-12-02T15:00:00Z","end":"2026-12-02T17:00:00Z","code":"SAE1.5","type":"TD","group":"S1A","room":"GC-001","prof":"FMAR","name":"Devis ouvrage"},{"start":"2026-12-03T07:00:00Z","end":"2026-12-03T11:00:00Z","code":"MGM1","type":"TD","group":"S1A","room":"GC-210","prof":"FMAR","name":"Méthodes, Gestion et Management 1"},{"start":"2026-12-04T07:00:00Z","end":"2026-12-04T09:00:00Z","code":"SAE1.5","type":"TD","group":"S1A","room":"GC-007","prof":"FMAR","name":"Devis ouvrage"},{"start":"2026-12-04T09:15:00Z","end":"2026-12-04T11:15:00Z","code":"SAE1.2","type":"TD","group":"S1A","room":"GC-006","prof":"SGRA","name":"Projet ouvrage d\u0027art"},{"start":"2026-12-04T12:45:00Z","end":"2026-12-04T14:45:00Z","code":"SAE1.5","type":"TD","group":"S1A","room":"GC-005","prof":"FMAR","name":"Devis ouvrage"},{"start":"2026-12-07T07:00:00Z","end":"2026-12-07T11:00:00Z","code":"TASP","type":"TP","group":"S1TP1","room":"GC-001","prof":"SGRA","name":"Technologie et analyse des structures porteuses"},{"start":"2026-12-07T12:45:00Z","end":"2026-12-07T14:45:00Z","code":"SAE1.1","type":"TD","group":"S1A","room":"GC-108","prof":"CAU","name":"Études d’exécution d’un"},{"start":"2026-12-07T15:00:00Z","end":"2026-12-07T17:00:00Z","code":"SAE1.4","type":"TD","group":"S1A","room":"GC-210","prof":"NCA","name":"Dimensionnement réseaux secs et humides"},{"start":"2026-12-08T07:00:00Z","end":"2026-12-08T09:00:00Z","code":"SAE1.4","type":"PRTUT","group":"S1A","room":"GC-210","prof":"0","name":"Dimensionnement réseaux secs et humides"},{"start":"2026-12-08T09:15:00Z","end":"2026-12-08T11:15:00Z","code":"MAT1","type":"TD","group":"S1A","room":"GC-005","prof":"CCOU","name":"Mathématiques 1"},{"start":"2026-12-08T12:45:00Z","end":"2026-12-08T14:45:00Z","code":"SAE1.1","type":"PRTUT1","group":"S1A","room":"GC-108","prof":"CAU","name":"Études d’exécution d’un"},{"start":"2026-12-09T07:00:00Z","end":"2026-12-09T09:00:00Z","code":"SAE1.6","type":"TP","group":"S1TP1","room":"HALL ETB F","prof":"NCA","name":"Etats des lieux d\u0027un ouvrage existant"},{"start":"2026-12-09T12:45:00Z","end":"2026-12-09T14:45:00Z","code":"MGM1","type":"TD","group":"S1A","room":"GC-001","prof":"FMAR","name":"Méthodes, Gestion et Management 1"},{"start":"2026-12-09T15:00:00Z","end":"2026-12-09T17:00:00Z","code":"SAE1.5","type":"TD","group":"S1A","room":"GC-001","prof":"FMAR","name":"Devis ouvrage"},{"start":"2026-12-10T07:00:00Z","end":"2026-12-10T11:00:00Z","code":"SAE1.2","type":"PRTUT1","group":"S1A","room":"GC-006","prof":"SGRA","name":"Projet ouvrage d\u0027art"},{"start":"2026-12-11T07:00:00Z","end":"2026-12-11T11:00:00Z","code":"SAE1.2","type":"TD","group":"S1A","room":"GC-006","prof":"SGRA","name":"Projet ouvrage d\u0027art"},{"start":"2026-12-11T12:45:00Z","end":"2026-12-11T14:45:00Z","code":"SAE1.5","type":"TD","group":"S1A","room":"GC-006","prof":"FMAR","name":"Devis ouvrage"},{"start":"2026-12-11T15:00:00Z","end":"2026-12-11T17:00:00Z","code":"ANG1","type":"TD","group":"S1A","room":"GC-006","prof":"NCO","name":"Anglais"},{"start":"2026-12-14T07:00:00Z","end":"2026-12-14T09:00:00Z","code":"MAT1","type":"TD","group":"S1A","room":"GC-005","prof":"CCOU","name":"Mathématiques 1"},{"start":"2026-12-14T09:15:00Z","end":"2026-12-14T11:15:00Z","code":"SAE1.5","type":"TD","group":"S1A","room":"GC-001","prof":"FMAR","name":"Devis ouvrage"},{"start":"2026-12-14T12:45:00Z","end":"2026-12-14T14:45:00Z","code":"SAE1.1","type":"TD","group":"S1A","room":"GC-108","prof":"CAU","name":"Études d’exécution d’un"},{"start":"2026-12-14T15:00:00Z","end":"2026-12-14T17:00:00Z","code":"SAE1.4","type":"TD","group":"S1A","room":"GC-210","prof":"NCA","name":"Dimensionnement réseaux secs et humides"},{"start":"2026-12-15T09:15:00Z","end":"2026-12-15T11:15:00Z","code":"SAE1.4","type":"TP","group":"S1TP1","room":"GC-202","prof":"","name":"Dimensionnement réseaux secs et humides"},{"start":"2026-12-15T12:45:00Z","end":"2026-12-15T14:45:00Z","code":"SAE1.1","type":"TD","group":"S1A","room":"GC-108","prof":"CAU","name":"Études d’exécution d’un"},{"start":"2026-12-16T07:00:00Z","end":"2026-12-16T11:00:00Z","code":"SAE1.2","type":"PRTUT1","group":"S1A","room":"GC-009","prof":"SGRA","name":"Projet ouvrage d\u0027art"},{"start":"2026-12-16T12:45:00Z","end":"2026-12-16T14:45:00Z","code":"SAE1.5","type":"TD","group":"S1A","room":"GC-210","prof":"FMAR","name":"Devis ouvrage"},{"start":"2026-12-16T16:00:00Z","end":"2026-12-16T17:00:00Z","code":"FCB","type":"DS","group":"S1","room":"GC-009","prof":"COB","name":"Principales fonctions et équipement"},{"start":"2026-12-17T07:00:00Z","end":"2026-12-17T11:00:00Z","code":"MGM1","type":"TD","group":"S1A","room":"GC-202","prof":"FMAR","name":"Méthodes, Gestion et Management 1"},{"start":"2026-12-18T07:00:00Z","end":"2026-12-18T11:00:00Z","code":"COM 1","type":"TP","group":"S1TP1","room":"GC-101","prof":"WLG","name":"Communication 1"},{"start":"2026-12-18T12:45:00Z","end":"2026-12-18T14:45:00Z","code":"ANG1","type":"TD","group":"S1A","room":"GC-102","prof":"NCO","name":"Anglais"},{"start":"2026-12-18T15:00:00Z","end":"2026-12-18T17:00:00Z","code":"SAE1.2","type":"TP","group":"S1TP1","room":"GC-201","prof":"SGRA","name":"Projet ouvrage d\u0027art"},{"start":"2027-01-04T07:00:00Z","end":"2027-01-04T11:00:00Z","code":"SAE1.2","type":"TP","group":"S1TP1","room":"GC-202","prof":"SGRA","name":"Projet ouvrage d\u0027art"},{"start":"2027-01-04T12:45:00Z","end":"2027-01-04T14:45:00Z","code":"COM 1","type":"TD","group":"S1A","room":"GC-101","prof":"WLG","name":"Communication 1"},{"start":"2027-01-04T15:00:00Z","end":"2027-01-04T17:00:00Z","code":"SAE1.6","type":"TD","group":"S1A","room":"GC-210","prof":"GMI","name":"Etats des lieux d\u0027un ouvrage existant"},{"start":"2027-01-05T07:00:00Z","end":"2027-01-05T09:00:00Z","code":"SAE1.5","type":"PRTUT","group":"S1TP1","room":"GC-001","prof":"0","name":"Devis ouvrage"},{"start":"2027-01-05T12:45:00Z","end":"2027-01-05T14:45:00Z","code":"ANG1","type":"TD","group":"S1A","room":"GC-006","prof":"NCO","name":"Anglais"},{"start":"2027-01-06T09:15:00Z","end":"2027-01-06T11:15:00Z","code":"MAT1","type":"TD","group":"S1A","room":"GC-005","prof":"CCOU","name":"Mathématiques 1"},{"start":"2027-01-06T13:00:00Z","end":"2027-01-06T17:00:00Z","code":"SAE1.6","type":"PRTUT1","group":"S1A","room":"GC-210","prof":"GMI","name":"Etats des lieux d\u0027un ouvrage existant"},{"start":"2027-01-07T09:15:00Z","end":"2027-01-07T11:15:00Z","code":"ANG1","type":"TP","group":"S1TP1","room":"GC-102","prof":"NCO","name":"Anglais"},{"start":"2027-01-08T15:00:00Z","end":"2027-01-08T17:00:00Z","code":"ANG1","type":"TD","group":"S1A","room":"GC-006","prof":"NCO","name":"Anglais"},{"start":"2027-01-11T07:00:00Z","end":"2027-01-11T11:00:00Z","code":"SAE1.2","type":"PRTUT","group":"S1A","room":"GC-007","prof":"","name":"Projet ouvrage d\u0027art"},{"start":"2027-01-11T12:45:00Z","end":"2027-01-11T14:45:00Z","code":"MAT1","type":"TD","group":"S1A","room":"GC-005/GC-210","prof":"CCOU","name":"Mathématiques 1"},{"start":"2027-01-12T07:00:00Z","end":"2027-01-12T11:00:00Z","code":"SUIVI","type":"PRTUT","group":"S1A","room":"GC-001","prof":"","name":"Intervenants et ouvrages dans environnement"},{"start":"2027-01-12T12:45:00Z","end":"2027-01-12T14:45:00Z","code":"COM 1","type":"TD","group":"S1A","room":"GC-101","prof":"WLG","name":"Communication 1"},{"start":"2027-01-12T15:00:00Z","end":"2027-01-12T17:00:00Z","code":"SAE1.5","type":"PRTUT","group":"S1TP1","room":"GC-005","prof":"","name":"Devis ouvrage"},{"start":"2027-01-13T07:00:00Z","end":"2027-01-13T11:00:00Z","code":"SAE1.3","type":"TP","group":"S1TP1","room":"GC-203","prof":"KAR","name":"Modélisation structure + chargement"},{"start":"2027-01-13T12:45:00Z","end":"2027-01-13T16:45:00Z","code":"MTUOI","type":"TP","group":"S1TP1","room":"GC-108","prof":"","name":"Méthodologie de Travail Universitaire"},{"start":"2027-01-14T08:00:00Z","end":"2027-01-14T09:00:00Z","code":"MGM1","type":"DS","group":"S1","room":"GC-009","prof":"CAU","name":"Méthodes, Gestion et Management 1"},{"start":"2027-01-15T07:00:00Z","end":"2027-01-15T11:00:00Z","code":"SAE1.6","type":"PRTUT1","group":"S1A","room":"GC-210","prof":"GMI","name":"Etats des lieux d\u0027un ouvrage existant"},{"start":"2027-01-15T13:00:00Z","end":"2027-01-15T15:00:00Z","code":"ANG1","type":"DS","group":"S1","room":"GC-009","prof":"NCO/DEM","name":"Anglais"},{"start":"2027-01-15T15:00:00Z","end":"2027-01-15T17:00:00Z","code":"TASP","type":"DS","group":"S1","room":"GC-009","prof":"CAU","name":"Technologie et analyse des structures porteuses"},{"start":"2027-01-18T07:00:00Z","end":"2027-01-18T09:00:00Z","code":"SAE1.5","type":"PRTUT","group":"S1TP1","room":"GC-001","prof":"","name":"Devis ouvrage"},{"start":"2027-01-18T09:15:00Z","end":"2027-01-18T11:15:00Z","code":"PPP1","type":"TP","group":"S1TP1","room":"GC-006","prof":"FMAR","name":"Projet Professionel Personnalisé 1"},{"start":"2027-01-18T15:00:00Z","end":"2027-01-18T17:00:00Z","code":"SAE1.5","type":"PRTUT1","group":"S1A","room":"GC-001","prof":"FMAR","name":"Devis ouvrage"},{"start":"2027-01-19T07:00:00Z","end":"2027-01-19T11:00:00Z","code":"SAE1.6","type":"PRTUT1","group":"S1A","room":"GC-210","prof":"GMI","name":"Etats des lieux d\u0027un ouvrage existant"},{"start":"2027-01-20T12:45:00Z","end":"2027-01-20T16:45:00Z","code":"SAE1.6","type":"TD","group":"S1A","room":"GC-009","prof":"GMI","name":"Etats des lieux d\u0027un ouvrage existant"},{"start":"2027-01-21T07:00:00Z","end":"2027-01-21T08:30:00Z","code":"MAT1","type":"DS","group":"S1","room":"GC-009","prof":"CCOU","name":"Mathématiques 1"}]};
+/* ======== Configuration de la base des devoirs (Supabase) ======== */
+const SUPA_URL = "https://oysfbsdpdcjpufrfpmjx.supabase.co";
+const SUPA_KEY = "sb_publishable_qHE46e33ZJ-_AFLZkXG4YA_ty7QAaXx";   // cle publique, faite pour etre dans la page
 
-const TYPES = {TP:"TP",TD:"TD",CM:"CM",DS:"Examen",PRTUT:"Projet",PRTUT1:"Projet",PRTUT2:"Projet"};
-const DAYS = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
-const fmtH = d => d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}).replace(":", "h");
+/* ======== utilitaires ======== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtH = d => d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}).replace(":","h");
 const fmtD = (d,o) => d.toLocaleDateString("fr-FR",o);
-const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-
-const events = (DATA?.events||[]).map(e=>({...e,s:new Date(e.start),e:new Date(e.end)}));
-
-// une couleur stable par matière
-const PALETTE = [8,200,145,280,35,330,175,240,95,15,260,55];
-const hueOf = {};
-[...new Set(events.map(e=>e.code))].sort().forEach((c,i)=>hueOf[c]=PALETTE[i%PALETTE.length]);
-const dark = matchMedia("(prefers-color-scheme:dark)").matches;
-function colors(code){
-  const h = hueOf[code] ?? 0;
-  return dark ? `--c:hsl(${h} 65% 58%);--bgc:hsl(${h} 30% 20%);--fg:hsl(${h} 40% 92%)`
-              : `--c:hsl(${h} 62% 50%);--bgc:hsl(${h} 75% 95%);--fg:hsl(${h} 45% 22%)`;
-}
-const isExam = e => e.type==="DS";
+const DAYS = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
+const TYPES = {DS:"Examen",PRTUT:"Projet",PRTUT1:"Projet",PRTUT2:"Projet"};
 const typeLbl = t => TYPES[t] || t || "";
-
+const sameDay = (a,b) => a.toDateString() === b.toDateString();
 function monday(d){ const x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate()-((x.getDay()+6)%7)); return x; }
 function isoWeek(d){ const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())); const n=t.getUTCDay()||7;
   t.setUTCDate(t.getUTCDate()+4-n); const y=new Date(Date.UTC(t.getUTCFullYear(),0,1)); return Math.ceil(((t-y)/864e5+1)/7); }
-const sameDay = (a,b) => a.toDateString()===b.toDateString();
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.style.display="block"; clearTimeout(toast.h); toast.h=setTimeout(()=>t.style.display="none",2200); }
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem("edt."+k); return v==null?d:JSON.parse(v);}catch{ return d; } },
+  set(k,v){ localStorage.setItem("edt."+k, JSON.stringify(v)); }
+};
 
+/* ======== etat ======== */
+let DATA = store.get("data", null);
+let tp = store.get("tp", null);
+let view = store.get("view", innerWidth < 800 ? "jour" : "semaine");
+let hwTab = "todo";
+let homework = store.get("hw", []);           // devoirs partages du TP (cache local)
+let done = store.get("done", {});              // coches personnelles : { idDevoir: true }
 let now = new Date();
-let week = monday(now);
-if (now.getDay()===0 || now.getDay()===6) week.setDate(week.getDate()+7); // le week-end on montre la semaine suivante
+let week = monday(now); if (now.getDay()===0 || now.getDay()===6) week.setDate(week.getDate()+7);
+let dayIdx = Math.min(4, Math.max(0, (now.getDay()+6)%7)); if (now.getDay()===0||now.getDay()===6) dayIdx = 0;
+let pickStep = null, pickTd = null;
+let sheetKey = null, editing = null;
 
-function render(){
-  now = new Date();
-  const end = new Date(week); end.setDate(end.getDate()+7);
-  const wk = events.filter(e=>e.s>=week && e.s<end);
-  const hasSat = wk.some(e=>e.s.getDay()===6);
-  const nDays = hasSat?6:5;
-  const last = new Date(week); last.setDate(last.getDate()+nDays-1);
-
-  document.getElementById("title").innerHTML =
-    `Semaine ${isoWeek(week)} <small>${fmtD(week,{day:"numeric",month:"short"})} – ${fmtD(last,{day:"numeric",month:"short",year:"numeric"})}</small>`;
-  document.getElementById("sub").textContent =
-    "IUT La Rochelle" + (DATA?.groups?.length ? " · " + DATA.groups.join(" · ") : "");
-
-  // plage horaire
-  let h0=8,h1=18;
-  wk.forEach(e=>{ h0=Math.min(h0,e.s.getHours()); h1=Math.max(h1,Math.ceil(e.e.getHours()+e.e.getMinutes()/60)); });
-  const H = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--hour"));
-  const top = d => ((d.getHours()+d.getMinutes()/60)-h0)*H;
-
-  // ----- grille -----
-  const g = document.getElementById("grid");
-  g.style.setProperty("--days",nDays);
-  let html = `<div class="corner"></div>`;
-  for(let i=0;i<nDays;i++){
-    const d=new Date(week); d.setDate(d.getDate()+i);
-    html += `<div class="dayhead ${sameDay(d,now)?"is-today":""}"><b>${DAYS[i]}</b><span>${d.getDate()}</span></div>`;
-  }
-  html += `<div class="times" style="height:${(h1-h0)*H}px">`;
-  for(let h=h0+1;h<h1;h++) html += `<div style="top:${(h-h0)*H}px">${h}h</div>`;
-  html += `</div>`;
-  for(let i=0;i<nDays;i++){
-    const d=new Date(week); d.setDate(d.getDate()+i);
-    html += `<div class="col ${sameDay(d,now)?"is-today":""}" style="height:${(h1-h0)*H}px">`;
-    wk.filter(e=>sameDay(e.s,d)).forEach(e=>{
-      const y=top(e.s), hgt=top(e.e)-y-3;
-      html += `<div class="ev ${isExam(e)?"exam":""} ${e.e<now?"past":""}" style="top:${y+1}px;height:${hgt}px;${colors(e.code)}"
-                 title="${esc(e.name)}&#10;${fmtH(e.s)} – ${fmtH(e.e)}&#10;${esc(e.room)} · ${esc(e.prof)} · ${esc(e.group)}">
-        <div class="t">${esc(e.code)} ${e.type?`<span class="badge">${esc(typeLbl(e.type))}</span>`:""}</div>
-        ${hgt>58?`<div class="n">${esc(e.name)}</div>`:""}
-        <div class="m">${esc(e.room)}${e.prof?` <span class="h">· ${esc(e.prof)}</span>`:""}</div>
-        ${hgt>78?`<div class="h">${fmtH(e.s)} – ${fmtH(e.e)}</div>`:""}
-      </div>`;
-    });
-    if(sameDay(d,now) && now.getHours()>=h0 && now.getHours()<h1) html += `<div class="now" style="top:${top(now)}px"></div>`;
-    html += `</div>`;
-  }
-  g.innerHTML = html;
-
-  // ----- liste -----
-  let lh="";
-  for(let i=0;i<nDays;i++){
-    const d=new Date(week); d.setDate(d.getDate()+i);
-    const de = wk.filter(e=>sameDay(e.s,d));
-    lh += `<div class="day ${sameDay(d,now)?"is-today":""}"><h2>${DAYS[i]} ${d.getDate()} ${fmtD(d,{month:"long"})}${sameDay(d,now)?" · aujourd'hui":""}</h2>`;
-    lh += de.length ? de.map(e=>`<div class="item" style="${colors(e.code)}">
-        <div class="hrs">${fmtH(e.s)}<span>${fmtH(e.e)}</span></div>
-        <div><div class="t">${esc(e.code)} ${e.type?`<span class="badge">${esc(typeLbl(e.type))}</span>`:""}</div>
-        <div class="n">${esc(e.name)}</div><div class="m">${esc(e.room)}${e.prof?` · ${esc(e.prof)}`:""}</div></div></div>`).join("")
-      : `<div class="empty">Pas de cours</div>`;
-    lh += `</div>`;
-  }
-  document.getElementById("list").innerHTML = lh;
-
-  // ----- prochain cours -----
-  const cur = events.find(e=>e.s<=now && e.e>now);
-  const nxt = events.find(e=>e.s>now);
-  const show = cur || nxt;
-  let nc="";
-  if(show){
-    const mins = Math.round((show.s-now)/6e4);
-    let when;
-    if(cur) when = `En cours<span>jusqu'à ${fmtH(cur.e)}</span>`;
-    else if(sameDay(show.s,now)) when = (mins<60?`Dans ${mins} min`:`Dans ${Math.floor(mins/60)}h${String(mins%60).padStart(2,"0")}`)+`<span>à ${fmtH(show.s)}</span>`;
-    else when = `${fmtD(show.s,{weekday:"long",day:"numeric",month:"short"})}<span>à ${fmtH(show.s)}</span>`;
-    nc = `<div class="next" style="${colors(show.code)}">
-      <div><div class="lbl">${cur?"Cours actuel":"Prochain cours"}</div>
-      <div class="what">${esc(show.code)} ${show.type?`<span class="badge">${esc(typeLbl(show.type))}</span>`:""} · ${esc(show.name)}</div>
-      <div style="color:var(--muted)">Salle ${esc(show.room)}${show.prof?` · ${esc(show.prof)}`:""}</div></div>
-      <div class="when">${when}</div></div>`;
-  }
-  document.getElementById("nextcard").innerHTML = nc;
-
-  // ----- légende + mise à jour -----
-  const codes = [...new Map(wk.map(e=>[e.code,e])).values()];
-  document.getElementById("legend").innerHTML = codes.map(e=>`<span style="${colors(e.code)}"><i></i>${esc(e.code)} – ${esc(e.name)}</span>`).join("");
-  document.getElementById("upd").textContent = DATA?.updated
-    ? "Mis à jour le " + fmtD(new Date(DATA.updated),{weekday:"long",day:"numeric",month:"long"}) + " à " + fmtH(new Date(DATA.updated))
-    : "Pas encore de données — lance edt.ps1";
+/* ======== couleurs par matiere ======== */
+const PALETTE=[8,200,145,280,35,330,175,240,95,15,260,55,120,300];
+const hue={};
+function colors(code){
+  if(!(code in hue)){ let h=0; for(const ch of code) h=(h*31+ch.charCodeAt(0))>>>0; hue[code]=PALETTE[h%PALETTE.length]; }
+  const h=hue[code], dark=matchMedia("(prefers-color-scheme:dark)").matches;
+  return dark ? `--c:hsl(${h} 65% 58%);--bgc:hsl(${h} 30% 20%);--fg:hsl(${h} 40% 92%)`
+              : `--c:hsl(${h} 62% 48%);--bgc:hsl(${h} 75% 94%);--fg:hsl(${h} 45% 22%)`;
 }
 
-const shift = n => { week.setDate(week.getDate()+7*n); render(); };
-document.getElementById("prev").onclick = ()=>shift(-1);
-document.getElementById("next").onclick = ()=>shift(1);
-document.getElementById("today").onclick = ()=>{ week=monday(new Date()); const d=new Date().getDay(); if(d===0||d===6) week.setDate(week.getDate()+7); render(); };
-addEventListener("keydown",e=>{ if(e.key==="ArrowLeft") shift(-1); if(e.key==="ArrowRight") shift(1); });
-setInterval(render, 60000);
-render();
+/* ======== donnees ======== */
+function events(){
+  if(!DATA || !tp || !DATA.events[tp]) return [];
+  return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
+}
+async function loadData(){
+  try{
+    const r = await fetch("data.json?t="+Date.now(), {cache:"no-store"});
+    if(!r.ok) throw 0;
+    DATA = await r.json(); store.set("data", DATA);
+  }catch{ if(!DATA) toast("Pas de connexion"); }
+  render();
+}
+
+/* ======== devoirs (Supabase REST) ======== */
+const HW_ON = !!(SUPA_URL && SUPA_KEY);
+function hdr(extra){ const h={apikey:SUPA_KEY,"Content-Type":"application/json",...extra}; if(!SUPA_KEY.startsWith("sb_")) h.Authorization="Bearer "+SUPA_KEY; return h; }
+async function loadHw(){
+  if(!HW_ON || !tp) return;
+  try{
+    const r = await fetch(`${SUPA_URL}/rest/v1/devoirs?tp=eq.${encodeURIComponent(tp)}&deleted=is.false&order=due.asc,created_at.asc`, {headers:hdr()});
+    if(!r.ok) throw 0;
+    homework = await r.json(); store.set("hw", homework); render(); if(sheetKey) openSheet(sheetKey,true);
+  }catch{}
+}
+async function addHw(ev, texte){
+  const body={tp, ckey:ev.key, code:ev.code, due:ev.start, texte};
+  const r = await fetch(`${SUPA_URL}/rest/v1/devoirs`, {method:"POST", headers:hdr({Prefer:"return=representation"}), body:JSON.stringify(body)});
+  if(!r.ok){ toast("Erreur : devoir non enregistré"); return; }
+  toast("Devoir ajouté pour tout le "+tpLabel(tp)); await loadHw();
+}
+async function patchHw(id, fields, msg){
+  const r = await fetch(`${SUPA_URL}/rest/v1/devoirs?id=eq.${id}`, {method:"PATCH", headers:hdr(), body:JSON.stringify({...fields, updated_at:new Date().toISOString()})});
+  if(!r.ok){ toast("Erreur : modification non enregistrée"); return; }
+  if(msg) toast(msg); await loadHw();
+}
+const hwFor = key => homework.filter(h=>h.ckey===key);
+function hwBadge(key, big){
+  const l = hwFor(key); if(!l.length) return "";
+  const ok = l.every(h=>done[h.id]);
+  return `<span class="hw ${ok?"ok":"todo"}">${ok?"✓":"✗"}${big||l.length>1?" Devoir"+(l.length>1?"s":""):""}</span>`;
+}
+function toggleDone(id, v){ if(v) done[id]=true; else delete done[id]; store.set("done", done); render(); if(sheetKey) openSheet(sheetKey,true); }
+
+/* ======== groupes ======== */
+const tdLabel = g => "Groupe " + g.replace(/^S\d/,"");
+const tpLabel = g => g.replace(/^S\d/,"");
+function tdOf(t){ for(const [td,l] of Object.entries(DATA?.groups||{})) if(l.includes(t)) return td; return ""; }
+
+/* ======== rendu ======== */
+function render(){
+  now = new Date();
+  const app = $("app");
+  if(!DATA){ app.innerHTML = `<div class="pick"><img src="icon.png" width="72" style="border-radius:16px"><h1>Chargement…</h1></div>`; return; }
+  if(!tp || !DATA.events[tp] || pickStep){ renderPick(); return; }
+
+  const all = events();
+  const end = new Date(week); end.setDate(end.getDate()+7);
+  const wk = all.filter(e=>e.s>=week && e.s<end);
+  const nDays = wk.some(e=>e.s.getDay()===6) ? 6 : 5;
+  const last = new Date(week); last.setDate(last.getDate()+nDays-1);
+
+  let h = `<header>
+      <div class="ttl"><h1>Semaine ${isoWeek(week)}</h1><div>${fmtD(week,{day:"numeric",month:"short"})} – ${fmtD(last,{day:"numeric",month:"short"})}</div></div>
+      <button class="chip" onclick="startPick()">${esc(tdLabel(tdOf(tp)))} · ${esc(tpLabel(tp))} ▾</button>
+    </header>
+    <div class="bar">
+      <button class="btn" onclick="shift(-1)" aria-label="Semaine précédente">‹</button>
+      <button class="btn dark" onclick="goToday()">Aujourd'hui</button>
+      <button class="btn" onclick="shift(1)" aria-label="Semaine suivante">›</button>
+      <div class="seg"><button class="${view==="jour"?"on":""}" onclick="setView('jour')">Jour</button><button class="${view==="semaine"?"on":""}" onclick="setView('semaine')">Semaine</button></div>
+    </div>`;
+
+  // prochain cours
+  const cur = all.find(e=>e.s<=now && e.e>now), nxt = all.find(e=>e.s>now), sh = cur||nxt;
+  if(sh){
+    const mins=Math.round((sh.s-now)/6e4);
+    const when = cur ? `En cours<span>jusqu'à ${fmtH(cur.e)}</span>`
+      : sameDay(sh.s,now) ? (mins<60?`Dans ${mins} min`:`Dans ${Math.floor(mins/60)}h${String(mins%60).padStart(2,"0")}`)+`<span>à ${fmtH(sh.s)}</span>`
+      : `${fmtD(sh.s,{weekday:"short",day:"numeric",month:"short"})}<span>à ${fmtH(sh.s)}</span>`;
+    h += `<div class="next" style="${colors(sh.code)}" onclick="openSheet('${esc(sh.key)}')">
+      <div><div class="lbl">${cur?"Cours actuel":"Prochain cours"}</div>
+      <div class="what">${esc(sh.code)} ${sh.type?`<span class="badge">${esc(typeLbl(sh.type))}</span>`:""} ${hwBadge(sh.key,true)}</div>
+      <div class="sub">Salle ${esc(sh.room)}${sh.prof?` · ${esc(sh.prof)}`:""}</div></div><div class="when">${when}</div></div>`;
+  }
+
+  h += view==="semaine" ? renderWeek(wk, nDays) : renderDay(wk, nDays);
+  h += renderHwSection(all);
+  h += `<footer><span>${DATA.updated?"Emploi du temps vérifié le "+fmtD(new Date(DATA.updated),{day:"numeric",month:"short"})+" à "+fmtH(new Date(DATA.updated)):""}</span>
+        <span><a href="#" onclick="shareLink();return false" style="color:inherit">Partager l'appli</a></span></footer>`;
+  app.innerHTML = h;
+}
+
+function renderWeek(wk, nDays){
+  let h0=8,h1=18;
+  wk.forEach(e=>{ h0=Math.min(h0,e.s.getHours()); h1=Math.max(h1,Math.ceil(e.e.getHours()+e.e.getMinutes()/60)); });
+  const H=parseInt(getComputedStyle(document.documentElement).getPropertyValue("--hour"));
+  const top=d=>((d.getHours()+d.getMinutes()/60)-h0)*H;
+  let h=`<div class="grid" style="--days:${nDays}"><div class="corner"></div>`;
+  for(let i=0;i<nDays;i++){ const d=new Date(week); d.setDate(d.getDate()+i);
+    h+=`<div class="dh ${sameDay(d,now)?"today":""}"><b>${DAYS[i].slice(0,3)}</b><span>${d.getDate()}</span></div>`; }
+  h+=`<div class="times" style="height:${(h1-h0)*H}px">`;
+  for(let x=h0+1;x<h1;x++) h+=`<div style="top:${(x-h0)*H}px">${x}h</div>`;
+  h+=`</div>`;
+  for(let i=0;i<nDays;i++){
+    const d=new Date(week); d.setDate(d.getDate()+i);
+    h+=`<div class="col" style="height:${(h1-h0)*H}px">`;
+    wk.filter(e=>sameDay(e.s,d)).forEach(e=>{
+      const y=top(e.s), hg=top(e.e)-y-2;
+      h+=`<div class="ev ${e.type==="DS"?"exam":""} ${e.e<now?"past":""}" style="top:${y+1}px;height:${hg}px;${colors(e.code)}" onclick="openSheet('${esc(e.key)}')">
+        <div class="t">${esc(e.code)}</div><div class="r">${esc(e.room)}</div>
+        ${hg>70?`<div class="x">${esc(typeLbl(e.type))}${e.prof?" · "+esc(e.prof):""}</div>`:""}
+        ${hg>95?`<div class="x">${fmtH(e.s)}–${fmtH(e.e)}</div>`:""}
+        ${hwBadge(e.key)}</div>`;
+    });
+    if(sameDay(d,now)&&now.getHours()>=h0&&now.getHours()<h1) h+=`<div class="now" style="top:${top(now)}px"></div>`;
+    h+=`</div>`;
+  }
+  return h+`</div>` + (wk.length?"":`<div class="empty">Pas de cours cette semaine (ou semaine pas encore publiée par l'IUT).</div>`);
+}
+
+function renderDay(wk, nDays){
+  if(dayIdx>=nDays) dayIdx=nDays-1;
+  let h=`<div class="days">`;
+  for(let i=0;i<nDays;i++){ const d=new Date(week); d.setDate(d.getDate()+i);
+    const n=wk.filter(e=>sameDay(e.s,d)).length;
+    h+=`<button class="${i===dayIdx?"on":""} ${sameDay(d,now)?"today":""}" onclick="setDay(${i})"><b>${DAYS[i].slice(0,3)}</b><span>${d.getDate()}</span>${n?"":`<b>—</b>`}</button>`; }
+  h+=`</div>`;
+  const d=new Date(week); d.setDate(d.getDate()+dayIdx);
+  const de=wk.filter(e=>sameDay(e.s,d));
+  if(!de.length) return h+`<div class="empty">Pas de cours le ${DAYS[dayIdx].toLowerCase()} ${d.getDate()} ${fmtD(d,{month:"long"})}.</div>`;
+  return h + de.map(e=>{
+    const l=hwFor(e.key);
+    return `<div class="card" style="${colors(e.code)}" onclick="openSheet('${esc(e.key)}')">
+      <div class="hrs">${fmtH(e.s)}<span>${fmtH(e.e)}</span></div>
+      <div style="flex:1;min-width:0"><div class="t">${esc(e.code)} ${e.type?`<span class="badge">${esc(typeLbl(e.type))}</span>`:""} ${hwBadge(e.key,true)}</div>
+        <div class="n">${esc(e.name)}</div>
+        <div class="m">Salle ${esc(e.room)}${e.prof?` · ${esc(e.prof)}`:""}</div>
+        ${e.memo?`<div class="memo">${esc(e.memo)}</div>`:""}
+        ${l.length?`<div class="hwl">${l.map(x=>`<div><input type="checkbox" class="ck" ${done[x.id]?"checked":""} onclick="event.stopPropagation();toggleDone(${x.id},this.checked)"><span class="${done[x.id]?"done":""}">${esc(x.texte)}</span></div>`).join("")}</div>`:""}
+      </div></div>`;
+  }).join("");
+}
+
+function renderHwSection(all){
+  if(!HW_ON) return "";
+  const byKey={}; all.forEach(e=>byKey[e.key]=e);
+  const todo=homework.filter(h=>!done[h.id]), fin=homework.filter(h=>done[h.id]);
+  const list = hwTab==="todo" ? todo : fin.slice().reverse();
+  let h=`<div class="sect"><h2>Devoirs <span class="chip" style="font-size:12px">${esc(tpLabel(tp))}</span></h2>
+    <div class="tabs"><button class="${hwTab==="todo"?"on":""}" onclick="setHwTab('todo')">✗ À faire (${todo.length})</button>
+    <button class="${hwTab==="done"?"on":""}" onclick="setHwTab('done')">✓ Faits (${fin.length})</button></div>`;
+  if(!list.length) h+=`<div class="empty">${hwTab==="todo"?"Rien à faire. Appuie sur un cours pour ajouter un devoir.":"Aucun devoir coché pour l'instant."}</div>`;
+  list.forEach(x=>{
+    const ev=byKey[x.ckey], due=new Date(x.due);
+    h+=`<div class="hwitem" style="${colors(x.code)}">
+      <input type="checkbox" class="ck" ${done[x.id]?"checked":""} onclick="toggleDone(${x.id},this.checked)">
+      <div class="tx" onclick="${ev?`jumpTo('${esc(x.ckey)}')`:""}">${esc(x.texte)}
+        <div class="meta">${esc(x.code)} · pour le ${fmtD(due,{weekday:"short",day:"numeric",month:"short"})}${due<now&&!done[x.id]?" · <b style='color:var(--accent)'>en retard</b>":""}</div></div></div>`;
+  });
+  return h+`</div>`;
+}
+
+/* ======== choix du groupe ======== */
+function renderPick(){
+  const groups = DATA.groups || {};
+  let h=`<div class="pick"><img src="icon.png" width="72" style="border-radius:16px">`;
+  if(!pickTd){
+    h+=`<h1>Ton groupe ?</h1><p>On s'en souviendra sur ce téléphone.</p><div class="opts">`;
+    for(const td of Object.keys(groups)) h+=`<button onclick="pickGroup('${esc(td)}')">${esc(tdLabel(td).replace("Groupe ",""))}</button>`;
+    h+=`</div>`;
+  }else{
+    h+=`<h1>Ton TP ?</h1><p>${esc(tdLabel(pickTd))}</p><div class="opts">`;
+    for(const t of groups[pickTd]) h+=`<button onclick="pickTp('${esc(t)}')">${esc(tpLabel(t))}</button>`;
+    h+=`</div><button class="back" onclick="pickGroup(null)">‹ Changer de groupe</button>`;
+  }
+  if(tp && DATA.events[tp]) h+=`<div><button class="back" onclick="cancelPick()">Annuler</button></div>`;
+  $("app").innerHTML = h+`</div>`;
+}
+function startPick(){ pickStep=1; pickTd=null; render(); }
+function pickGroup(td){ pickTd=td; const l=DATA.groups[td]; if(td && l.length===1) return pickTp(l[0]); render(); }
+function pickTp(t){ tp=t; store.set("tp",t); pickStep=null; pickTd=null; homework=[]; store.set("hw",[]); render(); loadHw(); }
+function cancelPick(){ pickStep=null; pickTd=null; render(); }
+
+/* ======== navigation ======== */
+function shift(n){ week.setDate(week.getDate()+7*n); render(); }
+function goToday(){ now=new Date(); week=monday(now); dayIdx=(now.getDay()+6)%7;
+  if(dayIdx>4){ week.setDate(week.getDate()+7); dayIdx=0; } render(); }
+function setView(v){ view=v; store.set("view",v); render(); }
+function setDay(i){ dayIdx=i; render(); }
+function setHwTab(t){ hwTab=t; render(); }
+function jumpTo(key){ const e=events().find(x=>x.key===key); if(!e) return; week=monday(e.s); dayIdx=(e.s.getDay()+6)%7; render(); openSheet(key); }
+async function shareLink(){
+  const url=location.href.split("?")[0].split("#")[0];
+  if(navigator.share){ try{ await navigator.share({title:"EDT",text:"Notre emploi du temps + devoirs",url}); }catch{} }
+  else { await navigator.clipboard?.writeText(url); toast("Lien copié"); }
+}
+
+/* ======== fiche d'un cours ======== */
+function openSheet(key, keep){
+  const e=events().find(x=>x.key===key); if(!e) return;
+  sheetKey=key; if(!keep) editing=null;
+  const l=hwFor(key);
+  let h=`<div class="grab"></div>
+    <h3 style="${colors(e.code)}">${esc(e.code)} ${e.type?`<span class="badge">${esc(typeLbl(e.type))}</span>`:""}</h3>
+    <div style="font-weight:600;margin-top:2px">${esc(e.name)}</div>
+    <p class="info">${fmtD(e.s,{weekday:"long",day:"numeric",month:"long"})} · ${fmtH(e.s)} – ${fmtH(e.e)}<br>
+      Salle ${esc(e.room)}${e.prof?` · ${esc(e.prof)}`:""} · ${esc(e.group)}</p>
+    ${e.memo?`<div class="memo">${esc(e.memo)}</div>`:""}`;
+  if(!HW_ON){ h+=`<p class="note">Les devoirs ne sont pas encore activés.</p>`; }
+  else{
+    h+=`<h4>Devoirs pour ce cours <small>visibles par tout le ${esc(tpLabel(tp))}</small></h4>`;
+    if(!l.length) h+=`<div class="note" style="margin:0 0 6px">Aucun devoir noté pour ce cours.</div>`;
+    l.forEach(x=>{
+      if(editing===x.id){
+        h+=`<div class="hwrow" style="display:block"><textarea id="edtx" maxlength="1000">${esc(x.texte)}</textarea>
+          <div class="row"><button class="btn" onclick="editing=null;openSheet(sheetKey,true)">Annuler</button>
+          <button class="btn dark" onclick="saveEdit(${x.id})">Enregistrer</button></div></div>`;
+      }else{
+        h+=`<div class="hwrow"><input type="checkbox" class="ck" ${done[x.id]?"checked":""} onclick="toggleDone(${x.id},this.checked)">
+          <div style="flex:1;min-width:0"><div class="tx ${done[x.id]?"done":""}">${esc(x.texte)}</div>
+          <div class="meta">${x.updated_at?"modifié le "+fmtD(new Date(x.updated_at),{day:"numeric",month:"short"})+" à "+fmtH(new Date(x.updated_at)):""}</div></div>
+          <div class="act"><button onclick="editing=${x.id};openSheet(sheetKey,true)">Modifier</button><button onclick="delHw(${x.id})">Suppr.</button></div></div>`;
+      }
+    });
+    h+=`<textarea id="newhw" maxlength="1000" placeholder="Écrire un devoir pour ce cours… (ex : exercices 3 à 5 p. 42)"></textarea>
+      <div class="row"><button class="btn" onclick="closeSheet()">Fermer</button><button class="btn dark" onclick="saveNew()">Ajouter le devoir</button></div>
+      <p class="note">Le devoir est partagé avec ton TP. La case « fait » ne concerne que toi.</p>`;
+  }
+  if(!HW_ON) h+=`<div class="row"><button class="btn" onclick="closeSheet()">Fermer</button></div>`;
+  $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
+}
+function closeSheet(){ sheetKey=null; editing=null; $("sheet").classList.remove("open"); $("veil").style.display="none"; }
+async function saveNew(){
+  const t=$("newhw").value.trim(); if(!t) return;
+  const e=events().find(x=>x.key===sheetKey); if(!e) return;
+  $("newhw").value=""; await addHw(e,t);
+}
+async function saveEdit(id){ const t=$("edtx").value.trim(); if(!t) return; editing=null; await patchHw(id,{texte:t},"Devoir modifié"); }
+async function delHw(id){ if(!confirm("Supprimer ce devoir pour tout le TP ?")) return; await patchHw(id,{deleted:true},"Devoir supprimé"); }
+$("veil").onclick=closeSheet;
+
+/* ======== demarrage ======== */
+addEventListener("keydown",e=>{ if(e.target.tagName==="TEXTAREA") return; if(e.key==="ArrowLeft") shift(-1); if(e.key==="ArrowRight") shift(1); if(e.key==="Escape") closeSheet(); });
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ loadData(); loadHw(); } });
+setInterval(()=>{ if(!sheetKey) render(); }, 60000);
+setInterval(()=>{ if(!document.hidden) loadHw(); }, 90000);
+render(); loadData(); loadHw();
 </script>
 </body>
 </html>
