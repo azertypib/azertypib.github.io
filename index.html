@@ -40,14 +40,12 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12p
 .seg button{border:0;background:var(--panel);height:34px;padding:0 12px;font-weight:600;color:var(--muted)}
 .seg button.on{background:var(--ink);color:var(--bg)}
 
-/* ---------- prochain cours ---------- */
-.next{display:flex;align-items:center;gap:12px;background:var(--panel);border-radius:14px;padding:12px 14px;
+.sq{position:relative;width:48px;height:48px;flex:none;border:1px solid var(--line);background:var(--panel);border-radius:12px;
+  font-size:19px;font-weight:800;line-height:1;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:var(--shadow)}
+.sq small{font-size:10.5px;font-weight:700;color:var(--muted);margin-top:2px}
+.sq .cnt{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--accent);color:#fff;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center}
+header .ttl{min-width:0}
   box-shadow:var(--shadow);margin-bottom:12px;border-left:5px solid var(--c,var(--accent))}
-.next .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700}
-.next .what{font-weight:700}
-.next .sub{color:var(--muted);font-size:13px}
-.next .when{margin-left:auto;text-align:right;font-weight:700;white-space:nowrap}
-.next .when span{display:block;font-size:12px;color:var(--muted);font-weight:500}
 
 /* ---------- grille semaine ---------- */
 .grid{display:grid;grid-template-columns:30px repeat(var(--days),1fr);background:var(--panel);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
@@ -279,7 +277,8 @@ function render(){
 
   let h = `<header>
       <div class="ttl"><h1>Semaine ${isoWeek(week)}</h1><div>${fmtD(week,{day:"numeric",month:"short"})} – ${fmtD(last,{day:"numeric",month:"short"})}</div></div>
-      <button class="chip" onclick="startPick()">${esc(tdLabel(tdOf(tp)))} · ${esc(tpLabel(tp))} ▾</button>
+      ${HW_ON?`<button class="sq" onclick="openAnnList()" aria-label="Annonces">📢${annVisible().length?`<span class="cnt">${annVisible().length}</span>`:""}</button>`:""}
+      <button class="sq" onclick="startPick()" aria-label="Changer de groupe">${esc(tdLabel(tdOf(tp)).replace("Groupe ",""))}<small>${esc(tpLabel(tp))}</small></button>
     </header>
     <div class="bar">
       <button class="btn" onclick="shift(-1)" aria-label="Semaine précédente">‹</button>
@@ -287,21 +286,6 @@ function render(){
       <button class="btn" onclick="shift(1)" aria-label="Semaine suivante">›</button>
       <div class="seg"><button class="${view==="jour"?"on":""}" onclick="setView('jour')">Jour</button><button class="${view==="semaine"?"on":""}" onclick="setView('semaine')">Semaine</button></div>
     </div>`;
-
-  h += renderAnn();
-
-  // prochain cours
-  const cur = all.find(e=>e.s<=now && e.e>now), nxt = all.find(e=>e.s>now), sh = cur||nxt;
-  if(sh){
-    const mins=Math.round((sh.s-now)/6e4);
-    const when = cur ? `En cours<span>jusqu'à ${fmtH(cur.e)}</span>`
-      : sameDay(sh.s,now) ? (mins<60?`Dans ${mins} min`:`Dans ${Math.floor(mins/60)}h${String(mins%60).padStart(2,"0")}`)+`<span>à ${fmtH(sh.s)}</span>`
-      : `${fmtD(sh.s,{weekday:"short",day:"numeric",month:"short"})}<span>à ${fmtH(sh.s)}</span>`;
-    h += `<div class="next" style="${colors(sh.code)}" onclick="openSheet('${esc(sh.key)}')">
-      <div><div class="lbl">${cur?"Cours actuel":"Prochain cours"}</div>
-      <div class="what">${esc(sh.code)} ${sh.type?`<span class="badge">${esc(typeLbl(sh.type))}</span>`:""} ${hwBadge(sh.key,true)}</div>
-      <div class="sub">Salle ${esc(sh.room)}${sh.prof?` · ${esc(sh.prof)}`:""}</div></div><div class="when">${when}</div></div>`;
-  }
 
   h += view==="semaine" ? renderWeek(wk, nDays) : renderDay(wk, nDays);
   h += renderHwSection(all);
@@ -393,10 +377,10 @@ async function loadAnn(){
     annonces = await r.json(); store.set("ann", annonces); if(!sheetKey && !annOpen) render();
   }catch{}
 }
-function renderAnn(){
-  if(!HW_ON) return "";
+function openAnnList(){
+  sheetKey = null; annOpen = true;
   const l = annVisible(), today = ymd(new Date());
-  let h = `<div class="ann"><div class="head"><b>📢 Annonces ${esc(tdLabel(annGrp()))}</b><button onclick="openAnn()">+ Annonce</button></div>`;
+  let h = `<div class="grab"></div><div class="ann"><div class="head"><b>📢 Annonces ${esc(tdLabel(annGrp()))}</b><button onclick="openAnn()">+ Annonce</button></div>`;
   if(!l.length) h += `<div class="note" style="margin:0 2px 4px">Aucune annonce pour l'instant.</div>`;
   l.forEach(a=>{
     const d = new Date(a.jour+"T12:00:00");
@@ -404,7 +388,8 @@ function renderAnn(){
       <div class="d">${a.jour===today?"Aujourd'hui":esc(fmtD(d,{weekday:"short"}))}<span>${esc(fmtD(d,{day:"numeric",month:"short"}))}</span></div>
       <div class="tx">${esc(a.texte)}</div></div>`;
   });
-  return h + `</div>`;
+  h += `</div><div class="row"><button class="btn" onclick="closeSheet()">Fermer</button></div>`;
+  $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
 }
 let annOpen = false;
 function openAnn(id){
@@ -423,7 +408,7 @@ function openAnn(id){
       <p class="note">Visible par tout le ${esc(tdLabel(annGrp()))} jusqu'à la date choisie. S'il y a déjà une annonce ce jour-là, ton texte s'y ajoute.</p>
       <input type="date" id="anndate" min="${today}" value="${today}">
       <textarea id="anntx" maxlength="2000" placeholder="Ex : DS de méca reporté à jeudi, salle GC-009"></textarea>
-      <div class="row"><button class="btn" onclick="closeSheet()">Annuler</button><button class="btn dark" onclick="saveAnnNew()">Publier</button></div>`;
+      <div class="row"><button class="btn" onclick="openAnnList()">Annuler</button><button class="btn dark" onclick="saveAnnNew()">Publier</button></div>`;
   }
   $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
 }
@@ -441,18 +426,18 @@ async function saveAnnNew(){
     if(ex) await annReq("PATCH", `?id=eq.${ex.id}`, {texte:(ex.texte+"\n"+t).slice(0,2000), updated_at:new Date().toISOString()});
     else await annReq("POST", "", {grp:annGrp(), jour, texte:t});
     toast(ex ? "Ajouté à l'annonce de ce jour" : "Annonce publiée");
-    closeSheet(); await loadAnn(); render();
+    await loadAnn(); render(); openAnnList();
   }catch{ toast("Erreur : annonce non enregistrée"); }
 }
 async function saveAnnEdit(id){
   const t = $("anntx").value.trim();
   if(!t) return delAnn(id);
-  try{ await annReq("PATCH", `?id=eq.${id}`, {texte:t, updated_at:new Date().toISOString()}); toast("Annonce modifiée"); closeSheet(); await loadAnn(); render(); }
+  try{ await annReq("PATCH", `?id=eq.${id}`, {texte:t, updated_at:new Date().toISOString()}); toast("Annonce modifiée"); await loadAnn(); render(); openAnnList(); }
   catch{ toast("Erreur : modification non enregistrée"); }
 }
 async function delAnn(id){
   if(!confirm("Supprimer cette annonce pour toute la classe ?")) return;
-  try{ await annReq("PATCH", `?id=eq.${id}`, {deleted:true, updated_at:new Date().toISOString()}); toast("Annonce supprimée"); closeSheet(); await loadAnn(); render(); }
+  try{ await annReq("PATCH", `?id=eq.${id}`, {deleted:true, updated_at:new Date().toISOString()}); toast("Annonce supprimée"); await loadAnn(); render(); openAnnList(); }
   catch{ toast("Erreur"); }
 }
 
