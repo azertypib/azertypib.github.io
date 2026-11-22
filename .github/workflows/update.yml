@@ -2,8 +2,10 @@ name: Mise a jour EDT
 
 on:
   schedule:
-    - cron: '17 5-21 * * *'   # toutes les heures de 6h a 22h (heure de Paris, environ)
-  workflow_dispatch:          # bouton "Run workflow" pour lancer a la main
+    # GitHub compte en heure UTC : on lance a la demie de chaque heure entre 5h30 et 21h30 UTC,
+    # puis l'etape "Horaires" ne garde que 7h30 -> 23h00 heure de Paris (hiver comme ete).
+    - cron: '30 5-21 * * *'
+  workflow_dispatch:          # bouton "Run workflow" pour lancer a la main (toujours autorise)
 
 permissions:
   contents: write
@@ -17,9 +19,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Horaires (7h30 - 23h heure de Paris)
+        id: horaire
+        run: |
+          hm=$(TZ=Europe/Paris date +%H%M)
+          echo "Heure de Paris : $hm"
+          if [ "${{ github.event_name }}" = "schedule" ] && { [ $((10#$hm)) -lt 730 ] || [ $((10#$hm)) -gt 2300 ]; }; then
+            echo "Hors horaires : on ne touche a rien."
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.horaire.outputs.go == 'true'
 
       - name: Recuperer l'emploi du temps sur GPU
+        if: steps.horaire.outputs.go == 'true'
         shell: pwsh
         env:
           GPU_LOGIN: ${{ secrets.GPU_LOGIN }}
@@ -27,6 +43,7 @@ jobs:
         run: ./build.ps1
 
       - name: Publier
+        if: steps.horaire.outputs.go == 'true'
         run: |
           git config user.name "edt-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
