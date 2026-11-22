@@ -30,15 +30,14 @@ button{font:inherit;color:inherit;cursor:pointer}
 /* ---------- en-tete ---------- */
 header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 /* marque : bandeau (logo EDT + texte) en fondu bleu nuit -> canard ; les carres gardent leur style normal */
-.ban{flex:1 1 auto;min-width:0;height:48px;margin-right:6px;border-radius:12px;padding:0 12px 0 6px;display:flex;align-items:center;gap:6px;color:#fff;background:linear-gradient(90deg,#0d2a47 0%,#0d2a47 30%,#12808a 100%);box-shadow:var(--shadow);overflow:hidden}
-.ban .mark{flex:none;width:36px;display:flex;flex-direction:column;align-items:center;gap:2px}
-.ban .mark b{font-size:13px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.ban{flex:1 1 auto;min-width:0;height:48px;margin-right:6px;border-radius:12px;padding:0 12px 0 0;display:flex;align-items:center;gap:8px;color:#fff;background:linear-gradient(90deg,#0d2a47 0%,#0d2a47 30%,#12808a 100%);box-shadow:var(--shadow);overflow:hidden}
+.ban .lg{flex:none;height:100%;aspect-ratio:1;border-radius:12px 0 0 12px;display:block}
 .ban .bars{display:flex;align-items:flex-end;gap:2.5px;height:16px}.ban .bars i{display:block;width:5px;border-radius:2px;height:16px;background:#2e86d4}.ban .bars i:nth-child(2){height:10px;background:#12808a}.ban .bars i:nth-child(3){background:#2fbf6a}
 .ban .tel{display:flex;flex-direction:column;line-height:1.1;min-width:0}.ban .tel b{font-size:15px;font-weight:800}.ban .tel span{font-size:11.5px;font-weight:600;color:#d6e6f5;white-space:nowrap}
-.ban .pc{display:none}
+.ban .pc{display:none}.ban .bars.pc{display:none}
 .ban .bt{font-size:16px;font-weight:600;color:#d6e6f5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1;align-items:baseline;gap:5px}.ban .bt b{font-size:19px;font-weight:800;color:#fff;letter-spacing:-.02em}
 .ban em{margin-left:auto;font-style:normal;font-size:13px;font-weight:600;color:#eafaf0;white-space:nowrap}
-@media (min-width:760px){ .ban{padding:0 16px;gap:12px} .ban .tel,.ban .mark b{display:none} .ban .mark{width:auto} .ban .bars{height:24px} .ban .bars i{width:6px;height:24px} .ban .bars i:nth-child(2){height:15px} .ban .pc{display:block} .ban .pc.bt{display:flex} }
+@media (min-width:760px){ .ban{padding:0 16px;gap:12px} .ban .tel,.ban .lg{display:none} .ban .bars{height:24px} .ban .bars i{width:6px;height:24px} .ban .bars i:nth-child(2){height:15px} .ban .pc{display:block} .ban .pc.bt,.ban .bars.pc{display:flex} }
 .ttl{flex:0 0 150px;min-width:0;text-align:center;overflow:hidden}
 .ttl h1{margin:0;font-size:20px;letter-spacing:-.02em;line-height:1.15}
 .ttl div{color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -58,7 +57,7 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .sq small{font-size:10.5px;font-weight:700;color:var(--muted);margin-top:2px}
 .sq .cnt{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--accent);color:#fff;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .ttl h1{white-space:nowrap}
-@media (max-width:420px){ .ttl{flex:1 1 auto} header{gap:6px} .sq{width:42px;height:42px} .ban{height:42px;margin-right:2px;gap:4px;padding:0 9px 0 3px} .ban .tel b{font-size:13.5px} .ban .tel span{font-size:10.5px} .bar{gap:5px} .bar .nav{width:42px} .ttl h1{font-size:17px} .ttl div{font-size:11.5px} .seg button{padding:0 9px} }
+@media (max-width:420px){ .ttl{flex:1 1 auto} header{gap:6px} .sq{width:42px;height:42px} .ban{height:42px;margin-right:2px;gap:7px;padding:0 9px 0 0} .ban .tel b{font-size:13.5px} .ban .tel span{font-size:10.5px} .bar{gap:5px} .bar .nav{width:42px} .ttl h1{font-size:17px} .ttl div{font-size:11.5px} .seg button{padding:0 9px} }
 
 /* ---------- grille semaine ---------- */
 .grid{display:grid;grid-template-columns:30px repeat(var(--days),1fr);background:var(--panel);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
@@ -283,7 +282,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-23h";
+const APP_V = "2026-11-23i";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -366,7 +365,7 @@ function render(){
   const sub = view==="jour" ? (()=>{const d=new Date(week); d.setDate(d.getDate()+Math.min(dayIdx,nDays-1)); return fmtD(d,{weekday:"short",day:"numeric",month:"short"});})()
                             : fmtD(week,{day:"numeric",month:"short"})+" – "+fmtD(last,{day:"numeric",month:"short"});
   let h = `<header>
-      <div class="ban"><div class="mark"><b>EDT</b><div class="bars"><i></i><i></i><i></i></div></div>
+      <div class="ban"><img class="lg" src="icon.png?l" alt="EDT"><div class="bars pc"><i></i><i></i><i></i></div>
         <div class="tel"><b>IUT</b><span>La Rochelle</span></div>
         <div class="pc bt"><b>EDT</b><span>· Emploi du temps · IUT La Rochelle</span></div><em class="pc">Génie civil · S1</em></div>
       ${HW_ON?`<button class="sq" onclick="openChat()" aria-label="Discussion">${ICON_CHAT}${chatBadges()}</button>`:""}
