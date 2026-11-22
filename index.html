@@ -38,7 +38,9 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .ban .bt{font-size:16px;font-weight:600;color:#d6e6f5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1;align-items:baseline;gap:5px}.ban .bt b{font-size:19px;font-weight:800;color:#fff;letter-spacing:-.02em}
 .ban em{margin-left:auto;font-style:normal;font-size:13px;font-weight:600;color:#eafaf0;white-space:nowrap}
 @media (min-width:760px){ .ban{padding:0 16px;gap:12px} .ban .tel,.ban .lg{display:none} .ban .bars{height:24px} .ban .bars i{width:6px;height:24px} .ban .bars i:nth-child(2){height:15px} .ban .pc{display:block} .ban .pc.bt,.ban .bars.pc{display:flex} }
-.ttl{flex:0 0 150px;min-width:0;text-align:center;overflow:hidden}
+/* cartouche semaine (a gauche) : on le touche pour choisir une date ; le champ date invisible le recouvre */
+.ttl{position:relative;flex:0 1 auto;min-width:0;text-align:left;overflow:hidden;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:4px 14px;box-shadow:var(--shadow)}
+.ttl input{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0;margin:0;cursor:pointer;-webkit-appearance:none;appearance:none}
 .ttl h1{margin:0;font-size:20px;letter-spacing:-.02em;line-height:1.15}
 .ttl div{color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 12px;font-weight:650;font-size:14px}
@@ -57,7 +59,7 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .sq small{font-size:10.5px;font-weight:700;color:var(--muted);margin-top:2px}
 .sq .cnt{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--accent);color:#fff;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .ttl h1{white-space:nowrap}
-@media (max-width:420px){ .ttl{flex:1 1 auto} header{gap:6px} .sq{width:42px;height:42px} .ban{height:42px;margin-right:2px;gap:1px;padding:0 14px 0 0} .ban .tel b{font-size:13.5px} .ban .tel span{font-size:10.5px} .bar{gap:5px} .bar .nav{width:42px} .ttl h1{font-size:17px} .ttl div{font-size:11.5px} .seg button{padding:0 9px} }
+@media (max-width:420px){ header{gap:6px} .sq{width:42px;height:42px} .ban{height:42px;margin-right:2px;gap:1px;padding:0 14px 0 0} .ban .tel b{font-size:13.5px} .ban .tel span{font-size:10.5px} .bar{gap:5px} .bar .nav{width:42px} .ttl h1{font-size:17px} .ttl div{font-size:11.5px} .seg button{padding:0 9px} }
 
 /* ---------- grille semaine ---------- */
 .grid{display:grid;grid-template-columns:30px repeat(var(--days),1fr);background:var(--panel);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
@@ -65,8 +67,8 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .dh b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .dh span{font-size:17px;font-weight:700}
 /* vue Semaine : la journee d'aujourd'hui est juste encadree d'un trait fin, de haut en bas */
-.dh.today{box-shadow:inset 1px 0 0 var(--accent),inset -1px 0 0 var(--accent),inset 0 1px 0 var(--accent);border-radius:12px 12px 0 0}
-.col.today{box-shadow:inset 1px 0 0 var(--accent),inset -1px 0 0 var(--accent),inset 0 -1px 0 var(--accent);border-radius:0 0 12px 12px}
+.dh.today{box-shadow:inset .5px 0 0 var(--accent),inset -.5px 0 0 var(--accent),inset 0 .5px 0 var(--accent);border-radius:12px 12px 0 0}
+.col.today{box-shadow:inset .5px 0 0 var(--accent),inset -.5px 0 0 var(--accent),inset 0 -.5px 0 var(--accent);border-radius:0 0 12px 12px}
 .corner{border-bottom:1px solid var(--line)}
 .times{position:relative}
 .times div{position:absolute;right:4px;font-size:10px;color:var(--muted);transform:translateY(-50%)}
@@ -104,10 +106,16 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .dview{overflow:hidden;touch-action:pan-y;user-select:none;-webkit-user-select:none}
 .dtrack{--pw:82%;--dx:0px;display:flex;gap:12px;align-items:flex-start;transform:translateX(calc(var(--i) * (-1 * var(--pw) - 12px) + var(--dx)));transition:transform .38s cubic-bezier(.2,.8,.2,1)}
 .dtrack.drag{transition:none}
-.dpanel{flex:none;width:var(--pw);opacity:.35;transition:opacity .38s;background:color-mix(in srgb,var(--panel) 55%,transparent);border:1px solid var(--line);border-radius:20px;padding:12px 12px 14px}
-.dpanel.on{opacity:1}
+/* --o = 1 pour le jour/la semaine affiche, 0 pour les voisins ; en glissant il passe progressivement de l'un a l'autre */
+.dtrack>*{flex:none;width:var(--pw);opacity:calc(.35 + .65 * var(--o,0));transition:opacity .38s}
+.dtrack.drag>*,.dtrack.drag .full,.dtrack.drag .sum{transition:none}
+.wview .dtrack{--pw:100%}
+.dpanel{background:color-mix(in srgb,var(--panel) 55%,transparent);border:1px solid var(--line);border-radius:20px;padding:12px 12px 14px;min-height:var(--ph,0)}
 .dpanel h3{margin:0 0 10px 2px;font-size:16px}.dpanel h3 span{font-size:12.5px;color:var(--muted);font-weight:500;margin-left:6px}
-.dpanel.on .sum,.dpanel:not(.on) .full{display:none}
+/* detail et resume l'un sur l'autre : fondu croise pendant le glisser */
+.dbody{display:grid}.dbody>.full,.dbody>.sum{grid-area:1/1;transition:opacity .38s}
+.dbody>.full{opacity:var(--o,0)}.dbody>.sum{opacity:calc(1 - var(--o,0));pointer-events:none}
+.dtrack>:not(.on) .full{pointer-events:none}
 /* carte de cours : heure en haut a gauche, salle en gros a droite, module au milieu, nom en bas */
 .dc{position:relative;display:flex;flex-direction:column;justify-content:flex-start;background:var(--bgc);color:var(--fg);border-radius:14px;padding:9px 11px 10px;border-left:4px solid var(--c);cursor:pointer;overflow:hidden}
 .dc .tm{font-size:12px;font-weight:700;opacity:.85}
@@ -125,7 +133,7 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .sm{display:flex;flex-direction:column;justify-content:flex-start;font-size:15px;font-weight:700;padding:9px 11px;border-radius:14px;background:var(--bgc);color:var(--fg);border-left:4px solid var(--c);overflow:hidden}.sm b{font-size:12px;opacity:.85}
 .sp{display:block}
 @media (min-width:760px){ .dtrack{--pw:64%} }
-@media (prefers-reduced-motion:reduce){ .dtrack,.dpanel{transition:none} }
+@media (prefers-reduced-motion:reduce){ .dtrack,.dtrack>*,.dbody>*{transition:none} }
 .card{position:relative;display:flex;gap:12px;background:var(--panel);border-radius:14px;padding:12px 14px;margin-bottom:8px;box-shadow:var(--shadow);border-left:5px solid var(--c);cursor:pointer}
 .card .hrs{font-variant-numeric:tabular-nums;font-weight:700;min-width:50px}
 .card .hrs span{display:block;color:var(--muted);font-weight:500}
@@ -313,7 +321,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-23l";
+const APP_V = "2026-11-23m";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -392,8 +400,9 @@ function render(){
   const nDays = wk.some(e=>e.s.getDay()===6) ? 6 : 5;
   const last = new Date(week); last.setDate(last.getDate()+nDays-1);
 
-  // ligne du haut = fonctionnalites ; la semaine est entre les fleches
-  const sub = view==="jour" ? (()=>{const d=new Date(week); d.setDate(d.getDate()+Math.min(dayIdx,nDays-1)); return fmtD(d,{weekday:"short",day:"numeric",month:"short"});})()
+  // ligne du haut = fonctionnalites ; ligne 2 = cartouche semaine (choix de date) a gauche, Jour/Semaine a droite
+  const curD = new Date(week); if(view==="jour") curD.setDate(curD.getDate()+Math.min(dayIdx,nDays-1));
+  const sub = view==="jour" ? fmtD(curD,{weekday:"short",day:"numeric",month:"short"})
                             : fmtD(week,{day:"numeric",month:"short"})+" – "+fmtD(last,{day:"numeric",month:"short"});
   let h = `<header>
       <div class="ban"><img class="lg" src="icon.png?l" alt="EDT"><div class="bars pc"><i></i><i></i><i></i></div>
@@ -406,25 +415,42 @@ function render(){
       <button class="sq" onclick="startPick()" aria-label="Changer de groupe">${esc(tdLabel(tdOf(tp)).replace("Groupe ",""))}<small>${esc(tpLabel(tp))}</small></button>
     </header>
     <div class="bar">
-      <button class="btn nav" onclick="step(-1)" aria-label="Précédent" ${week<=minWeek() && (view!=="jour"||dayIdx===0)?"disabled":""}>${ICON_PREV}</button>
-      <div class="ttl" onclick="goToday()" title="Revenir à aujourd'hui"><h1>Semaine ${isoWeek(week)}</h1><div>${sub}</div></div>
-      <button class="btn nav" onclick="step(1)" aria-label="Suivant">${ICON_NEXT}</button>
+      <label class="ttl" title="Choisir une date"><h1>Semaine ${isoWeek(week)}</h1><div>${sub}</div>
+        <input type="date" aria-label="Choisir une date" value="${ymd(curD)}" min="${ymd(minWeek())}" onclick="try{this.showPicker()}catch{}" onchange="jumpDate(this.value)"></label>
       <div class="seg"><button class="${view==="jour"?"on":""}" onclick="setView('jour')">Jour</button><button class="${view==="semaine"?"on":""}" onclick="setView('semaine')">Semaine</button></div>
     </div>`;
 
-  h += view==="semaine" ? renderWeek(wk, nDays) : renderDay(wk, nDays);
+  h += view==="semaine" ? renderWeek(all) : renderDay(all);
   h += renderHwSection(all);
   h += `<footer><span>${DATA.updated?"Emploi du temps vérifié le "+fmtD(new Date(DATA.updated),{day:"numeric",month:"short"})+" à "+fmtH(new Date(DATA.updated)):""}</span>
         <span><a href="#" onclick="shareLink();return false" style="color:inherit">Partager l'appli</a></span></footer>`;
   app.innerHTML = h; bindSwipe();
+  // telephone : on mesure ou commence la bande puis on redessine une fois pour qu'elle finisse pile en bas de l'ecran
+  const tr=$("dtrack");
+  if(tr && phone() && !render.fit){ const t=Math.round(tr.getBoundingClientRect().top+scrollY);
+    if(Math.abs(t-fitTop)>2){ fitTop=t; render.fit=1; render(); render.fit=0; } }
 }
 
-function renderWeek(wk, nDays){
-  let h0=8,h1=18;
-  wk.forEach(e=>{ h0=Math.min(h0,e.s.getHours()); h1=Math.max(h1,Math.ceil(e.e.getHours()+e.e.getMinutes()/60)); });
-  const H=parseInt(getComputedStyle(document.documentElement).getPropertyValue("--hour"));
+// la bande contient la semaine precedente (si permise), la courante et la suivante
+function weekSpan(all, w){ const e=new Date(w); e.setDate(e.getDate()+7); const wk=all.filter(x=>x.s>=w && x.s<e); return {w, wk, n: wk.some(x=>x.s.getDay()===6)?6:5}; }
+function nearWeeks(all){ const out=[]; for(const k of [-1,0,1]){ const w=new Date(week); w.setDate(w.getDate()+7*k); if(w>=minWeek()) out.push(weekSpan(all,w)); } return out; }
+let SLOTS=[], fitTop=170, dayFit=0;
+const phone = () => innerWidth < 760;
+const fitH = () => Math.max(320, innerHeight - fitTop - 14);
+
+function renderWeek(all){
+  const W=nearWeeks(all); let h0=8,h1=18;
+  W.forEach(x=>x.wk.forEach(e=>{ h0=Math.min(h0,e.s.getHours()); h1=Math.max(h1,Math.ceil(e.e.getHours()+e.e.getMinutes()/60)); }));
+  let H=parseInt(getComputedStyle(document.documentElement).getPropertyValue("--hour"));
+  if(phone()) H=Math.max(36, Math.floor((fitH()-52)/(h1-h0)));
+  SLOTS=W.map(x=>({w:x.w, i:dayIdx}));
+  const ci=W.findIndex(x=>+x.w===+week);
+  return `<div class="dview wview" id="dview"><div class="dtrack" id="dtrack" style="--i:${ci}">`
+    + W.map((x,k)=>`<div class="wpanel ${k===ci?"on":""}" style="--o:${k===ci?1:0}">${weekGrid(x.w,x.wk,x.n,h0,h1,H)}</div>`).join("") + `</div></div>`;
+}
+function weekGrid(week, wk, nDays, h0, h1, H){
   const top=d=>((d.getHours()+d.getMinutes()/60)-h0)*H;
-  let h=`<div class="grid" style="--days:${nDays}"><div class="corner"></div>`;
+  let h=`<div class="grid" style="--days:${nDays};--hour:${H}px"><div class="corner"></div>`;
   for(let i=0;i<nDays;i++){ const d=new Date(week); d.setDate(d.getDate()+i);
     h+=`<div class="dh ${sameDay(d,now)?"today":""}"><b>${DAYS[i].slice(0,3)}</b><span>${d.getDate()}</span></div>`; }
   h+=`<div class="times" style="height:${(h1-h0)*H}px">`;
@@ -446,13 +472,15 @@ function renderWeek(wk, nDays){
   return h+`</div>` + (wk.length?"":`<div class="empty">Pas de cours cette semaine (ou semaine pas encore publiée par l'IUT).</div>`);
 }
 
-function renderDay(wk, nDays){
-  if(dayIdx>=nDays) dayIdx=nDays-1; curDays=nDays;
-  let h=`<div class="dview" id="dview"><div class="dtrack" id="dtrack" style="--i:${dayIdx}">`;
-  for(let i=0;i<nDays;i++){ const d=new Date(week); d.setDate(d.getDate()+i);
-    const de=wk.filter(e=>sameDay(e.s,d)).sort((a,b)=>a.s-b.s);
-    h+=`<div class="dpanel ${i===dayIdx?"on":""}"><h3>${DAYS[i]} ${d.getDate()}<span>${de.length?de.length+" cours":"pas de cours"}</span></h3>${dayList(d, de)}</div>`; }
-  return h+`</div></div>`;
+function renderDay(all){
+  const W=nearWeeks(all); SLOTS=[]; let h="", ci=0;
+  dayFit = phone() ? fitH() : 0;
+  W.forEach(x=>{ const cw=+x.w===+week; if(cw && dayIdx>=x.n) dayIdx=x.n-1;
+    for(let i=0;i<x.n;i++){ const d=new Date(x.w); d.setDate(d.getDate()+i); const on=cw && i===dayIdx;
+      if(on) ci=SLOTS.length; SLOTS.push({w:x.w, i});
+      const de=x.wk.filter(e=>sameDay(e.s,d)).sort((a,b)=>a.s-b.s);
+      h+=`<div class="dpanel ${on?"on":""}" style="--o:${on?1:0}"><h3>${DAYS[i]} ${d.getDate()}<span>${de.length?de.length+" cours":"pas de cours"}</span></h3>${dayList(d, de)}</div>`; } });
+  return `<div class="dview" id="dview" style="${dayFit?`--ph:${dayFit}px`:""}"><div class="dtrack" id="dtrack" style="--i:${ci}">${h}</div></div>`;
 }
 // la journee de 8h a 18h : cours a l'echelle (min. pour lire), trous a une echelle plus petite
 const PX_H = 36, GAP_H = 22;
@@ -476,6 +504,9 @@ function daySegs(d, de){
 function dayList(d, de){
   if(!de.length) return `<div class="empty">Pas de cours le ${DAYS[(d.getDay()+6)%7].toLowerCase()} ${d.getDate()} ${fmtD(d,{month:"long"})}.</div>`;
   const segs=daySegs(d, de);
+  // telephone : on etire la journee pour que le cadre finisse en bas de l'ecran (jamais plus petit que l'echelle normale)
+  if(dayFit){ const fix=segs.filter(s=>s.k==="dash").length*14, flex=segs.reduce((a,s)=>a+(s.k==="dash"?0:s.h),0), k=(dayFit-60-fix)/flex;
+    if(k>1) segs.forEach(s=>{ if(s.k!=="dash") s.h*=k; }); }
   const full=segs.map(s=> s.k==="c" ? `<div class="dc" style="height:${s.h}px;${colors(s.e.code)}" onclick="openSheet('${esc(s.e.key)}')">
         <div class="tm">${fmtH(s.e.s)} – ${fmtH(s.e.e)}</div><div class="rm">${esc((s.e.room||"").split(/[,/]/)[0].trim())}</div>
         <div class="cd">${esc(s.e.code)}${s.e.type?`<span class="badge">${esc(typeLbl(s.e.type))}</span>`:""}</div>
@@ -487,7 +518,7 @@ function dayList(d, de){
   // resume (jour voisin) : memes hauteurs pour garder l'allure de la journee, sans traits ni details
   const sum=segs.map(s=> s.k==="c" ? `<div class="sm" style="height:${s.h}px;${colors(s.e.code)}"><b>${fmtH(s.e.s)}</b>${esc(s.e.code)}</div>`
     : `<div class="sp" style="height:${s.k==="dash"?14:s.h}px"></div>`).join("");
-  return `<div class="full">${full}</div><div class="sum">${sum}</div>`;
+  return `<div class="dbody"><div class="full">${full}</div><div class="sum">${sum}</div></div>`;
 }
 
 function renderHwSection(all){
@@ -777,41 +808,39 @@ function cancelPick(){ pickStep=null; pickTd=null; render(); }
 /* ======== navigation ======== */
 // on ne remonte pas plus loin que la semaine derniere
 const minWeek = () => { const m=monday(new Date()); m.setDate(m.getDate()-7); return m; };
-function shift(n){ const w=new Date(week); w.setDate(w.getDate()+7*n); if(w<minWeek()) return; week=w; render(); }
-// fleches : en vue Jour on avance jour par jour (vendredi -> lundi suivant), en vue Semaine semaine par semaine
-let curDays = 5;
-function step(n){
-  if(view!=="jour") return shift(n);
-  const i = dayIdx + n;
-  if(i < 0){ const w=new Date(week); w.setDate(w.getDate()-7); if(w<minWeek()) return; week=w; dayIdx=curDays-1; }
-  else if(i >= curDays){ const w=new Date(week); w.setDate(w.getDate()+7); week=w; dayIdx=0; }
-  else return setDay(i);
-  render();
-}
+// fleches du clavier : un cran sur la bande (jour par jour en vue Jour, semaine par semaine en vue Semaine)
+function step(n){ const t=$("dtrack"); if(t) slideTo(+t.style.getPropertyValue("--i")+n); }
+// toucher le cartouche semaine = choisir une date precise
+function jumpDate(v){ if(!v) return; const d=new Date(v+"T12:00"); week=monday(d); dayIdx=(d.getDay()+6)%7;
+  if(dayIdx>5){ week.setDate(week.getDate()+7); dayIdx=0; } if(week<minWeek()) week=minWeek(); render(); }
 function goToday(){ now=new Date(); week=monday(now); dayIdx=(now.getDay()+6)%7;
   if(dayIdx>4){ week.setDate(week.getDate()+7); dayIdx=0; } render(); }
 function setView(v){ view=v; store.set("view",v); render(); }
-// changer de jour dans la semaine : la bande glisse au lieu de tout redessiner
-function setDay(i){
-  const tr=$("dtrack");
-  if(view!=="jour" || !tr){ dayIdx=i; return render(); }
-  dayIdx=i; tr.style.setProperty("--i", i);
-  [...tr.children].forEach((p,k)=>p.classList.toggle("on", k===i));
-
-  const d=new Date(week); d.setDate(d.getDate()+i);
-  const sub=document.querySelector(".ttl div"); if(sub) sub.textContent=fmtD(d,{weekday:"short",day:"numeric",month:"short"});
-  const prev=document.querySelector('.bar .nav[aria-label="Précédent"]'); if(prev) prev.disabled = week<=minWeek() && i===0;
+// glisser (doigt ou souris) sur la bande Jour ou Semaine : la bande suit le doigt et le voisin apparait peu a peu (--o de 0 a 1) ;
+// au lacher elle finit de glisser, puis on redessine centre sur le nouveau jour / la nouvelle semaine. Un glisser n'ouvre pas la fiche.
+let swipe=null, swiped=false, landing=false;
+const setO = (P, pos) => P.forEach((p,k)=>p.style.setProperty("--o", Math.max(0, 1-Math.abs(k-pos)).toFixed(3)));
+function slideTo(k){
+  const t=$("dtrack"); if(!t || landing) return;
+  const P=[...t.children], cur=+t.style.getPropertyValue("--i");
+  if(k<0 || k>=P.length) k=cur;
+  t.classList.remove("drag"); t.style.setProperty("--dx","0px"); t.style.setProperty("--i", k);
+  setO(P, k); P.forEach((p,j)=>p.classList.toggle("on", j===k));
+  if(k===cur) return;
+  const s=SLOTS[k]; landing=true;
+  setTimeout(()=>{ landing=false; week=new Date(s.w); dayIdx=s.i; render(); }, 390);
 }
-// glisser (doigt ou souris) sur la vue Jour : la bande suit, puis passe au jour voisin ; un glisser n'ouvre pas la fiche du cours
-let swipe=null, swiped=false;
 function bindSwipe(){
   const v=$("dview"), t=$("dtrack"); if(!v || !t) return;
-  v.addEventListener("pointerdown", e=>{ if(e.pointerType==="mouse" && e.button) return; swipe={x:e.clientX, y:e.clientY, dx:0, lock:null, id:e.pointerId}; swiped=false; });
+  const P=[...t.children], cur=+t.style.getPropertyValue("--i");
+  v.addEventListener("pointerdown", e=>{ if(landing || (e.pointerType==="mouse" && e.button)) return; swipe={x:e.clientX, y:e.clientY, dx:0, lock:null, id:e.pointerId}; swiped=false; });
   v.addEventListener("pointermove", e=>{ if(!swipe || e.pointerId!==swipe.id) return;
     swipe.dx=e.clientX-swipe.x; const dy=e.clientY-swipe.y;
     if(swipe.lock===null && Math.abs(swipe.dx)+Math.abs(dy)>10){ swipe.lock=Math.abs(swipe.dx)>Math.abs(dy); if(swipe.lock){ swiped=true; t.classList.add("drag"); try{ v.setPointerCapture(e.pointerId); }catch{} } }
-    if(swipe.lock) t.style.setProperty("--dx", swipe.dx+"px"); });
-  const end=()=>{ if(!swipe) return; const {dx,lock}=swipe; swipe=null; t.classList.remove("drag"); t.style.setProperty("--dx","0px"); if(lock && Math.abs(dx)>40) step(dx<0?1:-1); };
+    if(!swipe.lock) return;
+    let dx=swipe.dx; if((cur===0 && dx>0) || (cur===P.length-1 && dx<0)) dx/=3;   // bout de la bande : on freine
+    t.style.setProperty("--dx", dx+"px"); setO(P, cur - dx/(P[0].offsetWidth+12)); });
+  const end=()=>{ if(!swipe) return; const {dx,lock}=swipe; swipe=null; slideTo(lock && Math.abs(dx)>40 ? cur+(dx<0?1:-1) : cur); };
   v.addEventListener("pointerup", end); v.addEventListener("pointercancel", end);
   v.addEventListener("click", e=>{ if(swiped){ e.stopPropagation(); e.preventDefault(); swiped=false; } }, true);
 }
