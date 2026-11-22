@@ -123,10 +123,10 @@ header .logo{width:40px;height:40px;border-radius:10px;margin-right:auto}
 .msg .tx{font-size:14.5px;white-space:pre-wrap;word-break:break-word}
 .chatsend{margin-top:8px}.chatsend .field{margin-bottom:6px;padding:7px 10px;font-size:13.5px}
 .chatrow{display:flex;gap:6px;align-items:flex-end}.chatrow textarea{min-height:42px;height:42px;flex:1}.chatrow .btn{height:42px}
-.support{border:1px solid var(--line);border-radius:14px;padding:12px;margin:10px 0;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.support{border-top:1px solid var(--line);padding:12px 2px 4px;margin:14px 0 6px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .support>b,.support p{grid-column:1/-1;margin:0}.support p{color:var(--muted);font-size:13.5px}
 .support a{height:auto;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;color:var(--ink)}
-.support a b{font-size:18px}.support a span{font-size:12.5px;color:var(--muted);text-align:center}
+.support a b{font-size:15px}.support a span{font-size:12.5px;color:var(--muted);text-align:center}
 .annbox .d em{display:block;font-style:normal;font-weight:700;font-size:11.5px;color:var(--ink);margin-top:3px}
 .lbl{display:block;font-weight:700;font-size:13.5px;margin:12px 0 6px}
 .lbl small{font-weight:500;color:var(--muted)}
@@ -274,7 +274,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-22z";
+const APP_V = "2026-11-23a";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -581,16 +581,20 @@ async function loadFb(){
 }
 function openFeedback(){
   sheetKey = null; annOpen = true;
-  let h = `<div class="grab"></div><div class="ann"><div class="head"><b>Messages au créateur</b><button onclick="newFeedback()">+ Message</button></div>`;
-  if(!retours.length) h += `<div class="note" style="margin:0 2px 4px">Aucun message pour l'instant.</div>`;
   const KOFI = "https://ko-fi.com/azertyip";
+  // d'abord a quoi sert ce carre (signaler un probleme / proposer une idee), le soutien vient en dernier, discret
+  let h = `<div class="grab"></div><h3>Message au créateur</h3>
+    <p class="note" style="font-size:14px">Tu as repéré un bug, une erreur dans l'emploi du temps, ou tu as une idée pour l'appli ? Écris-le ici. Ton message sera <b>visible par tout le monde</b> et disparaîtra une fois le problème réglé.</p>
+    <button class="btn dark" style="width:100%;height:44px;margin:4px 0 14px" onclick="newFeedback()">Écrire un message</button>
+    <div class="ann"><div class="head"><b>Messages en attente${retours.length?` (${retours.length})`:""}</b></div>`;
+  if(!retours.length) h += `<div class="note" style="margin:0 2px 4px">Aucun message pour l'instant.</div>`;
   retours.forEach(m=>{
     const d = new Date(m.created_at);
     h += `<div class="annbox" style="cursor:default"><div class="d">${esc(fmtD(d,{day:"numeric",month:"short"}))}<span>${m.tp?esc(tpLabel(m.tp)):""}</span><em>${esc(m.contact||"Anonyme")}</em></div>
       <div class="tx">${esc(m.texte)}</div></div>`;
   });
-  h += `</div><p class="note">Chaque message disparaît quand l'idée a été mise en place.</p>
-    <div class="support"><b>Soutenir le créateur</b><p>Si l'appli te rend service, un petit geste me ferait super plaisir.</p>
+  h += `</div>
+    <div class="support"><b>Envie de soutenir l'appli ?</b><p>Rien d'obligatoire, mais ça fait toujours plaisir.</p>
       <a class="btn" href="${KOFI}" target="_blank" rel="noopener"><b>1 €</b><span>Un repas au resto U</span></a>
       <a class="btn" href="${KOFI}" target="_blank" rel="noopener"><b>3 €</b><span>T'es vraiment le GOAT</span></a></div>
     <div class="row"><button class="btn" onclick="closeSheet()">Fermer</button></div>`;
