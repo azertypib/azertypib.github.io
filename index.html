@@ -37,8 +37,11 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12p
 .btn{border:1px solid var(--line);background:var(--panel);height:36px;min-width:36px;padding:0 12px;border-radius:10px;font-weight:600}
 .btn.dark{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .btn:disabled{opacity:.4;cursor:default}
+.bar .nav{width:48px;height:42px;padding:0;display:grid;place-items:center;border-radius:12px;box-shadow:var(--shadow)}
+.bar .nav:first-child{margin-right:6px}
+.ttl{cursor:pointer}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-left:auto}
-.seg button{border:0;background:var(--panel);height:34px;padding:0 12px;font-weight:600;color:var(--muted)}
+.seg button{border:0;background:var(--panel);height:40px;padding:0 12px;font-weight:600;color:var(--muted)}
 .seg button.on{background:var(--ink);color:var(--bg)}
 
 .sq{position:relative;width:48px;height:48px;flex:none;border:1px solid var(--line);background:var(--panel);border-radius:12px;
@@ -46,6 +49,8 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12p
 .sq small{font-size:10.5px;font-weight:700;color:var(--muted);margin-top:2px}
 .sq .cnt{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--accent);color:#fff;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center}
 header .ttl{min-width:0}
+.ttl h1{white-space:nowrap}
+@media (max-width:420px){ header{gap:7px} .sq{width:44px;height:44px} .ttl h1{font-size:21px} }
 
 /* ---------- grille semaine ---------- */
 .grid{display:grid;grid-template-columns:30px repeat(var(--days),1fr);background:var(--panel);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
@@ -111,6 +116,7 @@ header .ttl{min-width:0}
 .who button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .who button:disabled:not(.on){opacity:.35}
 #annmod{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;font-size:14.5px;background:var(--bg);color:var(--ink);margin-bottom:8px}
+.field{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;font-size:14.5px;background:var(--bg);color:var(--ink);margin-bottom:8px}
 .annmod{display:block;width:fit-content;background:var(--bgc);color:var(--fg);border-left:4px solid var(--c);border-radius:6px;padding:3px 8px;font-weight:700;font-size:12.5px;margin-bottom:5px;white-space:normal}
 input[type=date]{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;background:var(--bg);color:var(--ink);margin-bottom:8px}
 
@@ -224,6 +230,9 @@ const svg = p => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" st
 const ICON_ANN  = svg('<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>');
 const ICON_SUN  = svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>');
 const ICON_MOON = svg('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>');
+const ICON_MSG  = svg('<path d="M20 15.5a2 2 0 0 1-2 2H8l-4 3.5V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 12.5h5"/>');
+const ICON_PREV = svg('<path d="m15 5-7 7 7 7"/>');
+const ICON_NEXT = svg('<path d="m9 5 7 7-7 7"/>');
 let theme = store.get("theme", matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light");
 function applyTheme(){ document.documentElement.dataset.theme = theme; document.querySelector('meta[name="theme-color"]').content = theme==="dark" ? "#141312" : "#f4f2ee"; }
 function toggleTheme(){ theme = theme==="dark" ? "light" : "dark"; store.set("theme", theme); applyTheme(); render(); }
@@ -245,7 +254,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-22u";
+const APP_V = "2026-11-22v";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -325,15 +334,15 @@ function render(){
   const last = new Date(week); last.setDate(last.getDate()+nDays-1);
 
   let h = `<header>
-      <div class="ttl"><h1>Semaine ${isoWeek(week)}</h1><div>${fmtD(week,{day:"numeric",month:"short"})} – ${fmtD(last,{day:"numeric",month:"short"})}</div></div>
+      <div class="ttl" onclick="goToday()" title="Revenir à aujourd'hui"><h1>Semaine ${isoWeek(week)}</h1><div>${view==="jour"?(()=>{const d=new Date(week); d.setDate(d.getDate()+Math.min(dayIdx,nDays-1)); return fmtD(d,{weekday:"long",day:"numeric",month:"long"});})():fmtD(week,{day:"numeric",month:"short"})+" – "+fmtD(last,{day:"numeric",month:"short"})}</div></div>
+      ${HW_ON?`<button class="sq" onclick="openFeedback()" aria-label="Écrire au créateur">${ICON_MSG}</button>`:""}
       <button class="sq" onclick="toggleTheme()" aria-label="Mode clair ou sombre">${theme==="dark"?ICON_SUN:ICON_MOON}</button>
       ${HW_ON?`<button class="sq" onclick="openAnnList()" aria-label="Annonces">${ICON_ANN}${annVisible().length?`<span class="cnt">${annVisible().length}</span>`:""}</button>`:""}
       <button class="sq" onclick="startPick()" aria-label="Changer de groupe">${esc(tdLabel(tdOf(tp)).replace("Groupe ",""))}<small>${esc(tpLabel(tp))}</small></button>
     </header>
     <div class="bar">
-      <button class="btn" onclick="step(-1)" aria-label="Précédent" ${week<=minWeek() && (view!=="jour"||dayIdx===0)?'disabled style="opacity:.3"':""}>‹</button>
-      <button class="btn dark" onclick="goToday()">Aujourd'hui</button>
-      <button class="btn" onclick="step(1)" aria-label="Suivant">›</button>
+      <button class="btn nav" onclick="step(-1)" aria-label="Précédent" ${week<=minWeek() && (view!=="jour"||dayIdx===0)?"disabled":""}>${ICON_PREV}</button>
+      <button class="btn nav" onclick="step(1)" aria-label="Suivant">${ICON_NEXT}</button>
       <div class="seg"><button class="${view==="jour"?"on":""}" onclick="setView('jour')">Jour</button><button class="${view==="semaine"?"on":""}" onclick="setView('semaine')">Semaine</button></div>
     </div>`;
 
@@ -516,6 +525,29 @@ async function delAnn(id){
   if(!confirm("Supprimer cette annonce pour tout le monde ?")) return;
   try{ await annReq("PATCH", `?id=eq.${id}`, {deleted:true, updated_at:new Date().toISOString()}); toast("Annonce supprimée"); await loadAnn(); render(); openAnnList(); }
   catch{ toast("Erreur"); }
+}
+
+/* ======== message au createur : table Supabase "retours", envoi seulement (personne ne peut relire via l'appli) ======== */
+function openFeedback(){
+  sheetKey = null; annOpen = true;
+  $("sheet").innerHTML = `<div class="grab"></div><h3>Écrire au créateur</h3>
+    <p class="note">Une idée, un bug, une erreur dans l'emploi du temps ? Ton message arrive directement au créateur de l'appli, personne d'autre ne le voit.</p>
+    <label class="lbl">Message</label>
+    <textarea id="fbtx" maxlength="2000" style="min-height:120px" oninput="$('fbsend').disabled=!this.value.trim()" placeholder="Ex : ce serait bien d'avoir les salles libres"></textarea>
+    <label class="lbl">Ton prénom ou contact <small>(facultatif, pour pouvoir te répondre)</small></label>
+    <input id="fbwho" maxlength="200" class="field" placeholder="Ex : Léa, TP3">
+    <div class="row"><button class="btn" onclick="closeSheet()">Annuler</button><button class="btn dark" id="fbsend" disabled onclick="sendFeedback()">Envoyer</button></div>`;
+  $("sheet").classList.add("open"); $("veil").style.display="block";
+}
+async function sendFeedback(){
+  const texte = $("fbtx").value.trim(), contact = $("fbwho").value.trim() || null;
+  if(!texte) return;
+  $("fbsend").disabled = true;
+  try{
+    const r = await fetch(`${SUPA_URL}/rest/v1/retours`, {method:"POST", headers:hdr({Prefer:"return=minimal"}), body:JSON.stringify({texte, contact, tp})});
+    if(!r.ok) throw 0;
+    toast("Merci, message envoyé"); closeSheet();
+  }catch{ toast("Erreur : message non envoyé"); $("fbsend").disabled = false; }
 }
 
 /* ======== choix du groupe ======== */
