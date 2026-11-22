@@ -150,7 +150,7 @@ textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:1
 .pick{max-width:420px;margin:12vh auto 0;text-align:center}
 .pick h1{font-size:28px;margin:12px 0 4px}
 .pick p{color:var(--muted);margin:0 0 20px}
-.pick .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.pick .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:10px}
 .pick .opts button{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:18px 10px;font-size:20px;font-weight:800;box-shadow:var(--shadow)}
 .pick .back{margin-top:18px;border:0;background:none;color:var(--muted);text-decoration:underline}
 
@@ -236,7 +236,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-22p";
+const APP_V = "2026-11-22q";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -260,16 +260,18 @@ function hdr(extra){ const h={apikey:SUPA_KEY,"Content-Type":"application/json",
 async function loadHw(){
   if(!HW_ON || !tp) return;
   try{
-    const r = await fetch(`${SUPA_URL}/rest/v1/devoirs?tp=eq.${encodeURIComponent(tp)}&deleted=is.false&due=gte.${encodeURIComponent(dayStart().toISOString())}&order=due.asc,created_at.asc`, {headers:hdr()});
+    const r = await fetch(`${SUPA_URL}/rest/v1/devoirs?tp=in.(${audiences().map(encodeURIComponent).join(",")})&deleted=is.false&due=gte.${encodeURIComponent(dayStart().toISOString())}&order=due.asc,created_at.asc`, {headers:hdr()});
     if(!r.ok) throw 0;
     homework = await r.json(); store.set("hw", homework); render(); if(sheetKey) openSheet(sheetKey,true);
   }catch{}
 }
 async function addHw(ev, texte){
-  const body={tp, ckey:ev.key, code:ev.code, due:ev.start, texte};
+  // le devoir va au public du cours selon GPU : S1 = promo, S1A = groupe de TD, S1TP1 = TP seul
+  const who = audiences().includes(ev.group) ? ev.group : tp;
+  const body={tp:who, ckey:ev.key, code:ev.code, due:ev.start, texte};
   const r = await fetch(`${SUPA_URL}/rest/v1/devoirs`, {method:"POST", headers:hdr({Prefer:"return=representation"}), body:JSON.stringify(body)});
   if(!r.ok){ toast("Erreur : devoir non enregistré"); return; }
-  toast("Devoir ajouté pour tout le "+tpLabel(tp)); await loadHw();
+  toast("Devoir ajouté pour "+audLabel(who)); await loadHw();
 }
 async function patchHw(id, fields, msg){
   const r = await fetch(`${SUPA_URL}/rest/v1/devoirs?id=eq.${id}`, {method:"PATCH", headers:hdr(), body:JSON.stringify({...fields, updated_at:new Date().toISOString()})});
@@ -294,6 +296,10 @@ function toggleDone(id, v){ if(v) done[id]=true; else delete done[id]; store.set
 /* ======== groupes ======== */
 const tdLabel = g => "Groupe " + g.replace(/^S\d/,"");
 const tpLabel = g => g.replace(/^S\d/,"");
+const PROMO = "S1";
+// publics dont on voit les devoirs : la promo, son groupe de TD, son TP
+const audiences = () => [PROMO, tdOf(tp), tp].filter(Boolean);
+const audLabel = g => g===PROMO ? "toute la promo" : g===tdOf(tp) ? "tout le groupe "+tpLabel(g) : "le "+tpLabel(g);
 function tdOf(t){ for(const [td,l] of Object.entries(DATA?.groups||{})) if(l.includes(t)) return td; return ""; }
 
 /* ======== rendu ======== */
@@ -387,7 +393,7 @@ function renderHwSection(all){
   const byKey={}; all.forEach(e=>byKey[e.key]=e);
   const live=hwLive(), todo=live.filter(h=>!done[h.id]), fin=live.filter(h=>done[h.id]);
   const list = hwTab==="todo" ? todo : fin.slice().reverse();
-  let h=`<div class="sect"><h2>Devoirs <span class="chip" style="font-size:12px">${esc(tpLabel(tp))}</span></h2>
+  let h=`<div class="sect"><h2>Devoirs <span class="chip" style="font-size:12px">${esc(tdLabel(tdOf(tp)).replace("Groupe ",""))} · ${esc(tpLabel(tp))}</span></h2>
     <div class="tabs"><button class="${hwTab==="todo"?"on":""}" onclick="setHwTab('todo')"><span class="hw todo">${ICO_X}</span> À faire (${todo.length})</button>
     <button class="${hwTab==="done"?"on":""}" onclick="setHwTab('done')"><span class="hw ok">${ICO_OK}</span> Faits (${fin.length})</button></div>`;
   if(!list.length) h+=`<div class="empty">${hwTab==="todo"?"Rien à faire. Appuie sur un cours pour ajouter un devoir.":"Aucun devoir coché pour l'instant."}</div>`;
@@ -544,7 +550,7 @@ function openSheet(key, keep){
     ${e.memo?`<div class="memo">${esc(e.memo)}</div>`:""}`;
   if(!HW_ON){ h+=`<p class="note">Les devoirs ne sont pas encore activés.</p>`; }
   else{
-    h+=`<h4>Devoir${l.length>1?"s":""} <small>visible${l.length>1?"s":""} par tout le ${esc(tpLabel(tp))}</small></h4>`;
+    h+=`<h4>Devoir${l.length>1?"s":""} <small>visible${l.length>1?"s":""} par ${esc(audLabel(audiences().includes(e.group)?e.group:tp))}</small></h4>`;
     l.forEach(x=>{
       if(editing===x.id){
         h+=`<div class="hwbig"><textarea id="edtx" maxlength="1000">${esc(x.texte)}</textarea>
