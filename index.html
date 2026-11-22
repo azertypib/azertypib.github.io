@@ -67,9 +67,12 @@ header .ttl{min-width:0}
 .now::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
 
 /* pastille devoir */
-.hw{position:absolute;right:6px;bottom:6px;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:900;color:#fff;line-height:1}
+.hw{position:absolute;right:7px;bottom:7px;width:18px;height:18px;border-radius:5px;display:grid;place-items:center;color:#fff}
+.hw svg{width:12px;height:12px;display:block}
 .hw.todo{background:#e0392f} .hw.ok{background:#2fbf6a}
-.ev .hw{right:3px;bottom:3px;width:15px;height:15px;font-size:9.5px}
+.ev .hw{right:3px;bottom:3px;width:15px;height:15px;border-radius:4px}
+.ev .hw svg{width:10px;height:10px}
+.tabs .hw{position:static;display:inline-grid;vertical-align:-3px;width:16px;height:16px;margin-right:3px}
 .badge{font-size:10px;font-weight:800;letter-spacing:.04em;padding:1px 5px;border-radius:4px;background:var(--c);color:#fff;vertical-align:1px}
 
 /* ---------- vue jour ---------- */
@@ -231,7 +234,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-22m";
+const APP_V = "2026-11-22n";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -272,10 +275,13 @@ async function patchHw(id, fields, msg){
   if(msg) toast(msg); await loadHw();
 }
 const hwFor = key => homework.filter(h=>h.ckey===key);
+// coche et croix dessinees (pas de caracteres unicode, qui ressemblent a des emojis)
+const ICO_OK = `<svg viewBox="0 0 12 12"><path d="M2.5 6.3l2.3 2.3 4.7-5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const ICO_X  = `<svg viewBox="0 0 12 12"><path d="M3.2 3.2l5.6 5.6M8.8 3.2l-5.6 5.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>`;
 function hwBadge(key){
   const l = hwFor(key); if(!l.length) return "";
   const ok = l.every(h=>done[h.id]);
-  return `<span class="hw ${ok?"ok":"todo"}" title="${ok?"Devoir fait":"Devoir à faire"}">${ok?"✓":"✗"}</span>`;
+  return `<span class="hw ${ok?"ok":"todo"}" title="${ok?"Devoir fait":"Devoir à faire"}">${ok?ICO_OK:ICO_X}</span>`;
 }
 function toggleDone(id, v){ if(v) done[id]=true; else delete done[id]; store.set("done", done); render(); if(sheetKey) openSheet(sheetKey,true); }
 
@@ -376,8 +382,8 @@ function renderHwSection(all){
   const todo=homework.filter(h=>!done[h.id]), fin=homework.filter(h=>done[h.id]);
   const list = hwTab==="todo" ? todo : fin.slice().reverse();
   let h=`<div class="sect"><h2>Devoirs <span class="chip" style="font-size:12px">${esc(tpLabel(tp))}</span></h2>
-    <div class="tabs"><button class="${hwTab==="todo"?"on":""}" onclick="setHwTab('todo')">✗ À faire (${todo.length})</button>
-    <button class="${hwTab==="done"?"on":""}" onclick="setHwTab('done')">✓ Faits (${fin.length})</button></div>`;
+    <div class="tabs"><button class="${hwTab==="todo"?"on":""}" onclick="setHwTab('todo')"><span class="hw todo">${ICO_X}</span> À faire (${todo.length})</button>
+    <button class="${hwTab==="done"?"on":""}" onclick="setHwTab('done')"><span class="hw ok">${ICO_OK}</span> Faits (${fin.length})</button></div>`;
   if(!list.length) h+=`<div class="empty">${hwTab==="todo"?"Rien à faire. Appuie sur un cours pour ajouter un devoir.":"Aucun devoir coché pour l'instant."}</div>`;
   list.forEach(x=>{
     const ev=byKey[x.ckey], due=new Date(x.due);
