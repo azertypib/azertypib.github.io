@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -133,7 +133,7 @@ input[type=date]{width:100%;border:1px solid var(--line);border-radius:10px;padd
 .sheet h4{margin:16px 0 8px;font-size:15px;display:flex;justify-content:space-between;align-items:baseline}
 .sheet h4 small{font-weight:500;color:var(--muted);font-size:12px}
 .hwbig{background:var(--soft);border-radius:14px;padding:14px 16px;margin-bottom:8px}
-.hwbig .tx{font-size:20px;font-weight:700;line-height:1.35;white-space:pre-wrap;word-break:break-word}
+.hwbig .tx{font-size:16px;font-weight:500;line-height:1.4;white-space:pre-wrap;word-break:break-word}
 .hwbig .act{display:flex;justify-content:flex-end;gap:6px;margin-top:10px}
 .hwbig .act button{border:0;background:var(--panel);color:var(--ink);border-radius:8px;padding:5px 10px;font-size:12.5px;font-weight:600}
 .hwbig .act button.on{background:var(--ink);color:var(--bg)}
@@ -234,7 +234,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-22i";
+const APP_V = "2026-11-22j";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
