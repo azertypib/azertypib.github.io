@@ -48,7 +48,7 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .btn{border:1px solid var(--line);background:var(--panel);height:36px;min-width:36px;padding:0 12px;border-radius:10px;font-weight:600}
 .btn.dark{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .btn:disabled{opacity:.4;cursor:default}
-.bar .nav{width:48px;height:42px;padding:0;display:grid;place-items:center;border-radius:12px;box-shadow:var(--shadow)}
+.bar .nav{width:44px;height:44px;padding:0;display:grid;place-items:center;border-radius:12px;box-shadow:var(--shadow)}
 .ttl{cursor:pointer}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-left:auto}
 .seg button{border:0;background:var(--panel);height:40px;padding:0 12px;font-weight:600;color:var(--muted)}
@@ -59,7 +59,7 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .sq small{font-size:10.5px;font-weight:700;color:var(--muted);margin-top:2px}
 .sq .cnt{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--accent);color:#fff;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .ttl h1{white-space:nowrap}
-@media (max-width:420px){ header{gap:6px} .sq{width:42px;height:42px} .ban{height:42px;margin-right:2px;gap:1px;padding:0 14px 0 0} .ban .tel b{font-size:13.5px} .ban .tel span{font-size:10.5px} .bar{gap:5px} .bar .nav{width:42px} .ttl h1{font-size:17px} .ttl div{font-size:11.5px} .seg button{padding:0 9px} }
+@media (max-width:420px){ header{gap:6px} .sq{width:42px;height:42px} .ban{height:42px;margin-right:2px;gap:1px;padding:0 14px 0 0} .ban .tel b{font-size:13.5px} .ban .tel span{font-size:10.5px} .bar{gap:5px} .bar .nav{width:34px} .ttl h1{font-size:17px} .ttl div{font-size:11.5px} .seg button{padding:0 9px} }
 
 /* ---------- grille semaine ---------- */
 .grid{display:grid;grid-template-columns:30px repeat(var(--days),1fr);background:var(--panel);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
@@ -329,7 +329,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-23p";
+const APP_V = "2026-11-23q";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -423,8 +423,10 @@ function render(){
       <button class="sq" onclick="startPick()" aria-label="Changer de groupe">${esc(tdLabel(tdOf(tp)).replace("Groupe ",""))}<small>${esc(tpLabel(tp))}</small></button>
     </header>
     <div class="bar">
+      <button class="btn nav" onclick="step(-1)" aria-label="Précédent">${ICON_PREV}</button>
       <label class="ttl" title="Choisir une date"><h1>Semaine ${isoWeek(week)}</h1><div>${sub}</div>
         <input type="date" aria-label="Choisir une date" value="${ymd(curD)}" min="${ymd(minWeek())}" onclick="try{this.showPicker()}catch{}" onchange="jumpDate(this.value)"></label>
+      <button class="btn nav" onclick="step(1)" aria-label="Suivant">${ICON_NEXT}</button>
       <div class="seg"><button class="${view==="jour"?"on":""}" onclick="setView('jour')">Jour</button><button class="${view==="semaine"?"on":""}" onclick="setView('semaine')">Semaine</button></div>
     </div>`;
 
@@ -488,24 +490,36 @@ function renderDay(all){
       if(on) ci=SLOTS.length; SLOTS.push({w:x.w, i});
       D.push({d, i, on, de: x.wk.filter(e=>sameDay(e.s,d)).sort((a,b)=>a.s-b.s)}); } });
   // telephone : on cherche la plus grande echelle des cours (1 a 2,5, la meme pour tous les jours) ou le jour le plus long tient a l'ecran
-  if(dayFit){ for(let k=2.5;;k=Math.max(1,k*.95)){ const top=dayLayout(D,k); if(top<=dayFit-60 || k===1) break; } }
+  if(dayFit){ for(let k=2.5;;k=Math.max(1,k*.95)){ const r=dayLayout(D,k); if((r.top<=dayFit-60 && !r.over) || k===1) break; } }
   else dayLayout(D,1);
   const h=D.map(({d,i,on,de,segs})=>`<div class="dpanel ${on?"on":""}" style="--o:${on?1:0}"><h3>${DAYS[i]} ${d.getDate()}</h3>${dayList(d, de, segs)}</div>`).join("");
   return `<div class="dview" id="dview" style="${dayFit?`--ph:${dayFit}px`:""}"><div class="dtrack" id="dtrack" style="--i:${ci}">${h}</div></div>`;
 }
-// calcule les segments de chaque jour (cours x k) puis cale la pause de midi au meme niveau partout ; renvoie la hauteur du jour le plus long
+// calcule les segments de chaque jour (cours x k) puis cale la pause de midi au meme niveau partout.
+// Telephone : ce niveau = le milieu du cadre. Le matin est allonge jusque-la : par le temps libre s'il y en a (debut tardif,
+// fin avant midi), sinon en etirant ses cours (jamais de grand vide entre le dernier cours du matin et midi).
+// Renvoie la hauteur du jour le plus long et si un matin depasse le milieu.
 function dayLayout(D, k){
   const hOf=s=>s.k==="dash"?14:s.h, sumH=a=>a.reduce((t,s)=>t+hOf(s),0);
   D.forEach(x=>{ x.segs = x.de.length ? daySegs(x.d, x.de) : null; x.segs?.forEach(s=>{ if(s.k==="c") s.h*=k; }); });
   const cut=segs=>segs.findIndex(s=>s.lunch || (s.k==="c" && s.e.s.getHours()>=12));
-  let Y=0, LH=40;
-  D.forEach(({segs})=>{ if(!segs) return; const j=cut(segs); if(j>0 && segs[j].lunch){ Y=Math.max(Y, sumH(segs.slice(0,j))); if(segs[j].k==="pause") LH=Math.max(LH, segs[j].h); } });
+  let M=0, LH=40;
+  D.forEach(({segs})=>{ if(!segs) return; const j=cut(segs); if(j>0 && segs[j].lunch){ M=Math.max(M, sumH(segs.slice(0,j))); if(segs[j].k==="pause") LH=Math.max(LH, segs[j].h); } });
+  const mid = dayFit ? dayFit/2 - 37 - LH/2 : 0, Y = Math.max(M, mid);   // 42 = haut du cadre + titre du jour
   D.forEach(({segs})=>{ if(!segs || !Y) return; const j=cut(segs); if(j<0) return;
-    const s=segs[j], m=sumH(segs.slice(0,j));
-    if(s.lunch){ const g=Y-m; if(g>0){ s.pt=g; s.h+=g; } }
-    else if(segs[0].k==="lead" && j===1){ const g=Y+LH-m; if(g>0) segs[0].h+=g; }   // pas de cours le matin : l'apres-midi commence au meme niveau
+    const s=segs[j], pre=segs.slice(0,j), g=Y-sumH(pre);
+    if(!s.lunch){ if(segs[0].k==="lead" && j===1){ const g2=Y+LH-sumH(pre); if(g2>0) segs[0].h+=g2; } return; }   // pas de cours le matin
+    if(g<=0) return;
+    if(s.k==="pause" && s.t0.getHours()*60+s.t0.getMinutes() < 12*60){ s.pt=g; s.h+=g; }   // matin fini tot : le vide est du vrai temps libre
+    else if(pre[0]?.k==="lead") pre[0].h+=g;                                               // debut tardif
+    else { const cs=pre.filter(x=>x.k==="c"), ch=sumH(cs); cs.forEach(x=>x.h*=(ch+g)/ch); } // matin plein : on etire les cours
   });
-  return Math.max(0, ...D.map(({segs})=>segs?sumH(segs):0));
+  // telephone : l'apres-midi s'allonge aussi pour finir en bas du cadre (cours au plus x2)
+  if(dayFit) D.forEach(({segs})=>{ if(!segs) return; const j=cut(segs); if(j<0 || !segs[j].lunch) return;
+    const cs=segs.slice(j+1).filter(x=>x.k==="c"), ch=sumH(cs), g=(dayFit-60)-sumH(segs);
+    if(g>0 && ch) cs.forEach(x=>x.h*=Math.min(2,(ch+g)/ch));
+  });
+  return {top: Math.max(0, ...D.map(({segs})=>segs?sumH(segs):0)), over: dayFit>0 && M>mid};
 }
 // la journee de 8h a 18h : cours a l'echelle (min. pour lire), trous a une echelle plus petite
 const PX_H = 36, GAP_H = 22;
@@ -517,8 +531,9 @@ function daySegs(d, de){
   if(lead>0.4) segs.push({k:"lead", h:Math.max(48, lead*GAP_H), txt:`Début des cours à ${fmtH(first)}`});
   de.forEach(e=>{
     if(prevEnd){ const g=(e.s-prevEnd)/6e4;
-      if(g>25) segs.push({k:"pause", h:Math.max(40, g/60*12+20), txt:`${fmtH(prevEnd)} – ${fmtH(e.s)}`, lunch: prevEnd.getHours()*60+prevEnd.getMinutes()<=12*60+30 && e.s.getHours()>=13});
-      else segs.push({k:"dash"}); }
+      if(g>25) segs.push({k:"pause", t0:prevEnd, h:Math.max(40, g/60*12+20), txt:`${fmtH(prevEnd)} – ${fmtH(e.s)}`, lunch: prevEnd.getHours()*60+prevEnd.getMinutes()<=12*60+30 && e.s.getHours()>=13});
+      else if(g>=15) segs.push({k:"dash"});   // trait seulement a partir de 15 min de pause
+      else segs.push({k:"join", h:4}); }       // cours qui s'enchainent : juste un petit ecart
     segs.push({k:"c", e, h:Math.max(74, (e.e-e.s)/36e5*PX_H)});
     prevEnd = prevEnd && prevEnd>e.e ? prevEnd : e.e;
   });
@@ -534,6 +549,7 @@ function dayList(d, de, segs){
         <div class="cd">${esc(s.e.code)}${s.e.type?`<span class="badge">${esc(typeLbl(s.e.type))}</span>`:""}</div>
         <div class="nm">${esc(s.e.name)}${s.e.prof?` · ${esc(s.e.prof)}`:""}</div>${hwBadge(s.e.key)}</div>`
     : s.k==="dash" ? `<div class="dash"></div>`
+    : s.k==="join" ? `<div style="height:4px"></div>`
     : s.k==="pause" ? `<div class="brk" style="height:${s.h}px${s.pt?`;padding-top:${s.pt+5}px`:""}"><i></i><span>${s.txt}</span><i></i></div>`
     : s.k==="lead" ? `<div class="brk lead" style="height:${s.h}px"><span>${s.txt}</span><i></i></div>`
     : `<div class="brk tail" style="height:${s.h}px${s.pt?`;padding-top:${s.pt+5}px`:""}"><i></i><span>${s.txt}</span></div>`).join("");
