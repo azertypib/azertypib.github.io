@@ -110,8 +110,8 @@ header .ttl{min-width:0}
 .who button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:11px;padding:11px 6px;font-weight:700;font-size:14.5px;cursor:pointer}
 .who button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .who button:disabled:not(.on){opacity:.35}
-.dt{display:flex;gap:8px}.dt input{flex:1;margin:0}
-.dt button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:11px;padding:0 12px;font-weight:600;font-size:13.5px;cursor:pointer}
+#annmod{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;font-size:14.5px;background:var(--bg);color:var(--ink);margin-bottom:8px}
+.annmod{display:block;width:fit-content;background:var(--bgc);color:var(--fg);border-left:4px solid var(--c);border-radius:6px;padding:3px 8px;font-weight:700;font-size:12.5px;margin-bottom:5px;white-space:normal}
 input[type=date]{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;background:var(--bg);color:var(--ink);margin-bottom:8px}
 
 /* ---------- devoirs (bas de page) ---------- */
@@ -245,7 +245,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-22s";
+const APP_V = "2026-11-22u";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -331,9 +331,9 @@ function render(){
       <button class="sq" onclick="startPick()" aria-label="Changer de groupe">${esc(tdLabel(tdOf(tp)).replace("Groupe ",""))}<small>${esc(tpLabel(tp))}</small></button>
     </header>
     <div class="bar">
-      <button class="btn" onclick="shift(-1)" aria-label="Semaine précédente" ${week<=minWeek()?'disabled style="opacity:.3"':""}>‹</button>
+      <button class="btn" onclick="step(-1)" aria-label="Précédent" ${week<=minWeek() && (view!=="jour"||dayIdx===0)?'disabled style="opacity:.3"':""}>‹</button>
       <button class="btn dark" onclick="goToday()">Aujourd'hui</button>
-      <button class="btn" onclick="shift(1)" aria-label="Semaine suivante">›</button>
+      <button class="btn" onclick="step(1)" aria-label="Suivant">›</button>
       <div class="seg"><button class="${view==="jour"?"on":""}" onclick="setView('jour')">Jour</button><button class="${view==="semaine"?"on":""}" onclick="setView('semaine')">Semaine</button></div>
     </div>`;
 
@@ -373,7 +373,7 @@ function renderWeek(wk, nDays){
 }
 
 function renderDay(wk, nDays){
-  if(dayIdx>=nDays) dayIdx=nDays-1;
+  if(dayIdx>=nDays) dayIdx=nDays-1; curDays=nDays;
   let h=`<div class="days">`;
   for(let i=0;i<nDays;i++){ const d=new Date(week); d.setDate(d.getDate()+i);
     const n=wk.filter(e=>sameDay(e.s,d)).length;
@@ -430,6 +430,36 @@ async function loadAnn(){
     annonces = await r.json(); store.set("ann", annonces); if(!sheetKey && !annOpen) render();
   }catch{}
 }
+// cours proposes selon le public : TP = tout son emploi du temps, groupe = ses cours de groupe (TD), promo = ses cours communs (amphi, DS...)
+function annCourses(g){
+  const seen = {}, out = [], nowT = Date.now();
+  for(const [t, evs] of Object.entries(DATA?.events||{})){
+    if(PROMO!==g && t!==g && !(DATA.groups?.[g]||[]).includes(t)) continue;
+    for(const e of evs){
+      if(t!==g && e.group!==g) continue;
+      const key = e.code+"|"+e.start;
+      if(seen[key] || new Date(e.end) < nowT) continue;
+      seen[key] = 1; out.push({...e, key});
+    }
+  }
+  return out.sort((a,b)=>a.start<b.start?-1:1);
+}
+const hm = d => `${d.getHours()}h${String(d.getMinutes()).padStart(2,"0")}`;
+const courseLbl = (code, start) => { const s=new Date(start); return `${code} · ${fmtD(s,{weekday:"short",day:"numeric",month:"short"})}, ${hm(s)}`; };
+let annCkey = null;
+function renderAnnMod(){
+  const w = $("annmodw"); if(!w) return;
+  // la case Cours n'apparait qu'avec un public ET une date : elle ne propose que les cours de ce public ce jour-la
+  const day = $("anndate")?.value;
+  if(!annWho || !day){ annCkey = null; w.innerHTML = ""; return; }
+  const l = annCourses(annWho).filter(e=>ymd(new Date(e.start))===day);
+  if(annCkey && !l.some(e=>e.key===annCkey)) annCkey = null;
+  w.innerHTML = `<label class="lbl">Cours <small>(facultatif)</small></label>
+    <select id="annmod" onchange="pickAnnMod(this.value)"><option value="">${l.length?"Aucun cours en particulier":"Pas de cours ce jour-là"}</option>${l.map(e=>
+      `<option value="${esc(e.key)}" ${e.key===annCkey?"selected":""}>${hm(new Date(e.start))} · ${esc(e.code)}${e.type?" ("+esc(typeLbl(e.type))+")":""}${DATA.names?.[e.code]?" – "+esc(DATA.names[e.code]):""}</option>`).join("")}</select>`;
+}
+// cours lie a l'annonce (facultatif)
+function pickAnnMod(k){ annCkey = k || null; }
 function openAnnList(){
   sheetKey = null; annOpen = true;
   const l = annVisible(), today = ymd(new Date());
@@ -439,31 +469,32 @@ function openAnnList(){
     const d = a.jour && new Date(a.jour+"T12:00:00");
     h += `<div class="annbox ${a.jour===today?"today":""}" onclick="openAnn(${a.id})">
       <div class="d">${!d?"":a.jour===today?"Aujourd'hui":esc(fmtD(d,{weekday:"short"}))}<span>${d?esc(fmtD(d,{day:"numeric",month:"short"})):""}</span><em>${esc(audShort(a.grp))}</em></div>
-      <div class="tx">${esc(a.texte)}</div></div>`;
+      <div class="tx">${a.ckey?`<span class="annmod" style="${colors(a.ckey.split("|")[0])}">${esc(courseLbl(...a.ckey.split("|")))}</span>`:""}${esc(a.texte)}</div></div>`;
   });
   h += `</div><div class="row"><button class="btn" onclick="closeSheet()">Fermer</button></div>`;
   $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
 }
 let annOpen = false, annWho = null;
-function setAnnWho(g){ annWho=g; document.querySelectorAll(".who button").forEach(b=>b.classList.toggle("on", b.dataset.g===g)); annCheck(); }
+function setAnnWho(g){ if(g!==annWho) annCkey=null; annWho=g; document.querySelectorAll(".who button").forEach(b=>b.classList.toggle("on", b.dataset.g===g)); renderAnnMod(); annCheck(); }
 // Publier reste grise tant que le public et le texte ne sont pas remplis
 function annCheck(){ const b=$("annpub"); if(b) b.disabled = !annWho || !$("anntx").value.trim(); }
 function openAnn(id){
   sheetKey = null; annOpen = true;
   const a = id ? annonces.find(x=>x.id===id) : null, today = ymd(new Date());
-  annWho = a ? a.grp : null;  // formulaire remis a zero a chaque nouvelle annonce
+  annWho = a ? a.grp : null; annCkey = a?.ckey || null;  // formulaire remis a zero a chaque nouvelle annonce
   // on peut viser n'importe quel public : toute la promo, un groupe de TD, ou un TP
   const all = [PROMO, ...Object.keys(DATA?.groups||{}), ...Object.values(DATA?.groups||{}).flat()];
   const who = all.map(g=>`<button data-g="${esc(g)}" class="${g===PROMO?"all ":""}${g===annWho?"on":""}" onclick="setAnnWho('${esc(g)}')">${esc(audShort(g))}</button>`).join("");
   let h = `<div class="grab"></div><h3>${a?"Annonce":"Nouvelle annonce"}</h3>
     <label class="lbl">Pour qui ?</label><div class="who">${who}</div>
     <label class="lbl">Date <small>(facultatif : l'annonce disparaît après ce jour)</small></label>
-    <div class="dt"><input type="date" id="anndate" min="${today}" value="${a?.jour||""}"><button onclick="$('anndate').value=''">Sans date</button></div>
+    <input type="date" id="anndate" min="${today}" value="${a?.jour||""}" onchange="renderAnnMod()" oninput="renderAnnMod()">
+    <div id="annmodw"></div>
     <label class="lbl">Information</label>
     <textarea id="anntx" maxlength="2000" style="min-height:110px" oninput="annCheck()" placeholder="Ex : réunion d'info Québec mardi 12h, amphi B (facultatif)">${a?esc(a.texte):""}</textarea>
     <div class="row">${a?`<button class="btn" onclick="delAnn(${a.id})">Supprimer</button><button class="btn dark" id="annpub" onclick="saveAnn(${a.id})">Enregistrer</button>`
       :`<button class="btn" onclick="openAnnList()">Annuler</button><button class="btn dark" id="annpub" disabled onclick="saveAnn()">Publier</button>`}</div>`;
-  $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
+  $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block"; renderAnnMod();
 }
 async function annReq(method, query, body){
   const r = await fetch(`${SUPA_URL}/rest/v1/annonces${query}`, {method, headers:hdr(), body:JSON.stringify(body)});
@@ -475,8 +506,8 @@ async function saveAnn(id){
   if(!t){ toast("Écris l'information"); return; }
   if(jour && jour < ymd(new Date())){ toast("Choisis aujourd'hui ou plus tard"); return; }
   try{
-    if(id) await annReq("PATCH", `?id=eq.${id}`, {grp:annWho, jour, texte:t, updated_at:new Date().toISOString()});
-    else await annReq("POST", "", {grp:annWho, jour, texte:t});
+    if(id) await annReq("PATCH", `?id=eq.${id}`, {grp:annWho, jour, ckey:annCkey, texte:t, updated_at:new Date().toISOString()});
+    else await annReq("POST", "", {grp:annWho, jour, ckey:annCkey, texte:t});
     toast(id ? "Annonce modifiée" : "Annonce publiée pour "+audLabel(annWho));
     await loadAnn(); render(); openAnnList();
   }catch{ toast("Erreur : annonce non enregistrée"); }
@@ -512,6 +543,16 @@ function cancelPick(){ pickStep=null; pickTd=null; render(); }
 // on ne remonte pas plus loin que la semaine derniere
 const minWeek = () => { const m=monday(new Date()); m.setDate(m.getDate()-7); return m; };
 function shift(n){ const w=new Date(week); w.setDate(w.getDate()+7*n); if(w<minWeek()) return; week=w; render(); }
+// fleches : en vue Jour on avance jour par jour (vendredi -> lundi suivant), en vue Semaine semaine par semaine
+let curDays = 5;
+function step(n){
+  if(view!=="jour") return shift(n);
+  const i = dayIdx + n;
+  if(i < 0){ const w=new Date(week); w.setDate(w.getDate()-7); if(w<minWeek()) return; week=w; dayIdx=curDays-1; }
+  else if(i >= curDays){ const w=new Date(week); w.setDate(w.getDate()+7); week=w; dayIdx=0; }
+  else dayIdx=i;
+  render();
+}
 function goToday(){ now=new Date(); week=monday(now); dayIdx=(now.getDay()+6)%7;
   if(dayIdx>4){ week.setDate(week.getDate()+7); dayIdx=0; } render(); }
 function setView(v){ view=v; store.set("view",v); render(); }
@@ -582,7 +623,7 @@ async function delHw(id){ if(!confirm("Supprimer ce devoir pour tout le TP ?")) 
 $("veil").onclick=closeSheet;
 
 /* ======== demarrage ======== */
-addEventListener("keydown",e=>{ if(e.target.tagName==="TEXTAREA") return; if(e.key==="ArrowLeft") shift(-1); if(e.key==="ArrowRight") shift(1); if(e.key==="Escape") closeSheet(); });
+addEventListener("keydown",e=>{ if(["TEXTAREA","INPUT","SELECT"].includes(e.target.tagName)) return; if(e.key==="ArrowLeft") step(-1); if(e.key==="ArrowRight") step(1); if(e.key==="Escape") closeSheet(); });
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ loadData(); loadHw(); loadAnn(); } });
 setInterval(()=>{ if(!sheetKey && !annOpen) render(); }, 60000);
 setInterval(()=>{ if(!document.hidden){ loadHw(); loadAnn(); } }, 90000);
