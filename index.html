@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>EDT</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -67,8 +67,15 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .dh b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .dh span{font-size:17px;font-weight:700}
 /* vue Semaine : la journee d'aujourd'hui est juste encadree d'un trait fin, de haut en bas */
-.dh.today{box-shadow:inset .5px 0 0 var(--accent),inset -.5px 0 0 var(--accent),inset 0 .5px 0 var(--accent);border-radius:12px 12px 0 0}
-.col.today{box-shadow:inset .5px 0 0 var(--accent),inset -.5px 0 0 var(--accent),inset 0 -.5px 0 var(--accent);border-radius:0 0 12px 12px}
+/* trait par-dessus (::after) : 1 px a l'ecran normal, 1 pixel physique sur ecran dense ou zoome (jamais arrondi a 0) */
+.dh.today,.col.today{position:relative;--tw:1px}
+@media (min-resolution:2dppx){ .dh.today,.col.today{--tw:.5px} }
+.dh.today::after,.col.today::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:4;border:var(--tw) solid var(--accent)}
+.dh.today::after{border-bottom:0;border-radius:12px 12px 0 0}
+.col.today::after{border-top:0;border-radius:0 0 12px 12px}
+/* telephone : pas de zoom (double toucher, champs < 16 px qui font zoomer iOS) */
+html{touch-action:manipulation}
+@media (max-width:759px){ input,textarea,select{font-size:16px} }
 .corner{border-bottom:1px solid var(--line)}
 .times{position:relative}
 .times div{position:absolute;right:4px;font-size:10px;color:var(--muted);transform:translateY(-50%)}
@@ -114,7 +121,8 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .dpanel h3{margin:0 0 10px 2px;font-size:16px}.dpanel h3 span{font-size:12.5px;color:var(--muted);font-weight:500;margin-left:6px}
 /* detail et resume l'un sur l'autre : fondu croise pendant le glisser */
 .dbody{display:grid}.dbody>.full,.dbody>.sum{grid-area:1/1;transition:opacity .38s}
-.dbody>.full{opacity:var(--o,0)}.dbody>.sum{opacity:calc(1 - var(--o,0));pointer-events:none}
+/* le resume s'efface sur la 1re moitie du glisser, le detail apparait sur la 2de : jamais les deux l'un sur l'autre */
+.dbody>.full{opacity:clamp(0, calc(var(--o,0) * 2 - 1), 1)}.dbody>.sum{opacity:clamp(0, calc(1 - var(--o,0) * 2), 1);pointer-events:none}
 .dtrack>:not(.on) .full{pointer-events:none}
 /* carte de cours : heure en haut a gauche, salle en gros a droite, module au milieu, nom en bas */
 .dc{position:relative;display:flex;flex-direction:column;justify-content:flex-start;background:var(--bgc);color:var(--fg);border-radius:14px;padding:9px 11px 10px;border-left:4px solid var(--c);cursor:pointer;overflow:hidden}
@@ -321,7 +329,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-23m";
+const APP_V = "2026-11-23n";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -833,17 +841,30 @@ function slideTo(k){
 function bindSwipe(){
   const v=$("dview"), t=$("dtrack"); if(!v || !t) return;
   const P=[...t.children], cur=+t.style.getPropertyValue("--i");
-  v.addEventListener("pointerdown", e=>{ if(landing || (e.pointerType==="mouse" && e.button)) return; swipe={x:e.clientX, y:e.clientY, dx:0, lock:null, id:e.pointerId}; swiped=false; });
-  v.addEventListener("pointermove", e=>{ if(!swipe || e.pointerId!==swipe.id) return;
-    swipe.dx=e.clientX-swipe.x; const dy=e.clientY-swipe.y;
-    if(swipe.lock===null && Math.abs(swipe.dx)+Math.abs(dy)>10){ swipe.lock=Math.abs(swipe.dx)>Math.abs(dy); if(swipe.lock){ swiped=true; t.classList.add("drag"); try{ v.setPointerCapture(e.pointerId); }catch{} } }
-    if(!swipe.lock) return;
+  const start=(x,y)=>{ if(landing) return; swipe={x, y, dx:0, lock:null, t0:Date.now()}; swiped=false; };
+  // renvoie true si le geste est horizontal (alors on bloque le defilement vertical de la page)
+  const move=(x,y)=>{ if(!swipe) return false;
+    swipe.dx=x-swipe.x; const dy=y-swipe.y;
+    if(swipe.lock===null){ if(Math.abs(swipe.dx)===Math.abs(dy)) return false;
+      swipe.lock=Math.abs(swipe.dx)>Math.abs(dy); if(swipe.lock){ swiped=true; t.classList.add("drag"); } }
+    if(!swipe.lock) return false;
     let dx=swipe.dx; if((cur===0 && dx>0) || (cur===P.length-1 && dx<0)) dx/=3;   // bout de la bande : on freine
-    t.style.setProperty("--dx", dx+"px"); setO(P, cur - dx/(P[0].offsetWidth+12)); });
-  const end=()=>{ if(!swipe) return; const {dx,lock}=swipe; swipe=null; slideTo(lock && Math.abs(dx)>40 ? cur+(dx<0?1:-1) : cur); };
-  v.addEventListener("pointerup", end); v.addEventListener("pointercancel", end);
+    t.style.setProperty("--dx", dx+"px"); setO(P, cur - dx/(P[0].offsetWidth+12)); return true; };
+  const end=()=>{ if(!swipe) return; const {dx,lock,t0}=swipe; swipe=null; if(!lock) return;
+    const flick=Math.abs(dx)>15 && Math.abs(dx)/Math.max(1,Date.now()-t0)>.4;   // petit coup rapide = on change aussi
+    slideTo(Math.abs(dx)>50 || flick ? cur+(dx<0?1:-1) : cur); };
+  // doigt : evenements tactiles, le 1er mouvement decide (horizontal = on glisse et la page ne bouge plus, vertical = on laisse defiler)
+  v.addEventListener("touchstart", e=>{ if(e.touches.length===1) start(e.touches[0].clientX, e.touches[0].clientY); else swipe=null; }, {passive:true});
+  v.addEventListener("touchmove", e=>{ if(move(e.touches[0].clientX, e.touches[0].clientY) && e.cancelable) e.preventDefault(); }, {passive:false});
+  v.addEventListener("touchend", end); v.addEventListener("touchcancel", end);
+  // souris (PC)
+  v.addEventListener("pointerdown", e=>{ if(e.pointerType!=="mouse" || e.button) return; start(e.clientX, e.clientY); try{ v.setPointerCapture(e.pointerId); }catch{} });
+  v.addEventListener("pointermove", e=>{ if(e.pointerType==="mouse") move(e.clientX, e.clientY); });
+  v.addEventListener("pointerup", e=>{ if(e.pointerType==="mouse") end(); });
   v.addEventListener("click", e=>{ if(swiped){ e.stopPropagation(); e.preventDefault(); swiped=false; } }, true);
 }
+// iPhone : on empeche le pincement pour zoomer
+addEventListener("gesturestart", e=>e.preventDefault());
 function setHwTab(t){ hwTab=t; render(); }
 function jumpTo(key){ const e=events().find(x=>x.key===key); if(!e) return; week=monday(e.s); dayIdx=(e.s.getDay()+6)%7; render(); openSheet(key); }
 async function shareLink(){
