@@ -90,6 +90,8 @@ header .ttl{min-width:0}
 .card .hwl div{font-size:13.5px;display:flex;gap:6px;align-items:flex-start}
 .card .hwl .done{text-decoration:line-through;color:var(--muted)}
 .empty{color:var(--muted);font-style:italic;padding:14px 4px}
+.gap{display:flex;justify-content:space-between;align-items:center;border:2px dashed var(--line);border-radius:12px;padding:8px 14px;margin:0 0 8px;color:var(--muted);font-weight:700;font-size:14px}
+.gap span{font-weight:600;font-variant-numeric:tabular-nums}
 
 /* ---------- annonces ---------- */
 .ann{margin-bottom:12px}
@@ -218,7 +220,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-22d";
+const APP_V = "2026-11-22e";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -341,9 +343,13 @@ function renderDay(wk, nDays){
   const d=new Date(week); d.setDate(d.getDate()+dayIdx);
   const de=wk.filter(e=>sameDay(e.s,d));
   if(!de.length) return h+`<div class="empty">Pas de cours le ${DAYS[dayIdx].toLowerCase()} ${d.getDate()} ${fmtD(d,{month:"long"})}.</div>`;
-  return h + de.map(e=>{
+  return h + de.map((e,i)=>{
     const l=hwFor(e.key);
-    return `<div class="card" style="${colors(e.code)}" onclick="openSheet('${esc(e.key)}')">
+    // trou d'au moins 30 min depuis la fin du cours precedent (les 15 min d'intercours ne comptent pas)
+    const prevEnd = i ? Math.max(...de.slice(0,i).map(x=>+x.e)) : 0;
+    const gap = prevEnd ? Math.round((e.s-prevEnd)/6e4) : 0;
+    const pause = gap>=30 ? `<div class="gap">☕ Pause de ${gap>=60?Math.floor(gap/60)+"h"+(gap%60?String(gap%60).padStart(2,"0"):""):gap+" min"}<span>${fmtH(new Date(prevEnd))} – ${fmtH(e.s)}</span></div>` : "";
+    return pause + `<div class="card" style="${colors(e.code)}" onclick="openSheet('${esc(e.key)}')">
       <div class="hrs">${fmtH(e.s)}<span>${fmtH(e.e)}</span></div>
       <div style="flex:1;min-width:0"><div class="t">${esc(e.code)} ${e.type?`<span class="badge">${esc(typeLbl(e.type))}</span>`:""} ${hwBadge(e.key,true)}</div>
         <div class="n">${esc(e.name)}</div>
