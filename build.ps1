@@ -185,15 +185,7 @@ $out = [ordered]@{}
 foreach ($td in $Groups.Keys) {
     foreach ($tp in $Groups[$td]) {
         $list = New-Object Collections.Generic.List[object]
-        # semaines anciennes deja connues
-        if ($old -and $old.events -and $old.events.$tp) {
-            foreach ($e in $old.events.$tp) {
-                $st = Get-Iso $e.start
-                if ([string]::CompareOrdinal($st, (ConvertTo-UtcIso $firstFetched)) -lt 0) {
-                    $list.Add([ordered]@{ id=$e.id; start=$st; end=(Get-Iso $e.end); code=$e.code; type=$e.type; group=$e.group; room=$e.room; prof=$e.prof; memo=$e.memo; ue=$e.ue; num=$e.num })
-                }
-            }
-        }
+        # les semaines plus anciennes que la semaine derniere ne sont plus publiees (l'appli ne remonte pas plus loin)
         foreach ($w in $weeks) {
             $body = @{ mode='edt'; semaine="$(Get-IsoWeek $w)"; liste='-1'; aff_edtabs='-1'; ansemaine="$($w.AddDays(3).Year)";
                        idedtselect='0'; left='0'; top='0'; taillepolice='15'; filiere=$Filiere; groupe=$tp }
