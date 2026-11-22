@@ -126,7 +126,9 @@ input[type=date]{width:100%;border:1px solid var(--line);border-radius:10px;padd
 .sheet:not(.open){box-shadow:none}
 .grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 10px}
 .sheet h3{margin:0;font-size:20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.sheet .info{color:var(--muted);margin:4px 0 0;font-size:14px}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:12px 0 0;font-size:14.5px}
+.facts dt{color:var(--muted);font-weight:600}
+.facts dd{margin:0;font-weight:600}
 .sheet .memo{margin-top:8px;background:var(--soft);border-radius:10px;padding:8px 10px;font-size:14px}
 .sheet h4{margin:16px 0 8px;font-size:15px;display:flex;justify-content:space-between;align-items:baseline}
 .sheet h4 small{font-weight:500;color:var(--muted);font-size:12px}
@@ -231,7 +233,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-22g";
+const APP_V = "2026-11-22h";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -504,6 +506,22 @@ async function shareLink(){
 }
 
 /* ======== fiche d'un cours ======== */
+// toutes les infos connues sur un cours, en liste "libelle : valeur"
+function facts(e){
+  const mins = Math.round((e.e-e.s)/6e4), dur = (mins>=60?Math.floor(mins/60)+"h":"")+(mins%60?String(mins%60).padStart(mins>=60?2:1,"0")+(mins<60?" min":""):"");
+  const profs = (e.prof||"").split(" / ").filter(Boolean).map(c=>DATA.profs?.[c] ? `${DATA.profs[c]} (${c})` : c).join(", ");
+  const rows = [
+    ["Date", fmtD(e.s,{weekday:"long",day:"numeric",month:"long"})],
+    ["Horaires", `${fmtH(e.s)} – ${fmtH(e.e)} (${dur})`],
+    ["Salle", e.room],
+    [(e.prof||"").includes("/")?"Enseignants":"Enseignant", profs],
+    ["Type", typeLbl(e.type)!==e.type ? `${typeLbl(e.type)} (${e.type})` : e.type],
+    ["Groupe", e.group],
+    ["Module", [e.code, e.ue].filter(Boolean).join(" · ")],
+    ["Séance", e.num ? "n° "+e.num : ""],
+  ];
+  return rows.filter(r=>r[1]).map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("");
+}
 function openSheet(key, keep){
   const e=events().find(x=>x.key===key); if(!e) return;
   sheetKey=key; if(!keep) editing=null;
@@ -511,8 +529,7 @@ function openSheet(key, keep){
   let h=`<div class="grab"></div>
     <h3 style="${colors(e.code)}">${esc(e.code)} ${e.type?`<span class="badge">${esc(typeLbl(e.type))}</span>`:""}</h3>
     <div style="font-weight:600;margin-top:2px">${esc(e.name)}</div>
-    <p class="info">${fmtD(e.s,{weekday:"long",day:"numeric",month:"long"})} · ${fmtH(e.s)} – ${fmtH(e.e)}<br>
-      Salle ${esc(e.room)}${e.prof?` · ${esc(e.prof)}`:""} · ${esc(e.group)}</p>
+    <dl class="facts">${facts(e)}</dl>
     ${e.memo?`<div class="memo">${esc(e.memo)}</div>`:""}`;
   if(!HW_ON){ h+=`<p class="note">Les devoirs ne sont pas encore activés.</p>`; }
   else{
