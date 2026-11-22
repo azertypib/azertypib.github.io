@@ -132,12 +132,13 @@ input[type=date]{width:100%;border:1px solid var(--line);border-radius:10px;padd
 .sheet .memo{margin-top:8px;background:var(--soft);border-radius:10px;padding:8px 10px;font-size:14px}
 .sheet h4{margin:16px 0 8px;font-size:15px;display:flex;justify-content:space-between;align-items:baseline}
 .sheet h4 small{font-weight:500;color:var(--muted);font-size:12px}
-.hwrow{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line)}
-.hwrow .tx{flex:1;white-space:pre-wrap;word-break:break-word}
-.hwrow .tx.done{text-decoration:line-through;color:var(--muted)}
-.hwrow .meta{font-size:12px;color:var(--muted)}
-.hwrow .act{display:flex;gap:4px}
-.hwrow .act button{border:0;background:var(--soft);border-radius:8px;padding:4px 8px;font-size:12.5px}
+.hwbig{background:var(--soft);border-radius:14px;padding:14px 16px;margin-bottom:8px}
+.hwbig .tx{font-size:20px;font-weight:700;line-height:1.35;white-space:pre-wrap;word-break:break-word}
+.hwbig .act{display:flex;justify-content:flex-end;gap:6px;margin-top:10px}
+.hwbig .act button{border:0;background:var(--panel);color:var(--ink);border-radius:8px;padding:5px 10px;font-size:12.5px;font-weight:600}
+.hwbig .act button.on{background:var(--ink);color:var(--bg)}
+.hwbig textarea{background:var(--panel)}
+.addhw{border:0;background:none;color:var(--muted);font:inherit;font-size:14px;font-weight:600;padding:4px 0}
 textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;background:var(--bg);color:var(--ink);resize:vertical}
 .row{display:flex;gap:8px;margin-top:8px}
 .row .btn{flex:1}
@@ -233,7 +234,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-22h";
+const APP_V = "2026-11-22i";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -533,23 +534,20 @@ function openSheet(key, keep){
     ${e.memo?`<div class="memo">${esc(e.memo)}</div>`:""}`;
   if(!HW_ON){ h+=`<p class="note">Les devoirs ne sont pas encore activés.</p>`; }
   else{
-    h+=`<h4>Devoirs pour ce cours <small>visibles par tout le ${esc(tpLabel(tp))}</small></h4>`;
-    if(!l.length) h+=`<div class="note" style="margin:0 0 6px">Aucun devoir noté pour ce cours.</div>`;
+    h+=`<h4>Devoir${l.length>1?"s":""} <small>visible${l.length>1?"s":""} par tout le ${esc(tpLabel(tp))}</small></h4>`;
     l.forEach(x=>{
       if(editing===x.id){
-        h+=`<div class="hwrow" style="display:block"><textarea id="edtx" maxlength="1000">${esc(x.texte)}</textarea>
-          <div class="row"><button class="btn" onclick="editing=null;openSheet(sheetKey,true)">Annuler</button>
-          <button class="btn dark" onclick="saveEdit(${x.id})">Enregistrer</button></div></div>`;
+        h+=`<div class="hwbig"><textarea id="edtx" maxlength="1000">${esc(x.texte)}</textarea>
+          <div class="act"><button onclick="editing=null;openSheet(sheetKey,true)">Annuler</button>
+          <button class="on" onclick="saveEdit(${x.id})">Enregistrer</button></div></div>`;
       }else{
-        h+=`<div class="hwrow"><input type="checkbox" class="ck" ${done[x.id]?"checked":""} onclick="toggleDone(${x.id},this.checked)">
-          <div style="flex:1;min-width:0"><div class="tx ${done[x.id]?"done":""}">${esc(x.texte)}</div>
-          <div class="meta">${x.updated_at?"modifié le "+fmtD(new Date(x.updated_at),{day:"numeric",month:"short"})+" à "+fmtH(new Date(x.updated_at)):""}</div></div>
-          <div class="act"><button onclick="editing=${x.id};openSheet(sheetKey,true)">Modifier</button><button onclick="delHw(${x.id})">Suppr.</button></div></div>`;
+        h+=`<div class="hwbig"><div class="tx">${esc(x.texte)}</div>
+          <div class="act"><button onclick="editing=${x.id};openSheet(sheetKey,true)">Modifier</button><button onclick="delHw(${x.id})">Supprimer</button></div></div>`;
       }
     });
-    h+=`<textarea id="newhw" maxlength="1000" placeholder="Écrire un devoir pour ce cours… (ex : exercices 3 à 5 p. 42)"></textarea>
-      <div class="row"><button class="btn" onclick="closeSheet()">Fermer</button><button class="btn dark" onclick="saveNew()">Ajouter le devoir</button></div>
-      <p class="note">Le devoir est partagé avec ton TP. La case « fait » ne concerne que toi.</p>`;
+    if(editing==="new") h+=`<div class="hwbig"><textarea id="newhw" maxlength="1000" placeholder="Le devoir… (ex : exercices 3 à 5 p. 42)"></textarea>
+        <div class="act"><button onclick="editing=null;openSheet(sheetKey,true)">Annuler</button><button class="on" onclick="saveNew()">Enregistrer</button></div></div>`;
+    else h+=`<button class="addhw" onclick="editing='new';openSheet(sheetKey,true);$('newhw').focus()">+ ${l.length?"Ajouter un autre devoir":"Ajouter un devoir"}</button>`;
   }
   if(!HW_ON) h+=`<div class="row"><button class="btn" onclick="closeSheet()">Fermer</button></div>`;
   $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
