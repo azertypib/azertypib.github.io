@@ -120,7 +120,7 @@ html{touch-action:manipulation}
 .dpanel{background:color-mix(in srgb,var(--panel) 55%,transparent);border:1px solid var(--line);border-radius:20px;padding:12px 12px 14px;min-height:var(--ph,0)}
 .dpanel h3{margin:0 0 10px 2px;font-size:16px}.dpanel h3 span{font-size:12.5px;color:var(--muted);font-weight:500;margin-left:6px}
 /* detail et resume l'un sur l'autre : fondu croise pendant le glisser */
-.dbody{display:grid}.dbody>.full,.dbody>.sum{grid-area:1/1;transition:opacity .38s}
+.dbody{display:grid;grid-template-columns:minmax(0,1fr)}.dbody>.full,.dbody>.sum{grid-area:1/1;min-width:0;transition:opacity .38s}
 /* le resume s'efface sur la 1re moitie du glisser, le detail apparait sur la 2de : jamais les deux l'un sur l'autre */
 .dbody>.full{opacity:clamp(0, calc(var(--o,0) * 2 - 1), 1)}.dbody>.sum{opacity:clamp(0, calc(1 - var(--o,0) * 2), 1);pointer-events:none}
 .dtrack>:not(.on) .full{pointer-events:none}
@@ -133,7 +133,7 @@ html{touch-action:manipulation}
 .dc .hw{right:10px;bottom:8px}
 /* pauses : 15 min = un pointille ; dejeuner = deux pointilles avec les heures entre ; debut / fin de journee */
 .dash{height:14px;display:flex;align-items:center}.dash::before{content:"";flex:1;border-top:2px dashed color-mix(in srgb,var(--muted) 50%,transparent)}
-.brk{display:flex;flex-direction:column;justify-content:space-between;padding:7px 0}
+.brk{display:flex;flex-direction:column;justify-content:space-between;padding:5px 0}
 .brk i{display:block;border-top:2px dashed color-mix(in srgb,var(--muted) 50%,transparent)}
 .brk span{text-align:center;font-size:12.5px;font-weight:700;color:var(--muted)}
 .brk.lead{justify-content:flex-end;gap:7px}.brk.tail{justify-content:flex-start;gap:7px}
@@ -329,7 +329,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-23n";
+const APP_V = "2026-11-23o";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -444,7 +444,7 @@ function weekSpan(all, w){ const e=new Date(w); e.setDate(e.getDate()+7); const 
 function nearWeeks(all){ const out=[]; for(const k of [-1,0,1]){ const w=new Date(week); w.setDate(w.getDate()+7*k); if(w>=minWeek()) out.push(weekSpan(all,w)); } return out; }
 let SLOTS=[], fitTop=170, dayFit=0;
 const phone = () => innerWidth < 760;
-const fitH = () => Math.max(320, innerHeight - fitTop - 14);
+const fitH = () => Math.max(320, innerHeight - fitTop - 28);   // petite marge en bas (+ barre de l'iPhone)
 
 function renderWeek(all){
   const W=nearWeeks(all); let h0=8,h1=18;
@@ -487,7 +487,7 @@ function renderDay(all){
     for(let i=0;i<x.n;i++){ const d=new Date(x.w); d.setDate(d.getDate()+i); const on=cw && i===dayIdx;
       if(on) ci=SLOTS.length; SLOTS.push({w:x.w, i});
       const de=x.wk.filter(e=>sameDay(e.s,d)).sort((a,b)=>a.s-b.s);
-      h+=`<div class="dpanel ${on?"on":""}" style="--o:${on?1:0}"><h3>${DAYS[i]} ${d.getDate()}<span>${de.length?de.length+" cours":"pas de cours"}</span></h3>${dayList(d, de)}</div>`; } });
+      h+=`<div class="dpanel ${on?"on":""}" style="--o:${on?1:0}"><h3>${DAYS[i]} ${d.getDate()}</h3>${dayList(d, de)}</div>`; } });
   return `<div class="dview" id="dview" style="${dayFit?`--ph:${dayFit}px`:""}"><div class="dtrack" id="dtrack" style="--i:${ci}">${h}</div></div>`;
 }
 // la journee de 8h a 18h : cours a l'echelle (min. pour lire), trous a une echelle plus petite
@@ -500,7 +500,7 @@ function daySegs(d, de){
   if(lead>0.4) segs.push({k:"lead", h:Math.max(48, lead*GAP_H), txt:`Début des cours à ${fmtH(first)}`});
   de.forEach(e=>{
     if(prevEnd){ const g=(e.s-prevEnd)/6e4;
-      if(g>25) segs.push({k:"pause", h:Math.max(52, g/60*GAP_H+30), txt:`${fmtH(prevEnd)} – ${fmtH(e.s)}`});
+      if(g>25) segs.push({k:"pause", h:Math.max(40, g/60*12+20), txt:`${fmtH(prevEnd)} – ${fmtH(e.s)}`});
       else segs.push({k:"dash"}); }
     segs.push({k:"c", e, h:Math.max(74, (e.e-e.s)/36e5*PX_H)});
     prevEnd = prevEnd && prevEnd>e.e ? prevEnd : e.e;
@@ -513,8 +513,9 @@ function dayList(d, de){
   if(!de.length) return `<div class="empty">Pas de cours le ${DAYS[(d.getDay()+6)%7].toLowerCase()} ${d.getDate()} ${fmtD(d,{month:"long"})}.</div>`;
   const segs=daySegs(d, de);
   // telephone : on etire la journee pour que le cadre finisse en bas de l'ecran (jamais plus petit que l'echelle normale)
-  if(dayFit){ const fix=segs.filter(s=>s.k==="dash").length*14, flex=segs.reduce((a,s)=>a+(s.k==="dash"?0:s.h),0), k=(dayFit-60-fix)/flex;
-    if(k>1) segs.forEach(s=>{ if(s.k!=="dash") s.h*=k; }); }
+  // seuls les cours s'allongent (les pauses restent petites), au plus x2,5
+  if(dayFit){ const fix=segs.reduce((a,s)=>a+(s.k==="c"?0:s.k==="dash"?14:s.h),0), flex=segs.reduce((a,s)=>a+(s.k==="c"?s.h:0),0), k=Math.min(2.5,(dayFit-60-fix)/flex);
+    if(k>1) segs.forEach(s=>{ if(s.k==="c") s.h*=k; }); }
   const full=segs.map(s=> s.k==="c" ? `<div class="dc" style="height:${s.h}px;${colors(s.e.code)}" onclick="openSheet('${esc(s.e.key)}')">
         <div class="tm">${fmtH(s.e.s)} – ${fmtH(s.e.e)}</div><div class="rm">${esc((s.e.room||"").split(/[,/]/)[0].trim())}</div>
         <div class="cd">${esc(s.e.code)}${s.e.type?`<span class="badge">${esc(typeLbl(s.e.type))}</span>`:""}</div>
@@ -824,38 +825,53 @@ function jumpDate(v){ if(!v) return; const d=new Date(v+"T12:00"); week=monday(d
 function goToday(){ now=new Date(); week=monday(now); dayIdx=(now.getDay()+6)%7;
   if(dayIdx>4){ week.setDate(week.getDate()+7); dayIdx=0; } render(); }
 function setView(v){ view=v; store.set("view",v); render(); }
-// glisser (doigt ou souris) sur la bande Jour ou Semaine : la bande suit le doigt et le voisin apparait peu a peu (--o de 0 a 1) ;
-// au lacher elle finit de glisser, puis on redessine centre sur le nouveau jour / la nouvelle semaine. Un glisser n'ouvre pas la fiche.
-let swipe=null, swiped=false, landing=false;
+// glisser (doigt ou souris) sur la bande Jour ou Semaine : la bande suit le doigt et le voisin apparait peu a peu (--o de 0 a 1).
+// Au lacher elle finit de glisser ; on peut enchainer les glisser sans attendre. On ne redessine (recentrage) qu'une fois le doigt au repos.
+let swipe=null, swiped=false, recentre=0;
 const setO = (P, pos) => P.forEach((p,k)=>p.style.setProperty("--o", Math.max(0, 1-Math.abs(k-pos)).toFixed(3)));
+// titre du cartouche mis a jour tout de suite pendant les glisser
+function setTitle(s){
+  const h=document.querySelector(".ttl h1"), sub=document.querySelector(".ttl div"); if(!h || !s) return;
+  const d=new Date(s.w); if(view==="jour") d.setDate(d.getDate()+s.i);
+  const l=new Date(s.w); l.setDate(l.getDate()+4);
+  h.textContent="Semaine "+isoWeek(s.w);
+  sub.textContent = view==="jour" ? fmtD(d,{weekday:"short",day:"numeric",month:"short"}) : fmtD(s.w,{day:"numeric",month:"short"})+" – "+fmtD(l,{day:"numeric",month:"short"});
+}
 function slideTo(k){
-  const t=$("dtrack"); if(!t || landing) return;
+  const t=$("dtrack"); if(!t) return;
   const P=[...t.children], cur=+t.style.getPropertyValue("--i");
   if(k<0 || k>=P.length) k=cur;
   t.classList.remove("drag"); t.style.setProperty("--dx","0px"); t.style.setProperty("--i", k);
   setO(P, k); P.forEach((p,j)=>p.classList.toggle("on", j===k));
-  if(k===cur) return;
-  const s=SLOTS[k]; landing=true;
-  setTimeout(()=>{ landing=false; week=new Date(s.w); dayIdx=s.i; render(); }, 390);
+  const s=SLOTS[k]; week=new Date(s.w); dayIdx=s.i; setTitle(s);
+  clearTimeout(recentre); if(String(k)!==t.dataset.i0) recentre=setTimeout(()=>{ if(!swipe) render(); }, 700);
 }
 function bindSwipe(){
   const v=$("dview"), t=$("dtrack"); if(!v || !t) return;
-  const P=[...t.children], cur=+t.style.getPropertyValue("--i");
-  const start=(x,y)=>{ if(landing) return; swipe={x, y, dx:0, lock:null, t0:Date.now()}; swiped=false; };
-  // renvoie true si le geste est horizontal (alors on bloque le defilement vertical de la page)
+  const P=[...t.children]; t.dataset.i0=t.style.getPropertyValue("--i");
+  const start=(x,y)=>{ clearTimeout(recentre);
+    const cur=+t.style.getPropertyValue("--i");
+    // si la bande est encore en train de glisser, on repart de la ou elle est (pas de saut)
+    const m=new DOMMatrix(getComputedStyle(t).transform), base=m.m41 + (P[cur].offsetLeft - P[0].offsetLeft);
+    swipe={x, y, dx:0, base, cur, lock:null, t0:Date.now()}; swiped=false; };
+  // renvoie true si le geste est horizontal (alors la page ne defile pas)
   const move=(x,y)=>{ if(!swipe) return false;
-    swipe.dx=x-swipe.x; const dy=y-swipe.y;
-    if(swipe.lock===null){ if(Math.abs(swipe.dx)===Math.abs(dy)) return false;
-      swipe.lock=Math.abs(swipe.dx)>Math.abs(dy); if(swipe.lock){ swiped=true; t.classList.add("drag"); } }
+    const fx=x-swipe.x, dy=y-swipe.y;
+    if(swipe.lock===null){ if(Math.abs(fx)+Math.abs(dy)<6) return false;   // on attend de connaitre la direction
+      swipe.lock = Math.abs(fx) > Math.abs(dy);                              // soit on glisse, soit on monte/descend : jamais les deux
+      if(swipe.lock){ swiped=true; t.classList.add("drag"); document.documentElement.style.overflow="hidden"; } }
     if(!swipe.lock) return false;
-    let dx=swipe.dx; if((cur===0 && dx>0) || (cur===P.length-1 && dx<0)) dx/=3;   // bout de la bande : on freine
-    t.style.setProperty("--dx", dx+"px"); setO(P, cur - dx/(P[0].offsetWidth+12)); return true; };
-  const end=()=>{ if(!swipe) return; const {dx,lock,t0}=swipe; swipe=null; if(!lock) return;
-    const flick=Math.abs(dx)>15 && Math.abs(dx)/Math.max(1,Date.now()-t0)>.4;   // petit coup rapide = on change aussi
-    slideTo(Math.abs(dx)>50 || flick ? cur+(dx<0?1:-1) : cur); };
-  // doigt : evenements tactiles, le 1er mouvement decide (horizontal = on glisse et la page ne bouge plus, vertical = on laisse defiler)
+    const {cur}=swipe; let dx=swipe.base+fx; if((cur===0 && dx>0) || (cur===P.length-1 && dx<0)) dx/=3;   // bout de la bande : on freine
+    swipe.dx=dx; t.style.setProperty("--dx", dx+"px"); setO(P, cur - dx/(P[0].offsetWidth+12)); return true; };
+  const end=()=>{ if(!swipe) return; const {dx,lock,t0,cur,x}=swipe; document.documentElement.style.overflow="";
+    if(!lock){ swipe=null; if(String(cur)!==t.dataset.i0) recentre=setTimeout(()=>{ if(!swipe) render(); }, 700); return; }
+    const fx=dx-swipe.base, step=P[0].offsetWidth+12; swipe=null;
+    const flick=Math.abs(fx)>12 && Math.abs(fx)/Math.max(1,Date.now()-t0)>.3;   // petit coup rapide = on change aussi
+    let k=Math.round(cur - dx/step); if(k===cur && flick) k=cur+(fx<0?1:-1);
+    slideTo(k); };
+  // doigt : evenements tactiles
   v.addEventListener("touchstart", e=>{ if(e.touches.length===1) start(e.touches[0].clientX, e.touches[0].clientY); else swipe=null; }, {passive:true});
-  v.addEventListener("touchmove", e=>{ if(move(e.touches[0].clientX, e.touches[0].clientY) && e.cancelable) e.preventDefault(); }, {passive:false});
+  v.addEventListener("touchmove", e=>{ if(swipe && move(e.touches[0].clientX, e.touches[0].clientY) && e.cancelable) e.preventDefault(); }, {passive:false});
   v.addEventListener("touchend", end); v.addEventListener("touchcancel", end);
   // souris (PC)
   v.addEventListener("pointerdown", e=>{ if(e.pointerType!=="mouse" || e.button) return; start(e.clientX, e.clientY); try{ v.setPointerCapture(e.pointerId); }catch{} });
