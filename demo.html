@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>EDT – démo mise en page D</title>
+<link rel="icon" href="icon.png?l">
+<style>
+/* Démo de la mise en page D (jours à faire glisser). Page séparée : l'appli (index.html) n'est pas modifiée. */
+:root{--bg:#f7f8fa;--panel:#fff;--ink:#16181d;--muted:#6b7280;--line:#e3e6eb;--acc:#2e86d4;--shadow:0 1px 3px rgba(0,0,0,.06)}
+:root[data-theme=dark]{--bg:#101114;--panel:#181a1f;--ink:#f2f3f5;--muted:#8b8f98;--line:#262930;--acc:#2e86d4;--shadow:none}
+*{box-sizing:border-box} html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Segoe UI,system-ui,-apple-system,sans-serif;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer}
+.app{max-width:1180px;margin:0 auto;padding:12px 16px 30px}
+.demo{font-size:12.5px;color:var(--muted);margin:0 0 10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.demo a{color:var(--acc);font-weight:600}
+/* en-tete identique a l'appli */
+header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.ban{flex:1 1 auto;min-width:0;height:48px;margin-right:6px;border-radius:12px;padding:0 12px 0 0;display:flex;align-items:center;gap:8px;color:#fff;background:linear-gradient(90deg,#0d2a47 0%,#0d2a47 30%,#12808a 100%);overflow:hidden}
+.ban .lg{flex:none;height:100%;aspect-ratio:1;border-radius:12px 0 0 12px;display:block}
+.ban .tel{display:flex;flex-direction:column;line-height:1.1}.ban .tel b{font-size:15px;font-weight:800}.ban .tel span{font-size:11.5px;font-weight:600;color:#d6e6f5;white-space:nowrap}
+.ban .pc{display:none}
+.ban .bars{display:flex;align-items:flex-end;gap:3px;height:24px}.ban .bars i{display:block;width:6px;height:24px;border-radius:2px;background:#2e86d4}.ban .bars i:nth-child(2){height:15px;background:#12808a}.ban .bars i:nth-child(3){background:#2fbf6a}
+.ban .bt{font-size:16px;font-weight:600;color:#d6e6f5;white-space:nowrap;line-height:1;display:flex;align-items:baseline;gap:5px}.ban .bt b{font-size:19px;font-weight:800;color:#fff}
+.ban em{margin-left:auto;font-style:normal;font-size:13px;font-weight:600;color:#eafaf0;white-space:nowrap}
+.sq{position:relative;width:48px;height:48px;flex:none;border:1px solid var(--line);background:var(--panel);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:19px;font-weight:800;line-height:1;box-shadow:var(--shadow)}
+.sq small{font-size:10.5px;font-weight:700;color:var(--muted);margin-top:2px}
+.sq svg{width:22px;height:22px}
+.sq select{position:absolute;inset:0;opacity:0;cursor:pointer}
+.bar{display:flex;gap:6px;align-items:center;margin-bottom:12px}
+.nav{width:48px;height:42px;border:1px solid var(--line);background:var(--panel);border-radius:12px;display:grid;place-items:center;box-shadow:var(--shadow)}
+.nav svg{width:22px;height:22px}.nav:disabled{opacity:.35}
+.ttl{flex:0 0 150px;text-align:center;line-height:1.15;cursor:pointer}.ttl h1{margin:0;font-size:20px;white-space:nowrap}.ttl div{color:var(--muted);font-size:12.5px;white-space:nowrap}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-left:auto}
+.seg button{border:0;background:var(--panel);height:40px;padding:0 12px;font-weight:600;color:var(--muted)}.seg button.on{background:var(--ink);color:var(--bg)}
+@media (max-width:760px){ .ban .pc{display:none} }
+@media (min-width:761px){ .ban{padding:0 16px;gap:12px} .ban .lg,.ban .tel{display:none} .ban .pc{display:flex} }
+@media (max-width:420px){ .app{padding:10px 12px 30px} header{gap:6px} .sq{width:42px;height:42px} .ban{height:42px;margin-right:2px;gap:7px;padding:0 9px 0 0} .ban .tel b{font-size:13.5px} .ban .tel span{font-size:10.5px}
+  .bar{gap:5px} .nav{width:42px} .ttl{flex:1 1 auto} .ttl h1{font-size:17px} .ttl div{font-size:11.5px} .seg button{padding:0 9px} }
+
+/* ---- D : les jours a faire glisser ---- */
+.rail{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding:2px 16px 14px;margin:0 -16px;scrollbar-width:none}
+.rail::-webkit-scrollbar{display:none}
+.day{flex:none;width:min(82vw,420px);scroll-snap-align:center;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:12px;box-shadow:var(--shadow);transition:opacity .25s}
+.day.away{opacity:.45}
+.day h3{margin:0 0 10px;font-size:17px;display:flex;align-items:baseline;gap:7px}.day h3 span{font-size:12.5px;color:var(--muted);font-weight:500}
+.day h3 .today{font-size:11.5px;font-weight:700;color:#fff;background:var(--acc);border-radius:999px;padding:2px 8px}
+.it{border-radius:14px;padding:9px 11px 10px;background:var(--bgc);color:var(--fg);border-left:4px solid var(--c);position:relative}
+.it .tm{font-size:12px;font-weight:700;opacity:.85}
+.it b{display:block;font-size:16px;margin-top:1px}.it b small{font-size:12px;font-weight:600;opacity:.8;margin-left:4px}
+.it .nm{font-size:12.5px;opacity:.85;margin-top:1px}
+.it .r{position:absolute;right:11px;top:9px;font-weight:800;font-size:15px}
+.it.now{box-shadow:0 0 0 2px var(--c)}
+.it.now .tm::after{content:"  en cours";color:var(--c);font-weight:800}
+.it.past{opacity:.5}
+.gap{font-size:11.5px;color:var(--muted);text-align:center;margin:6px 0;padding-top:6px;border-top:1px dashed var(--line)}
+.gap.big{color:var(--ink);font-weight:600}
+.empty{color:var(--muted);text-align:center;padding:30px 0;font-size:14px}
+.dots{display:flex;gap:6px;justify-content:center}.dots i{width:7px;height:7px;border-radius:4px;background:var(--line);transition:width .2s}.dots i.on{width:20px;background:var(--acc)}
+/* vue Semaine : memes cartes, plus etroites et compactes */
+.wk .day{width:min(46vw,230px);padding:10px}
+.wk .day h3{font-size:15px;flex-direction:column;gap:0}.wk .day h3 .today{align-self:flex-start;margin-top:3px}
+.wk .it{padding:7px 8px}.wk .it b{font-size:14px}.wk .it .nm{display:none}.wk .it .r{position:static;font-size:13px;margin-top:2px}
+.wk .gap{margin:4px 0;padding-top:4px;font-size:10.5px}
+@media (min-width:761px){ .wk .rail{display:grid;grid-template-columns:repeat(var(--n),1fr);overflow:visible;margin:0;padding:2px 0 14px} .wk .day{width:auto} .wk .dots{display:none} }
+</style></head><body>
+<div class="app" id="app">Chargement…</div>
+<script>
+const $=id=>document.getElementById(id);
+const store={get(k,d){try{const v=localStorage.getItem("edt."+k);return v==null?d:JSON.parse(v)}catch{return d}},set(k,v){localStorage.setItem("edt."+k,JSON.stringify(v))}};
+let theme=store.get("theme",matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");
+const applyTheme=()=>document.documentElement.dataset.theme=theme; applyTheme();
+let DATA=null, tp=store.get("tp","S1TP1"), view=store.get("demoView","jour"), week=null, dayIdx=0;
+const DAYS=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
+const TYPES={TD:"TD",TP:"TP",CM:"CM",DS:"DS",PRTUT:"Projet",PRTUT1:"Projet",PRTUT2:"Projet"};
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const svg=p=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const I={ann:svg('<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>'),sun:svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),moon:svg('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'),msg:svg('<path d="M20 15.5a2 2 0 0 1-2 2H8l-4 3.5V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 12.5h5"/>'),chat:svg('<path d="M21 11.5a8.4 8.4 0 0 1-12.2 7.5L3 21l2-5.6A8.4 8.4 0 1 1 21 11.5z"/><path d="M8.5 11.5h.01M12.5 11.5h.01M16.5 11.5h.01" stroke-width="3"/>'),prev:svg('<path d="m15 5-7 7 7 7"/>'),next:svg('<path d="m9 5 7 7-7 7"/>')};
+// memes couleurs de modules que l'appli
+const PALETTE=[8,200,145,280,35,330,175,240,95,15,260,55,120,300], hue={};
+function colors(code){ if(!(code in hue)){let h=0;for(const ch of code)h=(h*31+ch.charCodeAt(0))>>>0;hue[code]=PALETTE[h%PALETTE.length];} const h=hue[code];
+  return theme==="dark"?`--c:hsl(${h} 62% 62%);--bgc:hsl(${h} 45% 22%);--fg:hsl(${h} 40% 95%)`:`--c:hsl(${h} 62% 48%);--bgc:hsl(${h} 85% 92%);--fg:hsl(${h} 45% 20%)`; }
+const monday=d=>{const m=new Date(d);m.setHours(0,0,0,0);m.setDate(m.getDate()-((m.getDay()+6)%7));return m;};
+const isoWeek=d=>{const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const n=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-n);const y=new Date(Date.UTC(t.getUTCFullYear(),0,1));return Math.ceil(((t-y)/864e5+1)/7);};
+const hm=d=>`${d.getHours()}h${String(d.getMinutes()).padStart(2,"0")}`;
+const fmt=(d,o)=>d.toLocaleDateString("fr-FR",o);
+const sameDay=(a,b)=>a.toDateString()===b.toDateString();
+const dur=m=>m>=60?`${Math.floor(m/60)} h ${m%60?String(m%60).padStart(2,"0"):""}`.trim():`${m} min`;
+
+function goToday(){ const n=new Date(); week=monday(n); dayIdx=(n.getDay()+6)%7; if(dayIdx>4){ week.setDate(week.getDate()+7); dayIdx=0; } }
+function events(){ return (DATA.events[tp]||[]).map(e=>({...e,s:new Date(e.start),e:new Date(e.end)})); }
+
+function dayCard(d, list, i){
+  const now=new Date(), today=sameDay(d,now);
+  let h=`<section class="day" data-i="${i}"><h3>${view==="semaine"?`${DAYS[i].slice(0,3)}. ${d.getDate()}`:`${DAYS[i]} ${d.getDate()}`} <span>${list.length} cours</span>${today?'<span class="today">Aujourd\'hui</span>':""}</h3>`;
+  if(!list.length) return h+`<div class="empty">Pas de cours</div></section>`;
+  list.forEach((e,k)=>{
+    if(k){ const g=Math.round((e.s-list[k-1].e)/6e4); if(g>=10){ const lunch=list[k-1].e.getHours()<13 && e.s.getHours()>=12 && g>=45;
+      h+=`<div class="gap ${g>=60?"big":""}">${lunch?"Pause déjeuner · ":"Pause · "}${dur(g)}</div>`; } }
+    const st = now>=e.s && now<e.e ? "now" : now>=e.e ? "past" : "";
+    const room=(e.room||"").split(/[,/]/)[0].trim();
+    h+=`<div class="it ${st}" style="${colors(e.code)}"><div class="tm">${hm(e.s)} – ${hm(e.e)}</div>
+      <b>${esc(e.code)}${e.type?`<small>${esc(TYPES[e.type]||e.type)}</small>`:""}</b>
+      <div class="nm">${esc(DATA.names?.[e.code]||"")}</div><div class="r">${esc(room)}</div></div>`;
+  });
+  return h+`</section>`;
+}
+
+function render(){
+  const all=events(), wk=all.filter(e=>e.s>=week && e.s<new Date(+week+7*864e5));
+  const nDays=wk.some(e=>e.s.getDay()===6)?6:5; dayIdx=Math.min(dayIdx,nDays-1);
+  const last=new Date(week); last.setDate(last.getDate()+nDays-1);
+  const cur=new Date(week); cur.setDate(cur.getDate()+dayIdx);
+  const sub=view==="jour"?fmt(cur,{weekday:"short",day:"numeric",month:"short"}):`${fmt(week,{day:"numeric",month:"short"})} – ${fmt(last,{day:"numeric",month:"short"})}`;
+  const groups=DATA.groups||{}, td=Object.keys(groups).find(g=>groups[g].includes(tp))||"";
+  let h=`<p class="demo">Démo de la mise en page D : ton appli n'est pas modifiée. <a href="./">Revenir à l'appli</a></p>
+  <header><div class="ban"><img class="lg" src="icon.png?l" alt="EDT"><div class="bars pc"><i></i><i></i><i></i></div>
+      <div class="tel"><b>IUT</b><span>La Rochelle</span></div><div class="pc bt"><b>EDT</b><span>· Emploi du temps · IUT La Rochelle</span></div><em class="pc">Génie civil · S1</em></div>
+    <div class="sq" title="Discussion (pas dans la démo)">${I.chat}</div><div class="sq" title="Messages (pas dans la démo)">${I.msg}</div>
+    <button class="sq" onclick="toggleTheme()" aria-label="Mode clair ou sombre">${theme==="dark"?I.sun:I.moon}</button>
+    <div class="sq" title="Annonces (pas dans la démo)">${I.ann}</div>
+    <div class="sq">${esc(td.replace(/^S\d/,""))}<small>${esc(tp.replace(/^S\d/,""))}</small>
+      <select aria-label="Changer de TP" onchange="tp=this.value;store.set('tp',tp);render()">${Object.values(groups).flat().map(t=>`<option ${t===tp?"selected":""}>${t}</option>`).join("")}</select></div></header>
+  <div class="bar"><button class="nav" onclick="step(-1)" aria-label="Précédent">${I.prev}</button>
+    <div class="ttl" onclick="goToday();render()" title="Revenir à aujourd'hui"><h1>Semaine ${isoWeek(week)}</h1><div>${sub}</div></div>
+    <button class="nav" onclick="step(1)" aria-label="Suivant">${I.next}</button>
+    <div class="seg"><button class="${view==="jour"?"on":""}" onclick="setView('jour')">Jour</button><button class="${view==="semaine"?"on":""}" onclick="setView('semaine')">Semaine</button></div></div>
+  <div class="${view==="semaine"?"wk":"dj"}" style="--n:${nDays}"><div class="rail" id="rail">`;
+  for(let i=0;i<nDays;i++){ const d=new Date(week); d.setDate(d.getDate()+i); h+=dayCard(d, wk.filter(e=>(e.s.getDay()+6)%7===i).sort((a,b)=>a.s-b.s), i); }
+  h+=`</div><div class="dots">${Array.from({length:nDays},(_,i)=>`<i class="${i===dayIdx?"on":""}"></i>`).join("")}</div></div>`;
+  $("app").innerHTML=h; watch(true);
+}
+// carte au centre = jour choisi ; les autres sont estompees
+let io=null, quiet=false;
+function watch(jump){
+  const rail=$("rail"); if(!rail) return;
+  const cards=[...rail.children];
+  if(jump){ quiet=true; rail.style.scrollBehavior="auto"; const c=cards[dayIdx]; if(c) rail.scrollLeft=c.offsetLeft-(rail.clientWidth-c.clientWidth)/2; rail.style.scrollBehavior=""; setTimeout(()=>quiet=false,80); }
+  io?.disconnect();
+  if(view!=="jour"){ cards.forEach(c=>c.classList.remove("away")); return; }
+  io=new IntersectionObserver(es=>{ es.forEach(e=>{ if(e.intersectionRatio>.6 && !quiet){ dayIdx=+e.target.dataset.i; mark(); } }); },{root:rail,threshold:[.6]});
+  cards.forEach(c=>io.observe(c)); mark();
+}
+function mark(){
+  const rail=$("rail"); if(!rail) return;
+  [...rail.children].forEach((c,i)=>c.classList.toggle("away", view==="jour" && i!==dayIdx));
+  document.querySelectorAll(".dots i").forEach((d,i)=>d.classList.toggle("on",i===dayIdx));
+  const cur=new Date(week); cur.setDate(cur.getDate()+dayIdx);
+  const sub=document.querySelector(".ttl div"); if(sub && view==="jour") sub.textContent=fmt(cur,{weekday:"short",day:"numeric",month:"short"});
+}
+function step(n){
+  const nDays=$("rail")?.children.length||5;
+  if(view==="jour"){ const i=dayIdx+n; if(i>=0 && i<nDays){ dayIdx=i; const c=$("rail").children[i]; $("rail").scrollTo({left:c.offsetLeft-($("rail").clientWidth-c.clientWidth)/2}); mark(); return; }
+    week.setDate(week.getDate()+7*n); dayIdx = n>0 ? 0 : 4; }
+  else week.setDate(week.getDate()+7*n);
+  render();
+}
+function setView(v){ view=v; store.set("demoView",v); render(); }
+function toggleTheme(){ theme=theme==="dark"?"light":"dark"; store.set("theme",theme); applyTheme(); render(); }
+addEventListener("keydown",e=>{ if(e.target.tagName==="SELECT") return; if(e.key==="ArrowLeft") step(-1); if(e.key==="ArrowRight") step(1); });
+(async()=>{ try{ DATA=await (await fetch("data.json?t="+Date.now(),{cache:"no-store"})).json(); }catch{ $("app").textContent="Impossible de charger l'emploi du temps."; return; }
+  if(!DATA.events[tp]) tp=Object.keys(DATA.events)[0]; goToday(); render(); })();
+</script>
+</body></html>
