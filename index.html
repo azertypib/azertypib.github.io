@@ -36,6 +36,7 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12p
 .bar{display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
 .btn{border:1px solid var(--line);background:var(--panel);height:36px;min-width:36px;padding:0 12px;border-radius:10px;font-weight:600}
 .btn.dark{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:default}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-left:auto}
 .seg button{border:0;background:var(--panel);height:34px;padding:0 12px;font-weight:600;color:var(--muted)}
 .seg button.on{background:var(--ink);color:var(--bg)}
@@ -98,18 +99,17 @@ header .ttl{min-width:0}
 .ann .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .ann .head b{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .ann .head button{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 12px;font-weight:650;font-size:13px}
-.annbox{display:flex;gap:12px;background:var(--panel);border-radius:12px;padding:10px 12px;margin-bottom:6px;box-shadow:var(--shadow);border-left:5px solid var(--accent);cursor:pointer}
+.annbox{display:flex;gap:12px;background:var(--panel);border-radius:12px;padding:10px 12px;margin-bottom:6px;box-shadow:var(--shadow);cursor:pointer}
 .annbox .d{font-weight:800;min-width:62px;font-size:13px;line-height:1.25}
 .annbox .d span{display:block;color:var(--muted);font-weight:600}
 .annbox .tx{flex:1;white-space:pre-wrap;word-break:break-word;font-size:14.5px}
-.annbox.today{border-left-color:var(--todo)}
-.annbox .d em{display:block;font-style:normal;font-weight:700;font-size:11.5px;color:var(--accent);margin-top:2px}
+.annbox .d em{display:block;font-style:normal;font-weight:700;font-size:11.5px;color:var(--ink);margin-top:3px}
 .lbl{display:block;font-weight:700;font-size:13.5px;margin:12px 0 6px}
 .lbl small{font-weight:500;color:var(--muted)}
-.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.seg button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:11px;padding:11px 6px;font-weight:700;font-size:14.5px;cursor:pointer}
-.seg button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.seg button:disabled:not(.on){opacity:.35}
+.who{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.who .all{grid-column:1/-1}
+.who button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:11px;padding:11px 6px;font-weight:700;font-size:14.5px;cursor:pointer}
+.who button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.who button:disabled:not(.on){opacity:.35}
 .dt{display:flex;gap:8px}.dt input{flex:1;margin:0}
 .dt button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:11px;padding:0 12px;font-weight:600;font-size:13.5px;cursor:pointer}
 input[type=date]{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;background:var(--bg);color:var(--ink);margin-bottom:8px}
@@ -245,7 +245,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-22r";
+const APP_V = "2026-11-22s";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -308,7 +308,7 @@ const tpLabel = g => g.replace(/^S\d/,"");
 const PROMO = "S1";
 // publics dont on voit les devoirs : la promo, son groupe de TD, son TP
 const audiences = () => [PROMO, tdOf(tp), tp].filter(Boolean);
-const audLabel = g => g===PROMO ? "toute la promo" : g===tdOf(tp) ? "tout le groupe "+tpLabel(g) : "le "+tpLabel(g);
+const audLabel = g => g===PROMO ? "toute la promo" : /TP/.test(g) ? "le "+tpLabel(g) : "tout le groupe "+tpLabel(g);
 function tdOf(t){ for(const [td,l] of Object.entries(DATA?.groups||{})) if(l.includes(t)) return td; return ""; }
 
 /* ======== rendu ======== */
@@ -419,7 +419,7 @@ function renderHwSection(all){
 /* ======== annonces : pour la promo, un groupe de TD ou un TP ; date facultative (disparait apres), sinon reste jusqu'a suppression ======== */
 let annonces = store.get("ann", []);
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-const audShort = g => g===PROMO ? "Promo" : g===tdOf(tp) ? tdLabel(g) : tpLabel(g);
+const audShort = g => g===PROMO ? "Promo S1" : /TP/.test(g) ? tpLabel(g) : tdLabel(g);
 const annVisible = () => annonces.filter(a=>!a.jour || a.jour>=ymd(new Date()))
   .sort((a,b)=> (a.jour||"9") < (b.jour||"9") ? -1 : (a.jour||"9") > (b.jour||"9") ? 1 : (a.created_at<b.created_at?-1:1));
 async function loadAnn(){
@@ -445,20 +445,24 @@ function openAnnList(){
   $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
 }
 let annOpen = false, annWho = null;
-function setAnnWho(g){ annWho=g; document.querySelectorAll(".seg button").forEach(b=>b.classList.toggle("on", b.dataset.g===g)); }
+function setAnnWho(g){ annWho=g; document.querySelectorAll(".who button").forEach(b=>b.classList.toggle("on", b.dataset.g===g)); annCheck(); }
+// Publier reste grise tant que le public et le texte ne sont pas remplis
+function annCheck(){ const b=$("annpub"); if(b) b.disabled = !annWho || !$("anntx").value.trim(); }
 function openAnn(id){
   sheetKey = null; annOpen = true;
   const a = id ? annonces.find(x=>x.id===id) : null, today = ymd(new Date());
   annWho = a ? a.grp : null;  // formulaire remis a zero a chaque nouvelle annonce
-  const who = audiences().map(g=>`<button data-g="${esc(g)}" class="${g===annWho?"on":""}" ${a?"disabled":""} onclick="setAnnWho('${esc(g)}')">${esc(audShort(g))}</button>`).join("");
+  // on peut viser n'importe quel public : toute la promo, un groupe de TD, ou un TP
+  const all = [PROMO, ...Object.keys(DATA?.groups||{}), ...Object.values(DATA?.groups||{}).flat()];
+  const who = all.map(g=>`<button data-g="${esc(g)}" class="${g===PROMO?"all ":""}${g===annWho?"on":""}" onclick="setAnnWho('${esc(g)}')">${esc(audShort(g))}</button>`).join("");
   let h = `<div class="grab"></div><h3>${a?"Annonce":"Nouvelle annonce"}</h3>
-    <label class="lbl">Pour qui ?</label><div class="seg">${who}</div>
+    <label class="lbl">Pour qui ?</label><div class="who">${who}</div>
     <label class="lbl">Date <small>(facultatif : l'annonce disparaît après ce jour)</small></label>
     <div class="dt"><input type="date" id="anndate" min="${today}" value="${a?.jour||""}"><button onclick="$('anndate').value=''">Sans date</button></div>
     <label class="lbl">Information</label>
-    <textarea id="anntx" maxlength="2000" style="min-height:110px" placeholder="Ex : réunion d'info Québec mardi 12h, amphi B (facultatif)">${a?esc(a.texte):""}</textarea>
-    <div class="row">${a?`<button class="btn" onclick="delAnn(${a.id})">Supprimer</button><button class="btn dark" onclick="saveAnn(${a.id})">Enregistrer</button>`
-      :`<button class="btn" onclick="openAnnList()">Annuler</button><button class="btn dark" onclick="saveAnn()">Publier</button>`}</div>`;
+    <textarea id="anntx" maxlength="2000" style="min-height:110px" oninput="annCheck()" placeholder="Ex : réunion d'info Québec mardi 12h, amphi B (facultatif)">${a?esc(a.texte):""}</textarea>
+    <div class="row">${a?`<button class="btn" onclick="delAnn(${a.id})">Supprimer</button><button class="btn dark" id="annpub" onclick="saveAnn(${a.id})">Enregistrer</button>`
+      :`<button class="btn" onclick="openAnnList()">Annuler</button><button class="btn dark" id="annpub" disabled onclick="saveAnn()">Publier</button>`}</div>`;
   $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
 }
 async function annReq(method, query, body){
@@ -471,7 +475,7 @@ async function saveAnn(id){
   if(!t){ toast("Écris l'information"); return; }
   if(jour && jour < ymd(new Date())){ toast("Choisis aujourd'hui ou plus tard"); return; }
   try{
-    if(id) await annReq("PATCH", `?id=eq.${id}`, {jour, texte:t, updated_at:new Date().toISOString()});
+    if(id) await annReq("PATCH", `?id=eq.${id}`, {grp:annWho, jour, texte:t, updated_at:new Date().toISOString()});
     else await annReq("POST", "", {grp:annWho, jour, texte:t});
     toast(id ? "Annonce modifiée" : "Annonce publiée pour "+audLabel(annWho));
     await loadAnn(); render(); openAnnList();
