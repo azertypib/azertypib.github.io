@@ -319,8 +319,9 @@ const hue={};
 function colors(code){
   if(!(code in hue)){ let h=0; for(const ch of code) h=(h*31+ch.charCodeAt(0))>>>0; hue[code]=PALETTE[h%PALETTE.length]; }
   const h=hue[code], dark=theme==="dark";
-  return dark ? `--c:hsl(${h} 62% 62%);--bgc:hsl(${h} 45% 22%);--fg:hsl(${h} 40% 95%)`
-              : `--c:hsl(${h} 62% 48%);--bgc:hsl(${h} 85% 92%);--fg:hsl(${h} 45% 20%)`;
+  // couleurs des maquettes (Graphite vif) : fond plein du module, plus lumineux
+  return dark ? `--c:hsl(${h} 62% 50%);--bgc:hsl(${h} 45% 25%);--fg:hsl(${h} 40% 95%)`
+              : `--c:hsl(${h} 62% 50%);--bgc:hsl(${h} 85% 90%);--fg:hsl(${h} 40% 20%)`;
 }
 
 /* ======== donnees ======== */
@@ -329,7 +330,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-23q";
+const APP_V = "2026-11-23r";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
