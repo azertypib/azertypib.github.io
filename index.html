@@ -126,6 +126,8 @@ input[type=date]{width:100%;border:1px solid var(--line);border-radius:10px;padd
 .sheet:not(.open){box-shadow:none}
 .grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 10px}
 .sheet h3{margin:0;font-size:20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hwbtn{margin-left:auto;width:44px;height:44px;border:0;border-radius:11px;display:grid;place-items:center;color:#fff;cursor:pointer;transition:background .15s}
+.hwbtn svg{width:26px;height:26px} .hwbtn.todo{background:#e0392f} .hwbtn.ok{background:#2fbf6a}
 .facts{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:12px 0 0;font-size:14.5px}
 .facts dt{color:var(--muted);font-weight:600}
 .facts dd{margin:0;font-weight:600}
@@ -234,7 +236,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-22o";
+const APP_V = "2026-11-22p";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -286,6 +288,7 @@ function hwBadge(key){
   const ok = l.every(h=>done[h.id]);
   return `<span class="hw ${ok?"ok":"todo"}" title="${ok?"Devoir fait":"Devoir à faire"}">${ok?ICO_OK:ICO_X}</span>`;
 }
+function setCourseDone(v){ hwFor(sheetKey).forEach(x=>{ if(v) done[x.id]=true; else delete done[x.id]; }); store.set("done", done); render(); openSheet(sheetKey,true); }
 function toggleDone(id, v){ if(v) done[id]=true; else delete done[id]; store.set("done", done); render(); if(sheetKey) openSheet(sheetKey,true); }
 
 /* ======== groupes ======== */
@@ -534,7 +537,8 @@ function openSheet(key, keep){
   sheetKey=key; if(!keep) editing=null;
   const l=hwFor(key);
   let h=`<div class="grab"></div>
-    <h3 style="${colors(e.code)}">${esc(e.code)} ${e.type?`<span class="badge">${esc(typeLbl(e.type))}</span>`:""}</h3>
+    <h3 style="${colors(e.code)}">${esc(e.code)} ${e.type?`<span class="badge">${esc(typeLbl(e.type))}</span>`:""}
+      ${l.length?(()=>{const ok=l.every(x=>done[x.id]);return `<button class="hwbtn ${ok?"ok":"todo"}" onclick="setCourseDone(${!ok})" aria-label="${ok?"Devoir fait, toucher pour annuler":"Marquer le devoir comme fait"}">${ok?ICO_OK:ICO_X}</button>`;})():""}</h3>
     <div style="font-weight:600;margin-top:2px">${esc(e.name)}</div>
     <dl class="facts">${facts(e)}</dl>
     ${e.memo?`<div class="memo">${esc(e.memo)}</div>`:""}`;
