@@ -84,7 +84,8 @@ function ConvertFrom-GroupPage([string]$html) {
 
         $type   = ($first[0] -replace '\s*de$', '').Trim(); if ($type -eq '-') { $type = '' }
         $module = $rows['Module']
-        $code   = if ($module -match '^UE\S*\s+(.+)$') { $Matches[1].Trim() } else { $module }
+        $ue = ""; $code = $module
+        if ($module -match '^(UE\S*)\s+(.+)$') { $ue = $Matches[1]; $code = $Matches[2].Trim() }
         $roomsRaw = $rows['Salle(s)']
         $rooms  = @([regex]::Matches($roomsRaw, '[A-Za-z]+-[0-9A-Za-z]+') | ForEach-Object Value)
         $room   = if ($rooms.Count) { $rooms -join ' / ' } else { $roomsRaw.Trim('-', ' ') }
@@ -96,6 +97,7 @@ function ConvertFrom-GroupPage([string]$html) {
             start = ConvertTo-UtcIso $day.AddHours($h1).AddMinutes($m1)
             end   = ConvertTo-UtcIso $day.AddHours($h2).AddMinutes($m2)
             code = $code; type = $type; group = $rows['Groupe']; room = $room; prof = $profs; memo = $memo
+            ue = $ue; num = [string]$rows['Numero']
             local = $day
         }
     }
@@ -138,6 +140,26 @@ $null = Get-Web $LoginUrl @{ modeconnect = 'connect'; util = $login; acct_pass =
 if ((Get-Web $StudUrl) -notmatch 'Inscrit dans les groupes') { throw 'Connexion GPU refusee' }
 Write-Host 'Connecte a GPU'
 
+# ---------- tables GPU : noms des profs et des modules ----------
+# lignes <tr> : <a onclick="return Valide('table','CODE')"> puis des <P class="Police2G">&nbsp;valeur</P>
+function Get-GpuTable($table) {
+    $html = Get-Web "$Base/gpu/info_table.php?table=$table&champ=$table&filiere=$Filiere"
+    foreach ($m in [regex]::Matches($html, "Valide\('$table','([^']+)'\)(.*?)</tr>", 'Singleline')) {
+        $code = ($m.Groups[1].Value -split '\s+')[-1]
+        $vals = @([regex]::Matches($m.Groups[2].Value, '<P class="Police2G">(.*?)</P>', 'Singleline') | ForEach-Object { Clean $_.Groups[1].Value })
+        [pscustomobject]@{ code = $code; vals = $vals }
+    }
+}
+$profs = @{}
+foreach ($r in Get-GpuTable 'enseignant') {
+    $n = (@($r.vals | Where-Object { $_ }) -join ' ').Trim()
+    if ($n) { $profs[$r.code] = $n }
+}
+$moduleNames = @{}
+foreach ($r in Get-GpuTable 'matiere') { if ($r.vals[0]) { $moduleNames[$r.code] = $r.vals[0] } }
+Write-Host "$($profs.Count) profs, $($moduleNames.Count) modules"
+# shortcut: on ne publie que les profs presents dans l'emploi du temps (filtre plus bas), pas toute la liste
+
 # ---------- donnees precedentes (on garde les semaines passees) ----------
 $old = $null
 if (Test-Path $OutFile) { try { $old = [IO.File]::ReadAllText($OutFile) | ConvertFrom-Json } catch { } }
@@ -168,7 +190,7 @@ foreach ($td in $Groups.Keys) {
             foreach ($e in $old.events.$tp) {
                 $st = Get-Iso $e.start
                 if ([string]::CompareOrdinal($st, (ConvertTo-UtcIso $firstFetched)) -lt 0) {
-                    $list.Add([ordered]@{ id=$e.id; start=$st; end=(Get-Iso $e.end); code=$e.code; type=$e.type; group=$e.group; room=$e.room; prof=$e.prof; memo=$e.memo })
+                    $list.Add([ordered]@{ id=$e.id; start=$st; end=(Get-Iso $e.end); code=$e.code; type=$e.type; group=$e.group; room=$e.room; prof=$e.prof; memo=$e.memo; ue=$e.ue; num=$e.num })
                 }
             }
         }
@@ -186,7 +208,7 @@ foreach ($td in $Groups.Keys) {
                 }
             }
             foreach ($e in $evs) {
-                $list.Add([ordered]@{ id=$e.id; start=$e.start; end=$e.end; code=$e.code; type=$e.type; group=$e.group; room=$e.room; prof=$e.prof; memo=$e.memo })
+                $list.Add([ordered]@{ id=$e.id; start=$e.start; end=$e.end; code=$e.code; type=$e.type; group=$e.group; room=$e.room; prof=$e.prof; memo=$e.memo; ue=$e.ue; num=$e.num })
             }
             Write-Host ("{0} semaine {1} : {2} cours ({3})" -f $tp, (Get-IsoWeek $w), $evs.Count, $src)
             Start-Sleep -Milliseconds 300
@@ -198,10 +220,17 @@ foreach ($td in $Groups.Keys) {
 $total = ($out.Values | ForEach-Object { $_.Count } | Measure-Object -Sum).Sum
 if ($total -eq 0) { throw 'Aucun cours recupere : on ne remplace pas data.json' }
 
+foreach ($k in $moduleNames.Keys) { if (-not $names[$k]) { $names[$k] = $moduleNames[$k] } }
+$usedProfs = [ordered]@{}
+foreach ($e in ($out.Values | ForEach-Object { $_ })) {
+    foreach ($c in ($e.prof -split ' / ')) { if ($c -and $profs[$c]) { $usedProfs[$c] = $profs[$c] } }
+}
+
 $data = [ordered]@{
     updated = [datetime]::UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", $Inv)
     groups  = $Groups
     names   = $names
+    profs   = $usedProfs
     events  = $out
 }
 [IO.File]::WriteAllText($OutFile, ($data | ConvertTo-Json -Depth 6 -Compress), (New-Object Text.UTF8Encoding $false))
