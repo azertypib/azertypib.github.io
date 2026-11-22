@@ -31,7 +31,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 /* marque : bandeau (logo EDT + texte) en fondu bleu nuit -> canard ; les carres gardent leur style normal */
 .ban{flex:1 1 auto;min-width:0;height:48px;margin-right:6px;border-radius:12px;padding:0 12px 0 0;display:flex;align-items:center;gap:8px;color:#fff;background:linear-gradient(90deg,#0d2a47 0%,#0d2a47 30%,#12808a 100%);box-shadow:var(--shadow);overflow:hidden}
-.ban .lg{flex:none;height:100%;aspect-ratio:1;border-radius:12px 0 0 12px;display:block}
+.ban .lg{flex:none;height:100%;aspect-ratio:1;border-radius:12px 0 0 12px;display:block;-webkit-mask-image:linear-gradient(90deg,#000 62%,transparent 100%);mask-image:linear-gradient(90deg,#000 62%,transparent 100%)}
 .ban .bars{display:flex;align-items:flex-end;gap:2.5px;height:16px}.ban .bars i{display:block;width:5px;border-radius:2px;height:16px;background:#2e86d4}.ban .bars i:nth-child(2){height:10px;background:#12808a}.ban .bars i:nth-child(3){background:#2fbf6a}
 .ban .tel{display:flex;flex-direction:column;line-height:1.1;min-width:0}.ban .tel b{font-size:15px;font-weight:800}.ban .tel span{font-size:11.5px;font-weight:600;color:#d6e6f5;white-space:nowrap}
 .ban .pc{display:none}.ban .bars.pc{display:none}
@@ -57,7 +57,7 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .sq small{font-size:10.5px;font-weight:700;color:var(--muted);margin-top:2px}
 .sq .cnt{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--accent);color:#fff;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .ttl h1{white-space:nowrap}
-@media (max-width:420px){ .ttl{flex:1 1 auto} header{gap:6px} .sq{width:42px;height:42px} .ban{height:42px;margin-right:2px;gap:7px;padding:0 9px 0 0} .ban .tel b{font-size:13.5px} .ban .tel span{font-size:10.5px} .bar{gap:5px} .bar .nav{width:42px} .ttl h1{font-size:17px} .ttl div{font-size:11.5px} .seg button{padding:0 9px} }
+@media (max-width:420px){ .ttl{flex:1 1 auto} header{gap:6px} .sq{width:42px;height:42px} .ban{height:42px;margin-right:2px;gap:1px;padding:0 14px 0 0} .ban .tel b{font-size:13.5px} .ban .tel span{font-size:10.5px} .bar{gap:5px} .bar .nav{width:42px} .ttl h1{font-size:17px} .ttl div{font-size:11.5px} .seg button{padding:0 9px} }
 
 /* ---------- grille semaine ---------- */
 .grid{display:grid;grid-template-columns:30px repeat(var(--days),1fr);background:var(--panel);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
@@ -98,11 +98,30 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .days button span{font-size:18px;font-weight:700}
 .days button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)} .days button.on b{color:var(--bg)}
 .days button.today span{color:var(--accent)} .days button.on.today span{color:var(--bg)}
-/* vue Jour : tous les jours de la semaine sur une bande ; le jour choisi a gauche, le suivant visible en transparence ; la bande glisse */
-.dview{overflow:hidden;touch-action:pan-y}
-.dtrack{--pw:88%;display:flex;gap:12px;align-items:flex-start;transform:translateX(calc(var(--i) * (-1 * var(--pw) - 12px)));transition:transform .38s cubic-bezier(.2,.8,.2,1),translate .38s cubic-bezier(.2,.8,.2,1)}
+/* vue Jour : un grand cadre translucide par jour sur une bande ; le jour choisi a gauche (4/5), le suivant en resume tres transparent ; on glisse au doigt */
+.dview{overflow:hidden;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.dtrack{--pw:82%;--dx:0px;display:flex;gap:12px;align-items:flex-start;transform:translateX(calc(var(--i) * (-1 * var(--pw) - 12px) + var(--dx)));transition:transform .38s cubic-bezier(.2,.8,.2,1)}
 .dtrack.drag{transition:none}
-.dpanel{flex:none;width:var(--pw);opacity:.3;transition:opacity .38s}.dpanel.on{opacity:1}
+.dpanel{flex:none;width:var(--pw);opacity:.35;transition:opacity .38s;background:color-mix(in srgb,var(--panel) 55%,transparent);border:1px solid var(--line);border-radius:20px;padding:12px 12px 14px}
+.dpanel.on{opacity:1}
+.dpanel h3{margin:0 0 10px 2px;font-size:16px}.dpanel h3 span{font-size:12.5px;color:var(--muted);font-weight:500;margin-left:6px}
+.dpanel.on .sum,.dpanel:not(.on) .full{display:none}
+/* carte de cours : heure en haut a gauche, salle en gros a droite, module au milieu, nom en bas */
+.dc{position:relative;display:flex;flex-direction:column;justify-content:flex-start;background:var(--panel);border-radius:14px;padding:8px 12px;border-left:4px solid var(--c);box-shadow:var(--shadow);cursor:pointer;overflow:hidden}
+.dc .tm{font-size:12px;font-weight:700;color:var(--muted)}
+.dc .rm{position:absolute;right:12px;top:8px;font-size:16px;font-weight:800}
+.dc .cd{font-size:17px;font-weight:800;letter-spacing:-.01em;margin-top:1px}.dc .cd .badge{vertical-align:2px;margin-left:4px}
+.dc .nm{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dc .hw{right:10px;bottom:8px}
+/* pauses : 15 min = un pointille ; dejeuner = deux pointilles avec les heures entre ; debut / fin de journee */
+.dash{height:14px;display:flex;align-items:center}.dash::before{content:"";flex:1;border-top:2px dashed color-mix(in srgb,var(--muted) 50%,transparent)}
+.brk{display:flex;flex-direction:column;justify-content:space-between;padding:7px 0}
+.brk i{display:block;border-top:2px dashed color-mix(in srgb,var(--muted) 50%,transparent)}
+.brk span{text-align:center;font-size:12.5px;font-weight:700;color:var(--muted)}
+.brk.lead{justify-content:flex-end;gap:7px}.brk.tail{justify-content:flex-start;gap:7px}
+/* resume du jour voisin : seulement l'heure de debut et le module */
+.sm{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800;padding-left:4px}.sm b{font-size:12.5px;color:var(--muted)}
+.sp{display:block}
 @media (min-width:760px){ .dtrack{--pw:64%} }
 @media (prefers-reduced-motion:reduce){ .dtrack,.dpanel{transition:none} }
 .card{position:relative;display:flex;gap:12px;background:var(--panel);border-radius:14px;padding:12px 14px;margin-bottom:8px;box-shadow:var(--shadow);border-left:5px solid var(--c);cursor:pointer}
@@ -292,7 +311,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-23j";
+const APP_V = "2026-11-23k";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -395,7 +414,7 @@ function render(){
   h += renderHwSection(all);
   h += `<footer><span>${DATA.updated?"Emploi du temps vérifié le "+fmtD(new Date(DATA.updated),{day:"numeric",month:"short"})+" à "+fmtH(new Date(DATA.updated)):""}</span>
         <span><a href="#" onclick="shareLink();return false" style="color:inherit">Partager l'appli</a></span></footer>`;
-  app.innerHTML = h;
+  app.innerHTML = h; bindSwipe();
 }
 
 function renderWeek(wk, nDays){
@@ -428,30 +447,46 @@ function renderWeek(wk, nDays){
 
 function renderDay(wk, nDays){
   if(dayIdx>=nDays) dayIdx=nDays-1; curDays=nDays;
-  let h=`<div class="days">`;
+  let h=`<div class="dview" id="dview"><div class="dtrack" id="dtrack" style="--i:${dayIdx}">`;
   for(let i=0;i<nDays;i++){ const d=new Date(week); d.setDate(d.getDate()+i);
-    const n=wk.filter(e=>sameDay(e.s,d)).length;
-    h+=`<button class="${i===dayIdx?"on":""} ${sameDay(d,now)?"today":""}" onclick="setDay(${i})"><b>${DAYS[i].slice(0,3)}</b><span>${d.getDate()}</span>${n?"":`<b>—</b>`}</button>`; }
-  h+=`</div><div class="dview" id="dview"><div class="dtrack" id="dtrack" style="--i:${dayIdx}">`;
-  for(let i=0;i<nDays;i++){ const d=new Date(week); d.setDate(d.getDate()+i);
-    h+=`<div class="dpanel ${i===dayIdx?"on":""}">${dayList(i, d, wk.filter(e=>sameDay(e.s,d)))}</div>`; }
+    const de=wk.filter(e=>sameDay(e.s,d)).sort((a,b)=>a.s-b.s);
+    h+=`<div class="dpanel ${i===dayIdx?"on":""}"><h3>${DAYS[i]} ${d.getDate()}<span>${de.length?de.length+" cours":"pas de cours"}</span></h3>${dayList(d, de)}</div>`; }
   return h+`</div></div>`;
 }
-function dayList(i, d, de){
-  if(!de.length) return `<div class="empty">Pas de cours le ${DAYS[i].toLowerCase()} ${d.getDate()} ${fmtD(d,{month:"long"})}.</div>`;
-  return de.map((e,i)=>{
-    // trou d'au moins 30 min depuis la fin du cours precedent (les 15 min d'intercours ne comptent pas)
-    const prevEnd = i ? Math.max(...de.slice(0,i).map(x=>+x.e)) : 0;
-    const gap = prevEnd ? Math.round((e.s-prevEnd)/6e4) : 0;
-    const pause = gap>=30 ? `<div class="gap">Pause de ${gap>=60?Math.floor(gap/60)+"h"+(gap%60?String(gap%60).padStart(2,"0"):""):gap+" min"}<span>${fmtH(new Date(prevEnd))} – ${fmtH(e.s)}</span></div>` : "";
-    return pause + `<div class="card" style="${colors(e.code)}" onclick="openSheet('${esc(e.key)}')">
-      <div class="hrs">${fmtH(e.s)}<span>${fmtH(e.e)}</span></div>
-      <div style="flex:1;min-width:0"><div class="t">${esc(e.code)} ${e.type?`<span class="badge">${esc(typeLbl(e.type))}</span>`:""}</div>
-        <div class="n">${esc(e.name)}</div>
-        <div class="m">Salle ${esc(e.room)}${e.prof?` · ${esc(e.prof)}`:""}</div>
-        ${e.memo?`<div class="memo">${esc(e.memo)}</div>`:""}
-      </div>${hwBadge(e.key)}</div>`;
-  }).join("");
+// la journee de 8h a 18h : cours a l'echelle (min. pour lire), trous a une echelle plus petite
+const PX_H = 36, GAP_H = 22;
+function daySegs(d, de){
+  const at=h=>{ const x=new Date(d); x.setHours(h,0,0,0); return x; };
+  const d0=at(8), d1=new Date(Math.max(+at(18), ...de.map(e=>+e.e)));
+  const segs=[]; let prevEnd=null;
+  const first=de[0].s, lead=(first-d0)/36e5;
+  if(lead>0.4) segs.push({k:"lead", h:Math.max(48, lead*GAP_H), txt:`Début des cours à ${fmtH(first)}`});
+  de.forEach(e=>{
+    if(prevEnd){ const g=(e.s-prevEnd)/6e4;
+      if(g>25) segs.push({k:"pause", h:Math.max(52, g/60*GAP_H+30), txt:`${fmtH(prevEnd)} – ${fmtH(e.s)}`});
+      else segs.push({k:"dash"}); }
+    segs.push({k:"c", e, h:Math.max(74, (e.e-e.s)/36e5*PX_H)});
+    prevEnd = prevEnd && prevEnd>e.e ? prevEnd : e.e;
+  });
+  const tail=(d1-prevEnd)/36e5;
+  if(tail>0.4) segs.push({k:"tail", h:Math.max(48, tail*GAP_H), txt:`Fin des cours à ${fmtH(prevEnd)}`});
+  return segs;
+}
+function dayList(d, de){
+  if(!de.length) return `<div class="empty">Pas de cours le ${DAYS[(d.getDay()+6)%7].toLowerCase()} ${d.getDate()} ${fmtD(d,{month:"long"})}.</div>`;
+  const segs=daySegs(d, de);
+  const full=segs.map(s=> s.k==="c" ? `<div class="dc" style="height:${s.h}px;${colors(s.e.code)}" onclick="openSheet('${esc(s.e.key)}')">
+        <div class="tm">${fmtH(s.e.s)} – ${fmtH(s.e.e)}</div><div class="rm">${esc((s.e.room||"").split(/[,/]/)[0].trim())}</div>
+        <div class="cd">${esc(s.e.code)}${s.e.type?`<span class="badge">${esc(typeLbl(s.e.type))}</span>`:""}</div>
+        <div class="nm">${esc(s.e.name)}${s.e.prof?` · ${esc(s.e.prof)}`:""}</div>${hwBadge(s.e.key)}</div>`
+    : s.k==="dash" ? `<div class="dash"></div>`
+    : s.k==="pause" ? `<div class="brk" style="height:${s.h}px"><i></i><span>${s.txt}</span><i></i></div>`
+    : s.k==="lead" ? `<div class="brk lead" style="height:${s.h}px"><span>${s.txt}</span><i></i></div>`
+    : `<div class="brk tail" style="height:${s.h}px"><i></i><span>${s.txt}</span></div>`).join("");
+  // resume (jour voisin) : memes hauteurs pour garder l'allure de la journee, sans traits ni details
+  const sum=segs.map(s=> s.k==="c" ? `<div class="sm" style="height:${s.h}px"><b>${fmtH(s.e.s)}</b>${esc(s.e.code)}</div>`
+    : `<div class="sp" style="height:${s.k==="dash"?14:s.h}px"></div>`).join("");
+  return `<div class="full">${full}</div><div class="sum">${sum}</div>`;
 }
 
 function renderHwSection(all){
@@ -761,21 +796,24 @@ function setDay(i){
   if(view!=="jour" || !tr){ dayIdx=i; return render(); }
   dayIdx=i; tr.style.setProperty("--i", i);
   [...tr.children].forEach((p,k)=>p.classList.toggle("on", k===i));
-  document.querySelectorAll(".days button").forEach((b,k)=>b.classList.toggle("on", k===i));
+
   const d=new Date(week); d.setDate(d.getDate()+i);
   const sub=document.querySelector(".ttl div"); if(sub) sub.textContent=fmtD(d,{weekday:"short",day:"numeric",month:"short"});
   const prev=document.querySelector('.bar .nav[aria-label="Précédent"]'); if(prev) prev.disabled = week<=minWeek() && i===0;
 }
-// glisser du doigt sur la vue Jour : la bande suit le doigt, puis passe au jour voisin
-let swipe=null;
-addEventListener("touchstart", e=>{ const v=e.target.closest?.("#dview"); if(!v) return; swipe={x:e.touches[0].clientX, y:e.touches[0].clientY, dx:0, lock:null}; }, {passive:true});
-addEventListener("touchmove", e=>{ if(!swipe) return; const t=$("dtrack"); if(!t) return;
-  swipe.dx=e.touches[0].clientX-swipe.x; const dy=e.touches[0].clientY-swipe.y;
-  if(swipe.lock===null && Math.abs(swipe.dx)+Math.abs(dy)>8) swipe.lock = Math.abs(swipe.dx)>Math.abs(dy);
-  if(swipe.lock){ t.classList.add("drag"); t.style.translate=`${swipe.dx}px 0`; } }, {passive:true});
-addEventListener("touchend", ()=>{ if(!swipe) return; const t=$("dtrack"), dx=swipe.dx, lock=swipe.lock; swipe=null; if(!t) return;
-  t.classList.remove("drag"); t.style.translate="";
-  if(lock && Math.abs(dx)>50) step(dx<0?1:-1); });
+// glisser (doigt ou souris) sur la vue Jour : la bande suit, puis passe au jour voisin ; un glisser n'ouvre pas la fiche du cours
+let swipe=null, swiped=false;
+function bindSwipe(){
+  const v=$("dview"), t=$("dtrack"); if(!v || !t) return;
+  v.addEventListener("pointerdown", e=>{ if(e.pointerType==="mouse" && e.button) return; swipe={x:e.clientX, y:e.clientY, dx:0, lock:null, id:e.pointerId}; swiped=false; });
+  v.addEventListener("pointermove", e=>{ if(!swipe || e.pointerId!==swipe.id) return;
+    swipe.dx=e.clientX-swipe.x; const dy=e.clientY-swipe.y;
+    if(swipe.lock===null && Math.abs(swipe.dx)+Math.abs(dy)>10){ swipe.lock=Math.abs(swipe.dx)>Math.abs(dy); if(swipe.lock){ swiped=true; t.classList.add("drag"); try{ v.setPointerCapture(e.pointerId); }catch{} } }
+    if(swipe.lock) t.style.setProperty("--dx", swipe.dx+"px"); });
+  const end=()=>{ if(!swipe) return; const {dx,lock}=swipe; swipe=null; t.classList.remove("drag"); t.style.setProperty("--dx","0px"); if(lock && Math.abs(dx)>40) step(dx<0?1:-1); };
+  v.addEventListener("pointerup", end); v.addEventListener("pointercancel", end);
+  v.addEventListener("click", e=>{ if(swiped){ e.stopPropagation(); e.preventDefault(); swiped=false; } }, true);
+}
 function setHwTab(t){ hwTab=t; render(); }
 function jumpTo(key){ const e=events().find(x=>x.key===key); if(!e) return; week=monday(e.s); dayIdx=(e.s.getDay()+6)%7; render(); openSheet(key); }
 async function shareLink(){
