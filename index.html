@@ -218,7 +218,17 @@ function events(){
   if(!DATA || !tp || !DATA.events[tp]) return [];
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
+// Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
+const APP_V = "2026-11-22c";
+async function checkUpdate(){
+  try{
+    const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
+    const v = (t.match(/const APP_V = "([^"]+)"/)||[])[1];
+    if(v && v!==APP_V) location.replace(location.pathname+"?v="+v);
+  }catch{}
+}
 async function loadData(){
+  checkUpdate();
   try{
     const r = await fetch("data.json?t="+Date.now(), {cache:"no-store"});
     if(!r.ok) throw 0;
