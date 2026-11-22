@@ -221,6 +221,8 @@ $total = ($out.Values | ForEach-Object { $_.Count } | Measure-Object -Sum).Sum
 if ($total -eq 0) { throw 'Aucun cours recupere : on ne remplace pas data.json' }
 
 foreach ($k in $moduleNames.Keys) { if (-not $names[$k]) { $names[$k] = $moduleNames[$k] } }
+# Noms tronques dans GPU, corriges a la main (source : Moodle)
+$names['SAE1.1'] = "Étude d'exécution d'un ouvrage de bâtiment"
 $usedProfs = [ordered]@{}
 foreach ($e in ($out.Values | ForEach-Object { $_ })) {
     foreach ($c in ($e.prof -split ' / ')) { if ($c -and $profs[$c]) { $usedProfs[$c] = $profs[$c] } }
