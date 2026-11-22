@@ -126,7 +126,7 @@ header .logo{width:40px;height:40px;border-radius:10px;margin-right:auto}
 .support{border-top:1px solid var(--line);padding:12px 2px 4px;margin:14px 0 6px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .support>b,.support p{grid-column:1/-1;margin:0}.support p{color:var(--muted);font-size:13.5px}
 .support a{height:auto;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;color:var(--ink)}
-.support a b{font-size:15px}.support a span{font-size:12.5px;color:var(--muted);text-align:center}
+.support a b{font-size:15px}.support a em{font-style:normal;font-size:11.5px;color:#2fbf6a;font-weight:700}.support a span{font-size:12.5px;color:var(--muted);text-align:center}
 .annbox .d em{display:block;font-style:normal;font-weight:700;font-size:11.5px;color:var(--ink);margin-top:3px}
 .lbl{display:block;font-weight:700;font-size:13.5px;margin:12px 0 6px}
 .lbl small{font-weight:500;color:var(--muted)}
@@ -274,7 +274,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-23a";
+const APP_V = "2026-11-23b";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -579,6 +579,14 @@ async function loadFb(){
     retours = await r.json(); store.set("ret", retours); if(!sheetKey && !annOpen) render();
   }catch{}
 }
+// dons Ko-fi : la fonction Supabase "kofi-webhook" enregistre seulement les montants (table "soutiens")
+let soutiens = store.get("sout", []);
+async function loadSupport(){
+  if(!HW_ON) return;
+  try{ const r = await fetch(`${SUPA_URL}/rest/v1/soutiens?select=montant`, {headers:hdr()}); if(!r.ok) throw 0; soutiens = await r.json(); store.set("sout", soutiens); }catch{}
+}
+const supCount = v => soutiens.filter(s=>Number(s.montant)===v).length;
+const supLbl = n => n ? `<em>${n} personne${n>1?"s ont":" a"} fait ce geste</em>` : "";
 function openFeedback(){
   sheetKey = null; annOpen = true;
   const KOFI = "https://ko-fi.com/azertyip";
@@ -595,8 +603,8 @@ function openFeedback(){
   });
   h += `</div>
     <div class="support"><b>Envie de soutenir l'appli ?</b><p>Rien d'obligatoire, mais ça fait toujours plaisir.</p>
-      <a class="btn" href="${KOFI}" target="_blank" rel="noopener"><b>1 €</b><span>Un repas au resto U</span></a>
-      <a class="btn" href="${KOFI}" target="_blank" rel="noopener"><b>3 €</b><span>T'es vraiment le GOAT</span></a></div>
+      <a class="btn" href="${KOFI}" target="_blank" rel="noopener"><b>1 €</b><span>Un repas au resto U</span>${supLbl(supCount(1))}</a>
+      <a class="btn" href="${KOFI}" target="_blank" rel="noopener"><b>3 €</b><span>T'es vraiment le GOAT</span>${supLbl(supCount(3))}</a>${(()=>{const o=soutiens.length-supCount(1)-supCount(3); return o?`<p style="grid-column:1/-1;margin:0;font-size:12.5px;color:var(--muted)">+ ${o} autre${o>1?"s":""} don${o>1?"s":""}, merci !</p>`:"";})()}</div>
     <div class="row"><button class="btn" onclick="closeSheet()">Fermer</button></div>`;
   $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
 }
@@ -784,10 +792,10 @@ $("veil").onclick=closeSheet;
 
 /* ======== demarrage ======== */
 addEventListener("keydown",e=>{ if(["TEXTAREA","INPUT","SELECT"].includes(e.target.tagName)) return; if(e.key==="ArrowLeft") step(-1); if(e.key==="ArrowRight") step(1); if(e.key==="Escape") closeSheet(); });
-document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ loadData(); loadHw(); loadAnn(); loadFb(); loadChat(); } });
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ loadData(); loadHw(); loadAnn(); loadFb(); loadChat(); loadSupport(); } });
 setInterval(()=>{ if(!sheetKey && !annOpen) render(); }, 60000);
-setInterval(()=>{ if(!document.hidden){ loadHw(); loadAnn(); loadFb(); loadChat(); } }, 90000);
-render(); loadData(); loadHw(); loadAnn(); loadFb(); loadChat();
+setInterval(()=>{ if(!document.hidden){ loadHw(); loadAnn(); loadFb(); loadChat(); loadSupport(); } }, 90000);
+render(); loadData(); loadHw(); loadAnn(); loadFb(); loadChat(); loadSupport();
 </script>
 </body>
 </html>
