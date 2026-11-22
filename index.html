@@ -67,9 +67,9 @@ header .ttl{min-width:0}
 .now::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
 
 /* pastille devoir */
-.hw{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:800;border-radius:5px;padding:1px 4px;color:#fff;white-space:nowrap}
-.hw.todo{background:var(--todo)} .hw.ok{background:var(--ok)}
-.ev .hw{position:absolute;right:3px;bottom:3px}
+.hw{position:absolute;right:6px;bottom:6px;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:900;color:#fff;line-height:1}
+.hw.todo{background:#e0392f} .hw.ok{background:#2fbf6a}
+.ev .hw{right:3px;bottom:3px;width:15px;height:15px;font-size:9.5px}
 .badge{font-size:10px;font-weight:800;letter-spacing:.04em;padding:1px 5px;border-radius:4px;background:var(--c);color:#fff;vertical-align:1px}
 
 /* ---------- vue jour ---------- */
@@ -79,16 +79,13 @@ header .ttl{min-width:0}
 .days button span{font-size:18px;font-weight:700}
 .days button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)} .days button.on b{color:var(--bg)}
 .days button.today span{color:var(--accent)} .days button.on.today span{color:var(--bg)}
-.card{display:flex;gap:12px;background:var(--panel);border-radius:14px;padding:12px 14px;margin-bottom:8px;box-shadow:var(--shadow);border-left:5px solid var(--c);cursor:pointer}
+.card{position:relative;display:flex;gap:12px;background:var(--panel);border-radius:14px;padding:12px 14px;margin-bottom:8px;box-shadow:var(--shadow);border-left:5px solid var(--c);cursor:pointer}
 .card .hrs{font-variant-numeric:tabular-nums;font-weight:700;min-width:50px}
 .card .hrs span{display:block;color:var(--muted);font-weight:500}
 .card .t{font-weight:800}
 .card .n{color:var(--muted);font-size:13.5px}
 .card .m{font-size:13.5px;margin-top:2px}
 .card .memo{font-size:13px;margin-top:4px;color:var(--muted);font-style:italic}
-.card .hwl{margin-top:6px;display:flex;flex-direction:column;gap:4px}
-.card .hwl div{font-size:13.5px;display:flex;gap:6px;align-items:flex-start}
-.card .hwl .done{text-decoration:line-through;color:var(--muted)}
 .empty{color:var(--muted);font-style:italic;padding:14px 4px}
 .gap{display:flex;justify-content:space-between;align-items:center;border:2px dashed var(--line);border-radius:12px;padding:8px 14px;margin:0 0 8px;color:var(--muted);font-weight:700;font-size:14px}
 .gap span{font-weight:600;font-variant-numeric:tabular-nums}
@@ -234,7 +231,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-22l";
+const APP_V = "2026-11-22m";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -275,10 +272,10 @@ async function patchHw(id, fields, msg){
   if(msg) toast(msg); await loadHw();
 }
 const hwFor = key => homework.filter(h=>h.ckey===key);
-function hwBadge(key, big){
+function hwBadge(key){
   const l = hwFor(key); if(!l.length) return "";
   const ok = l.every(h=>done[h.id]);
-  return `<span class="hw ${ok?"ok":"todo"}">${ok?"✓":"✗"}${big||l.length>1?" Devoir"+(l.length>1?"s":""):""}</span>`;
+  return `<span class="hw ${ok?"ok":"todo"}" title="${ok?"Devoir fait":"Devoir à faire"}">${ok?"✓":"✗"}</span>`;
 }
 function toggleDone(id, v){ if(v) done[id]=true; else delete done[id]; store.set("done", done); render(); if(sheetKey) openSheet(sheetKey,true); }
 
@@ -359,19 +356,17 @@ function renderDay(wk, nDays){
   const de=wk.filter(e=>sameDay(e.s,d));
   if(!de.length) return h+`<div class="empty">Pas de cours le ${DAYS[dayIdx].toLowerCase()} ${d.getDate()} ${fmtD(d,{month:"long"})}.</div>`;
   return h + de.map((e,i)=>{
-    const l=hwFor(e.key);
     // trou d'au moins 30 min depuis la fin du cours precedent (les 15 min d'intercours ne comptent pas)
     const prevEnd = i ? Math.max(...de.slice(0,i).map(x=>+x.e)) : 0;
     const gap = prevEnd ? Math.round((e.s-prevEnd)/6e4) : 0;
     const pause = gap>=30 ? `<div class="gap">Pause de ${gap>=60?Math.floor(gap/60)+"h"+(gap%60?String(gap%60).padStart(2,"0"):""):gap+" min"}<span>${fmtH(new Date(prevEnd))} – ${fmtH(e.s)}</span></div>` : "";
     return pause + `<div class="card" style="${colors(e.code)}" onclick="openSheet('${esc(e.key)}')">
       <div class="hrs">${fmtH(e.s)}<span>${fmtH(e.e)}</span></div>
-      <div style="flex:1;min-width:0"><div class="t">${esc(e.code)} ${e.type?`<span class="badge">${esc(typeLbl(e.type))}</span>`:""} ${hwBadge(e.key,true)}</div>
+      <div style="flex:1;min-width:0"><div class="t">${esc(e.code)} ${e.type?`<span class="badge">${esc(typeLbl(e.type))}</span>`:""}</div>
         <div class="n">${esc(e.name)}</div>
         <div class="m">Salle ${esc(e.room)}${e.prof?` · ${esc(e.prof)}`:""}</div>
         ${e.memo?`<div class="memo">${esc(e.memo)}</div>`:""}
-        ${l.length?`<div class="hwl">${l.map(x=>`<div><input type="checkbox" class="ck" ${done[x.id]?"checked":""} onclick="event.stopPropagation();toggleDone(${x.id},this.checked)"><span class="${done[x.id]?"done":""}">${esc(x.texte)}</span></div>`).join("")}</div>`:""}
-      </div></div>`;
+      </div>${hwBadge(e.key)}</div>`;
   }).join("");
 }
 
