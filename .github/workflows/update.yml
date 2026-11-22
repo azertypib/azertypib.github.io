@@ -31,6 +31,19 @@ jobs:
             echo "go=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Garder la base des devoirs eveillee (tous les 5 jours, le matin)
+        if: steps.horaire.outputs.go == 'true'
+        run: |
+          jour=$((10#$(TZ=Europe/Paris date +%j)))
+          heure=$((10#$(TZ=Europe/Paris date +%H)))
+          if [ $((jour % 5)) -eq 0 ] && [ $heure -lt 11 ]; then
+            curl -s -o /dev/null -w "Supabase : %{http_code}\n" \
+              -H "apikey: sb_publishable_qHE46e33ZJ-_AFLZkXG4YA_ty7QAaXx" \
+              "https://oysfbsdpdcjpufrfpmjx.supabase.co/rest/v1/devoirs?select=id&limit=1" || true
+          else
+            echo "Pas aujourd'hui (jour $jour)."
+          fi
+
       - uses: actions/checkout@v4
         if: steps.horaire.outputs.go == 'true'
 
