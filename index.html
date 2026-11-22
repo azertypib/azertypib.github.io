@@ -30,7 +30,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 /* ---------- en-tete ---------- */
 header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 header .logo{width:40px;height:40px;border-radius:10px;margin-right:auto}
-.ttl{flex:1;min-width:0;text-align:center;overflow:hidden}
+.ttl{flex:0 0 150px;min-width:0;text-align:center;overflow:hidden}
 .ttl h1{margin:0;font-size:20px;letter-spacing:-.02em;line-height:1.15}
 .ttl div{color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 12px;font-weight:650;font-size:14px}
@@ -49,7 +49,7 @@ header .logo{width:40px;height:40px;border-radius:10px;margin-right:auto}
 .sq small{font-size:10.5px;font-weight:700;color:var(--muted);margin-top:2px}
 .sq .cnt{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--accent);color:#fff;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .ttl h1{white-space:nowrap}
-@media (max-width:420px){ header{gap:7px} .sq{width:44px;height:44px} header .logo{width:34px;height:34px} .bar{gap:5px} .bar .nav{width:42px} .ttl h1{font-size:17px} .ttl div{font-size:11.5px} .seg button{padding:0 9px} }
+@media (max-width:420px){ .ttl{flex:1 1 auto} header{gap:7px} .sq{width:44px;height:44px} header .logo{width:34px;height:34px} .bar{gap:5px} .bar .nav{width:42px} .ttl h1{font-size:17px} .ttl div{font-size:11.5px} .seg button{padding:0 9px} }
 
 /* ---------- grille semaine ---------- */
 .grid{display:grid;grid-template-columns:30px repeat(var(--days),1fr);background:var(--panel);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
@@ -274,7 +274,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-23b";
+const APP_V = "2026-11-23c";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -358,8 +358,8 @@ function render(){
                             : fmtD(week,{day:"numeric",month:"short"})+" – "+fmtD(last,{day:"numeric",month:"short"});
   let h = `<header>
       <img class="logo" src="icon.png?l" alt="EDT">
-      ${HW_ON?`<button class="sq" onclick="openChat()" aria-label="Discussion">${ICON_CHAT}${chatUnread()?`<span class="cnt">${chatUnread()}</span>`:""}</button>`:""}
-      ${HW_ON?`<button class="sq" onclick="openFeedback()" aria-label="Messages au créateur">${ICON_MSG}${retours.length?`<span class="cnt">${retours.length}</span>`:""}</button>`:""}
+      ${HW_ON?`<button class="sq" onclick="openChat()" aria-label="Discussion">${ICON_CHAT}${chatBadges()}</button>`:""}
+      ${HW_ON?`<button class="sq" onclick="openFeedback()" aria-label="Messages au créateur">${ICON_MSG}${retNew()?`<span class="cnt">${retNew()}</span>`:""}</button>`:""}
       <button class="sq" onclick="toggleTheme()" aria-label="Mode clair ou sombre">${theme==="dark"?ICON_SUN:ICON_MOON}</button>
       ${HW_ON?`<button class="sq" onclick="openAnnList()" aria-label="Annonces">${ICON_ANN}${annCount()?`<span class="cnt">${annCount()}</span>`:""}</button>`:""}
       <button class="sq" onclick="startPick()" aria-label="Changer de groupe">${esc(tdLabel(tdOf(tp)).replace("Groupe ",""))}<small>${esc(tpLabel(tp))}</small></button>
@@ -454,6 +454,8 @@ function renderHwSection(all){
 let annonces = store.get("ann", []);
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const audShort = g => g===PROMO ? "Promo S1" : /TP/.test(g) ? tpLabel(g) : tdLabel(g);
+// une couleur par public pour les pastilles de la discussion : promo orange, groupe bleu, TP vert
+const AUD_COL = g => g===PROMO ? "#e8833a" : /TP/.test(g) ? "#2fbf6a" : "#2e86d4";
 // sans date, une annonce disparait 1 semaine apres sa publication
 const WEEK_MS = 7*864e5;
 const annAlive = a => a.jour ? a.jour>=ymd(new Date()) : Date.now()-new Date(a.created_at) < WEEK_MS;
@@ -571,6 +573,9 @@ async function delAnn(id){
 
 /* ======== messages au createur : table Supabase "retours", lisibles par tous ; supprimes (dans Supabase) une fois l'idee mise en place ======== */
 let retours = store.get("ret", []);
+// pastille = messages pas encore vus sur ce telephone (s'efface quand on ouvre la fiche)
+let retSeen = store.get("retSeen", 0);
+const retNew = () => retours.filter(m=>m.id>retSeen).length;
 async function loadFb(){
   if(!HW_ON) return;
   try{
@@ -588,6 +593,7 @@ async function loadSupport(){
 const supCount = v => soutiens.filter(s=>Number(s.montant)===v).length;
 const supLbl = n => n ? `<em>${n} personne${n>1?"s ont":" a"} fait ce geste</em>` : "";
 function openFeedback(){
+  retSeen = Math.max(retSeen, ...retours.map(m=>m.id), 0); store.set("retSeen", retSeen);
   sheetKey = null; annOpen = true;
   const KOFI = "https://ko-fi.com/azertyip";
   // d'abord a quoi sert ce carre (signaler un probleme / proposer une idee), le soutien vient en dernier, discret
@@ -634,6 +640,8 @@ let chatGrp = null, chatOpen = false;
 const chatOf = g => chatMsgs.filter(m=>m.grp===g && Date.now()-new Date(m.created_at) < WEEK_MS);
 const chatNew = g => chatOf(g).filter(m=>!myMsgs[m.id] && (!chatSeen[g] || m.created_at > chatSeen[g])).length;
 const chatUnread = () => audiences().reduce((n,g)=>n+chatNew(g), 0);
+// pastilles en quinconce en haut a droite : une par public qui a des messages non lus, a sa couleur
+const chatBadges = () => audiences().filter(g=>chatNew(g)).map((g,i)=>`<span class="cnt" style="background:${AUD_COL(g)};right:${-6+i*13}px;top:${i%2?4:-6}px;z-index:${3-i}">${chatNew(g)}</span>`).join("");
 async function loadChat(){
   if(!HW_ON || !tp) return;
   try{
@@ -666,7 +674,7 @@ function renderChatList(toBottom){
   const l = chatOf(chatGrp);
   if(l.length){ chatSeen[chatGrp] = l[l.length-1].created_at; store.set("chatSeen", chatSeen); }
   $("chattabs").innerHTML = audiences().map(g=>{ const n=chatNew(g);
-    return `<button class="${g===chatGrp?"on":""}" onclick="openChat('${esc(g)}')">${esc(audShort(g))}${n?`<span class="cnt">${n}</span>`:""}</button>`; }).join("");
+    return `<button class="${g===chatGrp?"on":""}" style="box-shadow:inset 0 -3px 0 ${AUD_COL(g)}" onclick="openChat('${esc(g)}')">${esc(audShort(g))}${n?`<span class="cnt" style="background:${AUD_COL(g)}">${n}</span>`:""}</button>`; }).join("");
   box.innerHTML = l.length ? l.map(m=>{ const d=new Date(m.created_at), mine=!!myMsgs[m.id];
     return `<div class="msg ${mine?"me":""}"><div class="who">${esc(m.pseudo||"Anonyme")} <span>${esc(fmtD(d,{weekday:"short"}))} ${hm(d)}</span></div><div class="tx">${esc(m.texte)}</div></div>`; }).join("")
     : `<div class="note" style="text-align:center;margin:30px 0">Aucun message cette semaine.<br>Lance la discussion !</div>`;
@@ -780,7 +788,7 @@ function openSheet(key, keep){
   if(!HW_ON) h+=`<div class="row"><button class="btn" onclick="closeSheet()">Fermer</button></div>`;
   $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
 }
-function closeSheet(){ sheetKey=null; editing=null; annOpen=false; chatOpen=false; $("sheet").classList.remove("open"); $("veil").style.display="none"; }
+function closeSheet(){ const wasPanel=annOpen; sheetKey=null; editing=null; annOpen=false; chatOpen=false; $("sheet").classList.remove("open"); $("veil").style.display="none"; if(wasPanel) render(); }
 async function saveNew(){
   const t=$("newhw").value.trim(); if(!t) return;
   const e=events().find(x=>x.key===sheetKey); if(!e) return;
