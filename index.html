@@ -108,6 +108,10 @@ header .ttl{min-width:0}
 .annbox .d{font-weight:800;min-width:62px;font-size:13px;line-height:1.25}
 .annbox .d span{display:block;color:var(--muted);font-weight:600}
 .annbox .tx{flex:1;white-space:pre-wrap;word-break:break-word;font-size:14.5px}
+.annck{flex:none;align-self:center;width:28px;height:28px;border-radius:8px;border:2px solid var(--line);background:transparent;display:grid;place-items:center;color:#fff;cursor:pointer;padding:0}
+.annck svg{width:16px;height:16px}
+.annck.on{background:#2fbf6a;border-color:#2fbf6a}
+.annbox.seen{opacity:.55}
 .annbox .d em{display:block;font-style:normal;font-weight:700;font-size:11.5px;color:var(--ink);margin-top:3px}
 .lbl{display:block;font-weight:700;font-size:13.5px;margin:12px 0 6px}
 .lbl small{font-weight:500;color:var(--muted)}
@@ -254,7 +258,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-22v";
+const APP_V = "2026-11-22x";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -335,9 +339,9 @@ function render(){
 
   let h = `<header>
       <div class="ttl" onclick="goToday()" title="Revenir à aujourd'hui"><h1>Semaine ${isoWeek(week)}</h1><div>${view==="jour"?(()=>{const d=new Date(week); d.setDate(d.getDate()+Math.min(dayIdx,nDays-1)); return fmtD(d,{weekday:"long",day:"numeric",month:"long"});})():fmtD(week,{day:"numeric",month:"short"})+" – "+fmtD(last,{day:"numeric",month:"short"})}</div></div>
-      ${HW_ON?`<button class="sq" onclick="openFeedback()" aria-label="Écrire au créateur">${ICON_MSG}</button>`:""}
+      ${HW_ON?`<button class="sq" onclick="openFeedback()" aria-label="Messages au créateur">${ICON_MSG}${retours.length?`<span class="cnt">${retours.length}</span>`:""}</button>`:""}
       <button class="sq" onclick="toggleTheme()" aria-label="Mode clair ou sombre">${theme==="dark"?ICON_SUN:ICON_MOON}</button>
-      ${HW_ON?`<button class="sq" onclick="openAnnList()" aria-label="Annonces">${ICON_ANN}${annVisible().length?`<span class="cnt">${annVisible().length}</span>`:""}</button>`:""}
+      ${HW_ON?`<button class="sq" onclick="openAnnList()" aria-label="Annonces">${ICON_ANN}${annCount()?`<span class="cnt">${annCount()}</span>`:""}</button>`:""}
       <button class="sq" onclick="startPick()" aria-label="Changer de groupe">${esc(tdLabel(tdOf(tp)).replace("Groupe ",""))}<small>${esc(tpLabel(tp))}</small></button>
     </header>
     <div class="bar">
@@ -429,12 +433,28 @@ function renderHwSection(all){
 let annonces = store.get("ann", []);
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const audShort = g => g===PROMO ? "Promo S1" : /TP/.test(g) ? tpLabel(g) : tdLabel(g);
-const annVisible = () => annonces.filter(a=>!a.jour || a.jour>=ymd(new Date()))
+// sans date, une annonce disparait 1 semaine apres sa publication
+const WEEK_MS = 7*864e5;
+const annAlive = a => a.jour ? a.jour>=ymd(new Date()) : Date.now()-new Date(a.created_at) < WEEK_MS;
+// case perso : une annonce cochee disparait (pour soi seulement) 1 minute apres ; decocher avant l'annule
+let annSeen = store.get("annSeen", {});
+const ANN_HIDE_MS = 60e3;
+const annHidden = a => annSeen[a.id] && Date.now()-annSeen[a.id] >= ANN_HIDE_MS;
+const annVisible = () => annonces.filter(a=>annAlive(a) && !annHidden(a))
   .sort((a,b)=> (a.jour||"9") < (b.jour||"9") ? -1 : (a.jour||"9") > (b.jour||"9") ? 1 : (a.created_at<b.created_at?-1:1));
+const annCount = () => annVisible().filter(a=>!annSeen[a.id]).length;
+let annTimer = null;
+function toggleSeen(id, ev){
+  ev.stopPropagation();
+  if(annSeen[id]) delete annSeen[id]; else annSeen[id] = Date.now();  // recocher relance la minute
+  store.set("annSeen", annSeen); render(); openAnnList();
+  clearTimeout(annTimer);
+  annTimer = setTimeout(()=>{ render(); if(annOpen && $("annlist")) openAnnList(); }, ANN_HIDE_MS+500);
+}
 async function loadAnn(){
   if(!HW_ON || !tp) return;
   try{
-    const r = await fetch(`${SUPA_URL}/rest/v1/annonces?grp=in.(${audiences().map(encodeURIComponent).join(",")})&deleted=is.false&or=(jour.is.null,jour.gte.${ymd(new Date())})&order=jour.asc.nullslast,created_at.asc`, {headers:hdr()});
+    const r = await fetch(`${SUPA_URL}/rest/v1/annonces?grp=in.(${audiences().map(encodeURIComponent).join(",")})&deleted=is.false&or=(jour.gte.${ymd(new Date())},and(jour.is.null,created_at.gte.${encodeURIComponent(new Date(Date.now()-WEEK_MS).toISOString())}))&order=jour.asc.nullslast,created_at.asc`, {headers:hdr()});
     if(!r.ok) throw 0;
     annonces = await r.json(); store.set("ann", annonces); if(!sheetKey && !annOpen) render();
   }catch{}
@@ -472,15 +492,16 @@ function pickAnnMod(k){ annCkey = k || null; }
 function openAnnList(){
   sheetKey = null; annOpen = true;
   const l = annVisible(), today = ymd(new Date());
-  let h = `<div class="grab"></div><div class="ann"><div class="head"><b>Annonces</b><button onclick="openAnn()">+ Annonce</button></div>`;
+  let h = `<div class="grab"></div><div class="ann" id="annlist"><div class="head"><b>Annonces</b><button onclick="openAnn()">+ Annonce</button></div>`;
   if(!l.length) h += `<div class="note" style="margin:0 2px 4px">Aucune annonce pour l'instant.</div>`;
   l.forEach(a=>{
-    const d = a.jour && new Date(a.jour+"T12:00:00");
-    h += `<div class="annbox ${a.jour===today?"today":""}" onclick="openAnn(${a.id})">
+    const d = a.jour && new Date(a.jour+"T12:00:00"), seen = !!annSeen[a.id];
+    h += `<div class="annbox ${seen?"seen":""}" onclick="openAnn(${a.id})">
       <div class="d">${!d?"":a.jour===today?"Aujourd'hui":esc(fmtD(d,{weekday:"short"}))}<span>${d?esc(fmtD(d,{day:"numeric",month:"short"})):""}</span><em>${esc(audShort(a.grp))}</em></div>
-      <div class="tx">${a.ckey?`<span class="annmod" style="${colors(a.ckey.split("|")[0])}">${esc(courseLbl(...a.ckey.split("|")))}</span>`:""}${esc(a.texte)}</div></div>`;
+      <div class="tx">${a.ckey?`<span class="annmod" style="${colors(a.ckey.split("|")[0])}">${esc(courseLbl(...a.ckey.split("|")))}</span>`:""}${esc(a.texte)}</div>
+      <button class="annck ${seen?"on":""}" onclick="toggleSeen(${a.id},event)" aria-label="${seen?"Garder l'annonce":"Masquer l'annonce pour moi"}">${seen?ICO_OK:""}</button></div>`;
   });
-  h += `</div><div class="row"><button class="btn" onclick="closeSheet()">Fermer</button></div>`;
+  h += `</div>${l.length?`<p class="note">Coche une annonce pour la masquer chez toi : elle disparaît au bout d'1 minute (décoche avant pour la garder).</p>`:""}<div class="row"><button class="btn" onclick="closeSheet()">Fermer</button></div>`;
   $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
 }
 let annOpen = false, annWho = null;
@@ -496,7 +517,7 @@ function openAnn(id){
   const who = all.map(g=>`<button data-g="${esc(g)}" class="${g===PROMO?"all ":""}${g===annWho?"on":""}" onclick="setAnnWho('${esc(g)}')">${esc(audShort(g))}</button>`).join("");
   let h = `<div class="grab"></div><h3>${a?"Annonce":"Nouvelle annonce"}</h3>
     <label class="lbl">Pour qui ?</label><div class="who">${who}</div>
-    <label class="lbl">Date <small>(facultatif : l'annonce disparaît après ce jour)</small></label>
+    <label class="lbl">Date <small>(facultatif : l'annonce disparaît après ce jour. Sans date, elle disparaît 1 semaine après sa publication)</small></label>
     <input type="date" id="anndate" min="${today}" value="${a?.jour||""}" onchange="renderAnnMod()" oninput="renderAnnMod()">
     <div id="annmodw"></div>
     <label class="lbl">Information</label>
@@ -527,17 +548,36 @@ async function delAnn(id){
   catch{ toast("Erreur"); }
 }
 
-/* ======== message au createur : table Supabase "retours", envoi seulement (personne ne peut relire via l'appli) ======== */
+/* ======== messages au createur : table Supabase "retours", lisibles par tous ; supprimes (dans Supabase) une fois l'idee mise en place ======== */
+let retours = store.get("ret", []);
+async function loadFb(){
+  if(!HW_ON) return;
+  try{
+    const r = await fetch(`${SUPA_URL}/rest/v1/retours?select=id,created_at,contact,tp,texte&order=created_at.desc`, {headers:hdr()});
+    if(!r.ok) throw 0;
+    retours = await r.json(); store.set("ret", retours); if(!sheetKey && !annOpen) render();
+  }catch{}
+}
 function openFeedback(){
   sheetKey = null; annOpen = true;
-  $("sheet").innerHTML = `<div class="grab"></div><h3>Écrire au créateur</h3>
-    <p class="note">Une idée, un bug, une erreur dans l'emploi du temps ? Ton message arrive directement au créateur de l'appli, personne d'autre ne le voit.</p>
+  let h = `<div class="grab"></div><div class="ann"><div class="head"><b>Messages au créateur</b><button onclick="newFeedback()">+ Message</button></div>`;
+  if(!retours.length) h += `<div class="note" style="margin:0 2px 4px">Aucun message pour l'instant.</div>`;
+  retours.forEach(m=>{
+    const d = new Date(m.created_at);
+    h += `<div class="annbox" style="cursor:default"><div class="d">${esc(fmtD(d,{day:"numeric",month:"short"}))}<span>${m.tp?esc(tpLabel(m.tp)):""}</span><em>${esc(m.contact||"Anonyme")}</em></div>
+      <div class="tx">${esc(m.texte)}</div></div>`;
+  });
+  h += `</div><p class="note">Chaque message disparaît quand l'idée a été mise en place.</p><div class="row"><button class="btn" onclick="closeSheet()">Fermer</button></div>`;
+  $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
+}
+function newFeedback(){
+  $("sheet").innerHTML = `<div class="grab"></div><h3>Message au créateur</h3>
+    <p class="note">Une idée, un bug, une erreur dans l'emploi du temps ? Ton message sera <b>visible par tout le monde</b> dans l'appli.</p>
     <label class="lbl">Message</label>
     <textarea id="fbtx" maxlength="2000" style="min-height:120px" oninput="$('fbsend').disabled=!this.value.trim()" placeholder="Ex : ce serait bien d'avoir les salles libres"></textarea>
-    <label class="lbl">Ton prénom ou contact <small>(facultatif, pour pouvoir te répondre)</small></label>
-    <input id="fbwho" maxlength="200" class="field" placeholder="Ex : Léa, TP3">
-    <div class="row"><button class="btn" onclick="closeSheet()">Annuler</button><button class="btn dark" id="fbsend" disabled onclick="sendFeedback()">Envoyer</button></div>`;
-  $("sheet").classList.add("open"); $("veil").style.display="block";
+    <label class="lbl">Ton prénom <small>(facultatif, visible par tous)</small></label>
+    <input id="fbwho" maxlength="200" class="field" placeholder="Ex : Léa">
+    <div class="row"><button class="btn" onclick="openFeedback()">Annuler</button><button class="btn dark" id="fbsend" disabled onclick="sendFeedback()">Envoyer</button></div>`;
 }
 async function sendFeedback(){
   const texte = $("fbtx").value.trim(), contact = $("fbwho").value.trim() || null;
@@ -546,7 +586,7 @@ async function sendFeedback(){
   try{
     const r = await fetch(`${SUPA_URL}/rest/v1/retours`, {method:"POST", headers:hdr({Prefer:"return=minimal"}), body:JSON.stringify({texte, contact, tp})});
     if(!r.ok) throw 0;
-    toast("Merci, message envoyé"); closeSheet();
+    toast("Merci, message envoyé"); await loadFb(); render(); openFeedback();
   }catch{ toast("Erreur : message non envoyé"); $("fbsend").disabled = false; }
 }
 
@@ -656,10 +696,10 @@ $("veil").onclick=closeSheet;
 
 /* ======== demarrage ======== */
 addEventListener("keydown",e=>{ if(["TEXTAREA","INPUT","SELECT"].includes(e.target.tagName)) return; if(e.key==="ArrowLeft") step(-1); if(e.key==="ArrowRight") step(1); if(e.key==="Escape") closeSheet(); });
-document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ loadData(); loadHw(); loadAnn(); } });
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ loadData(); loadHw(); loadAnn(); loadFb(); } });
 setInterval(()=>{ if(!sheetKey && !annOpen) render(); }, 60000);
-setInterval(()=>{ if(!document.hidden){ loadHw(); loadAnn(); } }, 90000);
-render(); loadData(); loadHw(); loadAnn();
+setInterval(()=>{ if(!document.hidden){ loadHw(); loadAnn(); loadFb(); } }, 90000);
+render(); loadData(); loadHw(); loadAnn(); loadFb();
 </script>
 </body>
 </html>
