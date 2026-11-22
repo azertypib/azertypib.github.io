@@ -1,4 +1,4 @@
-# Recupere l'emploi du temps des groupes de TP sur GPU (gpu-lr.fr) et ecrit data.json.
+﻿# Recupere l'emploi du temps des groupes de TP sur GPU (gpu-lr.fr) et ecrit data.json.
 # Lance toutes les heures par GitHub Actions (.github/workflows/update.yml).
 # Identifiants lus dans les variables d'environnement GPU_LOGIN / GPU_PASSWORD (secrets GitHub).
 # Seul l'emploi du temps est publie : jamais les notes, absences ou infos du compte.
@@ -8,6 +8,9 @@ $ErrorActionPreference = 'Stop'
 # ---- Groupes publies : groupe de TD -> ses groupes de TP. Ajouter une ligne pour ouvrir un groupe. ----
 $Groups = [ordered]@{
     'S1A' = @('S1TP1', 'S1TP2')
+    'S1B' = @('S1TP3', 'S1TP4')
+    'S1C' = @('S1TP5', 'S1TP6')
+    'S1D' = @('S1TP7', 'S1TP8')
 }
 $Filiere     = 'S1'
 $WeeksBefore = 1
@@ -181,17 +184,27 @@ foreach ($w in $weeks) {
     Start-Sleep -Milliseconds 300
 }
 
+function Get-GroupWeek($g, $w) {
+    $body = @{ mode='edt'; semaine="$(Get-IsoWeek $w)"; liste='-1'; aff_edtabs='-1'; ansemaine="$($w.AddDays(3).Year)";
+               idedtselect='0'; left='0'; top='0'; taillepolice='15'; filiere=$Filiere; groupe=$g }
+    ConvertFrom-GroupPage (Get-Web $GroupUrl $body) | Where-Object { $_.local -ge $w -and $_.local -lt $w.AddDays(7) }
+}
+$tdWeeks = @{}
 $out = [ordered]@{}
 foreach ($td in $Groups.Keys) {
     foreach ($tp in $Groups[$td]) {
         $list = New-Object Collections.Generic.List[object]
         # les semaines plus anciennes que la semaine derniere ne sont plus publiees (l'appli ne remonte pas plus loin)
         foreach ($w in $weeks) {
-            $body = @{ mode='edt'; semaine="$(Get-IsoWeek $w)"; liste='-1'; aff_edtabs='-1'; ansemaine="$($w.AddDays(3).Year)";
-                       idedtselect='0'; left='0'; top='0'; taillepolice='15'; filiere=$Filiere; groupe=$tp }
-            $evs = @(ConvertFrom-GroupPage (Get-Web $GroupUrl $body) | Where-Object { $_.local -ge $w -and $_.local -lt $w.AddDays(7) })
+            $evs = @(Get-GroupWeek $tp $w)
             $src = 'gpu'
-            if (-not $evs.Count) {
+            if ($evs.Count) {
+                # la page d'un TP oublie parfois les cours de son groupe de TD (vu pour S1TP3) : on complete
+                $k = "$td|$($w.ToString('yyyy-MM-dd'))"
+                if (-not $tdWeeks.ContainsKey($k)) { $tdWeeks[$k] = @(Get-GroupWeek $td $w) }
+                $ids = @($evs | ForEach-Object { $_.id })
+                $evs += @($tdWeeks[$k] | Where-Object { $ids -notcontains $_.id })
+            } else {
                 # semaine non publiee sur la page groupe : on prend l'export VCal s'il contient ce TP
                 $v = @($vcs[$w.ToString('yyyy-MM-dd')])
                 if ($v | Where-Object { $_.group -eq $tp }) {
