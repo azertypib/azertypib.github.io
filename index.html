@@ -274,7 +274,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-23c";
+const APP_V = "2026-11-23d";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -641,7 +641,7 @@ const chatOf = g => chatMsgs.filter(m=>m.grp===g && Date.now()-new Date(m.create
 const chatNew = g => chatOf(g).filter(m=>!myMsgs[m.id] && (!chatSeen[g] || m.created_at > chatSeen[g])).length;
 const chatUnread = () => audiences().reduce((n,g)=>n+chatNew(g), 0);
 // pastilles en quinconce en haut a droite : une par public qui a des messages non lus, a sa couleur
-const chatBadges = () => audiences().filter(g=>chatNew(g)).map((g,i)=>`<span class="cnt" style="background:${AUD_COL(g)};right:${-6+i*13}px;top:${i%2?4:-6}px;z-index:${3-i}">${chatNew(g)}</span>`).join("");
+const chatBadges = () => audiences().filter(g=>chatNew(g)).map((g,i)=>`<span class="cnt" style="background:${AUD_COL(g)};right:${-6+i*14}px;top:-6px;z-index:${3-i}">${chatNew(g)}</span>`).join("");
 async function loadChat(){
   if(!HW_ON || !tp) return;
   try{
