@@ -103,6 +103,15 @@ header .ttl{min-width:0}
 .annbox .d span{display:block;color:var(--muted);font-weight:600}
 .annbox .tx{flex:1;white-space:pre-wrap;word-break:break-word;font-size:14.5px}
 .annbox.today{border-left-color:var(--todo)}
+.annbox .d em{display:block;font-style:normal;font-weight:700;font-size:11.5px;color:var(--accent);margin-top:2px}
+.lbl{display:block;font-weight:700;font-size:13.5px;margin:12px 0 6px}
+.lbl small{font-weight:500;color:var(--muted)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.seg button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:11px;padding:11px 6px;font-weight:700;font-size:14.5px;cursor:pointer}
+.seg button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.seg button:disabled:not(.on){opacity:.35}
+.dt{display:flex;gap:8px}.dt input{flex:1;margin:0}
+.dt button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:11px;padding:0 12px;font-weight:600;font-size:13.5px;cursor:pointer}
 input[type=date]{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;background:var(--bg);color:var(--ink);margin-bottom:8px}
 
 /* ---------- devoirs (bas de page) ---------- */
@@ -236,7 +245,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-22q";
+const APP_V = "2026-11-22r";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -407,15 +416,16 @@ function renderHwSection(all){
   return h+`</div>`;
 }
 
-/* ======== annonces de la classe (une par jour et par groupe, visibles jusqu'a la date incluse) ======== */
+/* ======== annonces : pour la promo, un groupe de TD ou un TP ; date facultative (disparait apres), sinon reste jusqu'a suppression ======== */
 let annonces = store.get("ann", []);
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-const annGrp = () => tdOf(tp) || tp;
-const annVisible = () => annonces.filter(a=>a.jour>=ymd(new Date())).sort((a,b)=>a.jour<b.jour?-1:1);
+const audShort = g => g===PROMO ? "Promo" : g===tdOf(tp) ? tdLabel(g) : tpLabel(g);
+const annVisible = () => annonces.filter(a=>!a.jour || a.jour>=ymd(new Date()))
+  .sort((a,b)=> (a.jour||"9") < (b.jour||"9") ? -1 : (a.jour||"9") > (b.jour||"9") ? 1 : (a.created_at<b.created_at?-1:1));
 async function loadAnn(){
   if(!HW_ON || !tp) return;
   try{
-    const r = await fetch(`${SUPA_URL}/rest/v1/annonces?grp=eq.${encodeURIComponent(annGrp())}&deleted=is.false&jour=gte.${ymd(new Date())}&order=jour.asc`, {headers:hdr()});
+    const r = await fetch(`${SUPA_URL}/rest/v1/annonces?grp=in.(${audiences().map(encodeURIComponent).join(",")})&deleted=is.false&or=(jour.is.null,jour.gte.${ymd(new Date())})&order=jour.asc.nullslast,created_at.asc`, {headers:hdr()});
     if(!r.ok) throw 0;
     annonces = await r.json(); store.set("ann", annonces); if(!sheetKey && !annOpen) render();
   }catch{}
@@ -423,63 +433,52 @@ async function loadAnn(){
 function openAnnList(){
   sheetKey = null; annOpen = true;
   const l = annVisible(), today = ymd(new Date());
-  let h = `<div class="grab"></div><div class="ann"><div class="head"><b>Annonces ${esc(tdLabel(annGrp()))}</b><button onclick="openAnn()">+ Annonce</button></div>`;
+  let h = `<div class="grab"></div><div class="ann"><div class="head"><b>Annonces</b><button onclick="openAnn()">+ Annonce</button></div>`;
   if(!l.length) h += `<div class="note" style="margin:0 2px 4px">Aucune annonce pour l'instant.</div>`;
   l.forEach(a=>{
-    const d = new Date(a.jour+"T12:00:00");
+    const d = a.jour && new Date(a.jour+"T12:00:00");
     h += `<div class="annbox ${a.jour===today?"today":""}" onclick="openAnn(${a.id})">
-      <div class="d">${a.jour===today?"Aujourd'hui":esc(fmtD(d,{weekday:"short"}))}<span>${esc(fmtD(d,{day:"numeric",month:"short"}))}</span></div>
+      <div class="d">${!d?"":a.jour===today?"Aujourd'hui":esc(fmtD(d,{weekday:"short"}))}<span>${d?esc(fmtD(d,{day:"numeric",month:"short"})):""}</span><em>${esc(audShort(a.grp))}</em></div>
       <div class="tx">${esc(a.texte)}</div></div>`;
   });
   h += `</div><div class="row"><button class="btn" onclick="closeSheet()">Fermer</button></div>`;
   $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
 }
-let annOpen = false;
+let annOpen = false, annWho = null;
+function setAnnWho(g){ annWho=g; document.querySelectorAll(".seg button").forEach(b=>b.classList.toggle("on", b.dataset.g===g)); }
 function openAnn(id){
   sheetKey = null; annOpen = true;
-  const a = id ? annonces.find(x=>x.id===id) : null;
-  let h = `<div class="grab"></div>`;
-  if(a){
-    const d = new Date(a.jour+"T12:00:00");
-    h += `<h3>Annonce du ${esc(fmtD(d,{weekday:"long",day:"numeric",month:"long"}))}</h3>
-      <p class="note">Tu peux modifier le texte ou y ajouter une ligne. Il disparaîtra après cette date.</p>
-      <textarea id="anntx" maxlength="2000" style="min-height:120px">${esc(a.texte)}</textarea>
-      <div class="row"><button class="btn" onclick="delAnn(${a.id})">Supprimer</button><button class="btn dark" onclick="saveAnnEdit(${a.id})">Enregistrer</button></div>`;
-  }else{
-    const today = ymd(new Date());
-    h += `<h3>Nouvelle annonce</h3>
-      <p class="note">Visible par tout le ${esc(tdLabel(annGrp()))} jusqu'à la date choisie. S'il y a déjà une annonce ce jour-là, ton texte s'y ajoute.</p>
-      <input type="date" id="anndate" min="${today}" value="${today}">
-      <textarea id="anntx" maxlength="2000" placeholder="Ex : DS de méca reporté à jeudi, salle GC-009"></textarea>
-      <div class="row"><button class="btn" onclick="openAnnList()">Annuler</button><button class="btn dark" onclick="saveAnnNew()">Publier</button></div>`;
-  }
+  const a = id ? annonces.find(x=>x.id===id) : null, today = ymd(new Date());
+  annWho = a ? a.grp : null;  // formulaire remis a zero a chaque nouvelle annonce
+  const who = audiences().map(g=>`<button data-g="${esc(g)}" class="${g===annWho?"on":""}" ${a?"disabled":""} onclick="setAnnWho('${esc(g)}')">${esc(audShort(g))}</button>`).join("");
+  let h = `<div class="grab"></div><h3>${a?"Annonce":"Nouvelle annonce"}</h3>
+    <label class="lbl">Pour qui ?</label><div class="seg">${who}</div>
+    <label class="lbl">Date <small>(facultatif : l'annonce disparaît après ce jour)</small></label>
+    <div class="dt"><input type="date" id="anndate" min="${today}" value="${a?.jour||""}"><button onclick="$('anndate').value=''">Sans date</button></div>
+    <label class="lbl">Information</label>
+    <textarea id="anntx" maxlength="2000" style="min-height:110px" placeholder="Ex : réunion d'info Québec mardi 12h, amphi B (facultatif)">${a?esc(a.texte):""}</textarea>
+    <div class="row">${a?`<button class="btn" onclick="delAnn(${a.id})">Supprimer</button><button class="btn dark" onclick="saveAnn(${a.id})">Enregistrer</button>`
+      :`<button class="btn" onclick="openAnnList()">Annuler</button><button class="btn dark" onclick="saveAnn()">Publier</button>`}</div>`;
   $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
 }
 async function annReq(method, query, body){
   const r = await fetch(`${SUPA_URL}/rest/v1/annonces${query}`, {method, headers:hdr(), body:JSON.stringify(body)});
   if(!r.ok) throw 0;
 }
-async function saveAnnNew(){
-  const jour = $("anndate").value, t = $("anntx").value.trim();
-  if(!jour || !t) return;
-  if(jour < ymd(new Date())){ toast("Choisis aujourd'hui ou plus tard"); return; }
+async function saveAnn(id){
+  const jour = $("anndate").value || null, t = $("anntx").value.trim();
+  if(!annWho){ toast("Choisis à qui s'adresse l'annonce"); return; }
+  if(!t){ toast("Écris l'information"); return; }
+  if(jour && jour < ymd(new Date())){ toast("Choisis aujourd'hui ou plus tard"); return; }
   try{
-    await loadAnn();
-    const ex = annonces.find(a=>a.jour===jour);
-    if(ex) await annReq("PATCH", `?id=eq.${ex.id}`, {texte:(ex.texte+"\n"+t).slice(0,2000), updated_at:new Date().toISOString()});
-    else await annReq("POST", "", {grp:annGrp(), jour, texte:t});
-    toast(ex ? "Ajouté à l'annonce de ce jour" : "Annonce publiée");
+    if(id) await annReq("PATCH", `?id=eq.${id}`, {jour, texte:t, updated_at:new Date().toISOString()});
+    else await annReq("POST", "", {grp:annWho, jour, texte:t});
+    toast(id ? "Annonce modifiée" : "Annonce publiée pour "+audLabel(annWho));
     await loadAnn(); render(); openAnnList();
   }catch{ toast("Erreur : annonce non enregistrée"); }
 }
-async function saveAnnEdit(id){
-  const t = $("anntx").value.trim();
-  if(!t) return delAnn(id);
-  try{ await annReq("PATCH", `?id=eq.${id}`, {texte:t, updated_at:new Date().toISOString()}); toast("Annonce modifiée"); await loadAnn(); render(); openAnnList(); }
-  catch{ toast("Erreur : modification non enregistrée"); }
-}
 async function delAnn(id){
-  if(!confirm("Supprimer cette annonce pour toute la classe ?")) return;
+  if(!confirm("Supprimer cette annonce pour tout le monde ?")) return;
   try{ await annReq("PATCH", `?id=eq.${id}`, {deleted:true, updated_at:new Date().toISOString()}); toast("Annonce supprimée"); await loadAnn(); render(); openAnnList(); }
   catch{ toast("Erreur"); }
 }
