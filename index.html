@@ -121,8 +121,8 @@ html{touch-action:manipulation}
 .dpanel h3{margin:0 0 10px 2px;font-size:16px}.dpanel h3 span{font-size:12.5px;color:var(--muted);font-weight:500;margin-left:6px}
 /* detail et resume l'un sur l'autre : fondu croise pendant le glisser */
 .dbody{display:grid;grid-template-columns:minmax(0,1fr)}.dbody>.full,.dbody>.sum{grid-area:1/1;min-width:0;transition:opacity .38s}
-/* le resume s'efface sur la 1re moitie du glisser, le detail apparait sur la 2de : jamais les deux l'un sur l'autre */
-.dbody>.full{opacity:clamp(0, calc(var(--o,0) * 2 - 1), 1)}.dbody>.sum{opacity:clamp(0, calc(1 - var(--o,0) * 2), 1);pointer-events:none}
+/* fondu croise : le resume s'efface pendant que le detail apparait (jamais de passage au noir) */
+.dbody>.full{opacity:clamp(0, calc((var(--o,0) - .2) / .6), 1)}.dbody>.sum{opacity:clamp(0, calc((.8 - var(--o,0)) / .6), 1);pointer-events:none}
 .dtrack>:not(.on) .full{pointer-events:none}
 /* carte de cours : heure en haut a gauche, salle en gros a droite, module au milieu, nom en bas */
 .dc{position:relative;display:flex;flex-direction:column;justify-content:flex-start;background:var(--bgc);color:var(--fg);border-radius:14px;padding:9px 11px 10px;border-left:4px solid var(--c);cursor:pointer;overflow:hidden}
@@ -329,7 +329,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-23o";
+const APP_V = "2026-11-23p";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -481,14 +481,31 @@ function weekGrid(week, wk, nDays, h0, h1, H){
 }
 
 function renderDay(all){
-  const W=nearWeeks(all); SLOTS=[]; let h="", ci=0;
+  const W=nearWeeks(all); SLOTS=[]; let ci=0; const D=[];
   dayFit = phone() ? fitH() : 0;
   W.forEach(x=>{ const cw=+x.w===+week; if(cw && dayIdx>=x.n) dayIdx=x.n-1;
     for(let i=0;i<x.n;i++){ const d=new Date(x.w); d.setDate(d.getDate()+i); const on=cw && i===dayIdx;
       if(on) ci=SLOTS.length; SLOTS.push({w:x.w, i});
-      const de=x.wk.filter(e=>sameDay(e.s,d)).sort((a,b)=>a.s-b.s);
-      h+=`<div class="dpanel ${on?"on":""}" style="--o:${on?1:0}"><h3>${DAYS[i]} ${d.getDate()}</h3>${dayList(d, de)}</div>`; } });
+      D.push({d, i, on, de: x.wk.filter(e=>sameDay(e.s,d)).sort((a,b)=>a.s-b.s)}); } });
+  // telephone : on cherche la plus grande echelle des cours (1 a 2,5, la meme pour tous les jours) ou le jour le plus long tient a l'ecran
+  if(dayFit){ for(let k=2.5;;k=Math.max(1,k*.95)){ const top=dayLayout(D,k); if(top<=dayFit-60 || k===1) break; } }
+  else dayLayout(D,1);
+  const h=D.map(({d,i,on,de,segs})=>`<div class="dpanel ${on?"on":""}" style="--o:${on?1:0}"><h3>${DAYS[i]} ${d.getDate()}</h3>${dayList(d, de, segs)}</div>`).join("");
   return `<div class="dview" id="dview" style="${dayFit?`--ph:${dayFit}px`:""}"><div class="dtrack" id="dtrack" style="--i:${ci}">${h}</div></div>`;
+}
+// calcule les segments de chaque jour (cours x k) puis cale la pause de midi au meme niveau partout ; renvoie la hauteur du jour le plus long
+function dayLayout(D, k){
+  const hOf=s=>s.k==="dash"?14:s.h, sumH=a=>a.reduce((t,s)=>t+hOf(s),0);
+  D.forEach(x=>{ x.segs = x.de.length ? daySegs(x.d, x.de) : null; x.segs?.forEach(s=>{ if(s.k==="c") s.h*=k; }); });
+  const cut=segs=>segs.findIndex(s=>s.lunch || (s.k==="c" && s.e.s.getHours()>=12));
+  let Y=0, LH=40;
+  D.forEach(({segs})=>{ if(!segs) return; const j=cut(segs); if(j>0 && segs[j].lunch){ Y=Math.max(Y, sumH(segs.slice(0,j))); if(segs[j].k==="pause") LH=Math.max(LH, segs[j].h); } });
+  D.forEach(({segs})=>{ if(!segs || !Y) return; const j=cut(segs); if(j<0) return;
+    const s=segs[j], m=sumH(segs.slice(0,j));
+    if(s.lunch){ const g=Y-m; if(g>0){ s.pt=g; s.h+=g; } }
+    else if(segs[0].k==="lead" && j===1){ const g=Y+LH-m; if(g>0) segs[0].h+=g; }   // pas de cours le matin : l'apres-midi commence au meme niveau
+  });
+  return Math.max(0, ...D.map(({segs})=>segs?sumH(segs):0));
 }
 // la journee de 8h a 18h : cours a l'echelle (min. pour lire), trous a une echelle plus petite
 const PX_H = 36, GAP_H = 22;
@@ -500,30 +517,26 @@ function daySegs(d, de){
   if(lead>0.4) segs.push({k:"lead", h:Math.max(48, lead*GAP_H), txt:`Début des cours à ${fmtH(first)}`});
   de.forEach(e=>{
     if(prevEnd){ const g=(e.s-prevEnd)/6e4;
-      if(g>25) segs.push({k:"pause", h:Math.max(40, g/60*12+20), txt:`${fmtH(prevEnd)} – ${fmtH(e.s)}`});
+      if(g>25) segs.push({k:"pause", h:Math.max(40, g/60*12+20), txt:`${fmtH(prevEnd)} – ${fmtH(e.s)}`, lunch: prevEnd.getHours()*60+prevEnd.getMinutes()<=12*60+30 && e.s.getHours()>=13});
       else segs.push({k:"dash"}); }
     segs.push({k:"c", e, h:Math.max(74, (e.e-e.s)/36e5*PX_H)});
     prevEnd = prevEnd && prevEnd>e.e ? prevEnd : e.e;
   });
   const tail=(d1-prevEnd)/36e5;
-  if(tail>0.4) segs.push({k:"tail", h:Math.max(48, tail*GAP_H), txt:`Fin des cours à ${fmtH(prevEnd)}`});
+  const pm=prevEnd.getHours()*60+prevEnd.getMinutes();
+  if(tail>0.4) segs.push({k:"tail", h:Math.max(48, tail*GAP_H), txt:`Fin des cours à ${fmtH(prevEnd)}`, lunch: pm>=11*60+30 && pm<=12*60+30});
   return segs;
 }
-function dayList(d, de){
+function dayList(d, de, segs){
   if(!de.length) return `<div class="empty">Pas de cours le ${DAYS[(d.getDay()+6)%7].toLowerCase()} ${d.getDate()} ${fmtD(d,{month:"long"})}.</div>`;
-  const segs=daySegs(d, de);
-  // telephone : on etire la journee pour que le cadre finisse en bas de l'ecran (jamais plus petit que l'echelle normale)
-  // seuls les cours s'allongent (les pauses restent petites), au plus x2,5
-  if(dayFit){ const fix=segs.reduce((a,s)=>a+(s.k==="c"?0:s.k==="dash"?14:s.h),0), flex=segs.reduce((a,s)=>a+(s.k==="c"?s.h:0),0), k=Math.min(2.5,(dayFit-60-fix)/flex);
-    if(k>1) segs.forEach(s=>{ if(s.k==="c") s.h*=k; }); }
   const full=segs.map(s=> s.k==="c" ? `<div class="dc" style="height:${s.h}px;${colors(s.e.code)}" onclick="openSheet('${esc(s.e.key)}')">
         <div class="tm">${fmtH(s.e.s)} – ${fmtH(s.e.e)}</div><div class="rm">${esc((s.e.room||"").split(/[,/]/)[0].trim())}</div>
         <div class="cd">${esc(s.e.code)}${s.e.type?`<span class="badge">${esc(typeLbl(s.e.type))}</span>`:""}</div>
         <div class="nm">${esc(s.e.name)}${s.e.prof?` · ${esc(s.e.prof)}`:""}</div>${hwBadge(s.e.key)}</div>`
     : s.k==="dash" ? `<div class="dash"></div>`
-    : s.k==="pause" ? `<div class="brk" style="height:${s.h}px"><i></i><span>${s.txt}</span><i></i></div>`
+    : s.k==="pause" ? `<div class="brk" style="height:${s.h}px${s.pt?`;padding-top:${s.pt+5}px`:""}"><i></i><span>${s.txt}</span><i></i></div>`
     : s.k==="lead" ? `<div class="brk lead" style="height:${s.h}px"><span>${s.txt}</span><i></i></div>`
-    : `<div class="brk tail" style="height:${s.h}px"><i></i><span>${s.txt}</span></div>`).join("");
+    : `<div class="brk tail" style="height:${s.h}px${s.pt?`;padding-top:${s.pt+5}px`:""}"><i></i><span>${s.txt}</span></div>`).join("");
   // resume (jour voisin) : memes hauteurs pour garder l'allure de la journee, sans traits ni details
   const sum=segs.map(s=> s.k==="c" ? `<div class="sm" style="height:${s.h}px;${colors(s.e.code)}"><b>${fmtH(s.e.s)}</b>${esc(s.e.code)}</div>`
     : `<div class="sp" style="height:${s.k==="dash"?14:s.h}px"></div>`).join("");
