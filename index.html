@@ -10,8 +10,8 @@
 <meta name="apple-mobile-web-app-title" content="EDT">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#141312">
-<link rel="apple-touch-icon" href="icon.png?k">
-<link rel="icon" type="image/png" href="icon.png?k">
+<link rel="apple-touch-icon" href="icon.png?l">
+<link rel="icon" type="image/png" href="icon.png?l">
 <style>
 :root{
   --bg:#f4f2ee; --panel:#fff; --ink:#1d1b18; --muted:#77716a; --line:#e6e1da; --soft:#efebe5;
@@ -234,7 +234,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-22k";
+const APP_V = "2026-11-22l";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
