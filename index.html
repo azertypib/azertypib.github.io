@@ -28,17 +28,17 @@ button{font:inherit;color:inherit;cursor:pointer}
 .wrap{max-width:1180px;margin:0 auto;padding:calc(14px + var(--top)) 12px calc(40px + var(--bot))}
 
 /* ---------- en-tete ---------- */
-header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
-.ttl{flex:1;min-width:160px}
-.ttl h1{margin:0;font-size:24px;letter-spacing:-.02em}
-.ttl div{color:var(--muted);font-size:13px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+header .logo{width:40px;height:40px;border-radius:10px;margin-right:auto}
+.ttl{flex:1;min-width:0;text-align:center;overflow:hidden}
+.ttl h1{margin:0;font-size:20px;letter-spacing:-.02em;line-height:1.15}
+.ttl div{color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 12px;font-weight:650;font-size:14px}
-.bar{display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.bar{display:flex;gap:6px;align-items:center;margin-bottom:12px}
 .btn{border:1px solid var(--line);background:var(--panel);height:36px;min-width:36px;padding:0 12px;border-radius:10px;font-weight:600}
 .btn.dark{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .btn:disabled{opacity:.4;cursor:default}
 .bar .nav{width:48px;height:42px;padding:0;display:grid;place-items:center;border-radius:12px;box-shadow:var(--shadow)}
-.bar .nav:first-child{margin-right:6px}
 .ttl{cursor:pointer}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-left:auto}
 .seg button{border:0;background:var(--panel);height:40px;padding:0 12px;font-weight:600;color:var(--muted)}
@@ -48,9 +48,8 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12p
   font-size:19px;font-weight:800;line-height:1;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:var(--shadow)}
 .sq small{font-size:10.5px;font-weight:700;color:var(--muted);margin-top:2px}
 .sq .cnt{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--accent);color:#fff;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center}
-header .ttl{min-width:0}
 .ttl h1{white-space:nowrap}
-@media (max-width:420px){ header{gap:7px} .sq{width:44px;height:44px} .ttl h1{font-size:21px} }
+@media (max-width:420px){ header{gap:7px} .sq{width:44px;height:44px} header .logo{width:34px;height:34px} .bar{gap:5px} .bar .nav{width:42px} .ttl h1{font-size:17px} .ttl div{font-size:11.5px} .seg button{padding:0 9px} }
 
 /* ---------- grille semaine ---------- */
 .grid{display:grid;grid-template-columns:30px repeat(var(--days),1fr);background:var(--panel);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
@@ -112,6 +111,18 @@ header .ttl{min-width:0}
 .annck svg{width:16px;height:16px}
 .annck.on{background:#2fbf6a;border-color:#2fbf6a}
 .annbox.seen{opacity:.55}
+.chathead{display:flex;flex-direction:column;margin-bottom:8px}.chathead b{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}.chathead small{color:var(--muted);font-size:12px}
+.chattabs{display:flex;gap:6px;margin-bottom:8px}
+.chattabs button{position:relative;flex:1;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;height:38px;font-weight:700;font-size:14px;cursor:pointer}
+.chattabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chattabs .cnt{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:var(--accent);color:#fff;font-size:11px;display:grid;place-items:center}
+.chatlist{height:42vh;overflow-y:auto;background:var(--soft);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px}
+.msg{max-width:82%;align-self:flex-start;background:var(--panel);border-radius:12px 12px 12px 4px;padding:6px 10px;box-shadow:var(--shadow)}
+.msg.me{align-self:flex-end;background:var(--ink);color:var(--bg);border-radius:12px 12px 4px 12px}
+.msg .who{font-size:12px;font-weight:700}.msg .who span{font-weight:500;opacity:.65}
+.msg .tx{font-size:14.5px;white-space:pre-wrap;word-break:break-word}
+.chatsend{margin-top:8px}.chatsend .field{margin-bottom:6px;padding:7px 10px;font-size:13.5px}
+.chatrow{display:flex;gap:6px;align-items:flex-end}.chatrow textarea{min-height:42px;height:42px;flex:1}.chatrow .btn{height:42px}
 .support{border:1px solid var(--line);border-radius:14px;padding:12px;margin:10px 0;display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .support>b,.support p{grid-column:1/-1;margin:0}.support p{color:var(--muted);font-size:13.5px}
 .support a{height:auto;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;color:var(--ink)}
@@ -239,6 +250,7 @@ const ICON_ANN  = svg('<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3
 const ICON_SUN  = svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>');
 const ICON_MOON = svg('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>');
 const ICON_MSG  = svg('<path d="M20 15.5a2 2 0 0 1-2 2H8l-4 3.5V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 12.5h5"/>');
+const ICON_CHAT = svg('<path d="M21 11.5a8.4 8.4 0 0 1-12.2 7.5L3 21l2-5.6A8.4 8.4 0 1 1 21 11.5z"/><path d="M8.5 11.5h.01M12.5 11.5h.01M16.5 11.5h.01" stroke-width="3"/>');
 const ICON_PREV = svg('<path d="m15 5-7 7 7 7"/>');
 const ICON_NEXT = svg('<path d="m9 5 7 7-7 7"/>');
 let theme = store.get("theme", matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light");
@@ -262,7 +274,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-22y";
+const APP_V = "2026-11-22z";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -341,8 +353,12 @@ function render(){
   const nDays = wk.some(e=>e.s.getDay()===6) ? 6 : 5;
   const last = new Date(week); last.setDate(last.getDate()+nDays-1);
 
+  // ligne du haut = fonctionnalites ; la semaine est entre les fleches
+  const sub = view==="jour" ? (()=>{const d=new Date(week); d.setDate(d.getDate()+Math.min(dayIdx,nDays-1)); return fmtD(d,{weekday:"short",day:"numeric",month:"short"});})()
+                            : fmtD(week,{day:"numeric",month:"short"})+" – "+fmtD(last,{day:"numeric",month:"short"});
   let h = `<header>
-      <div class="ttl" onclick="goToday()" title="Revenir à aujourd'hui"><h1>Semaine ${isoWeek(week)}</h1><div>${view==="jour"?(()=>{const d=new Date(week); d.setDate(d.getDate()+Math.min(dayIdx,nDays-1)); return fmtD(d,{weekday:"long",day:"numeric",month:"long"});})():fmtD(week,{day:"numeric",month:"short"})+" – "+fmtD(last,{day:"numeric",month:"short"})}</div></div>
+      <img class="logo" src="icon.png?l" alt="EDT">
+      ${HW_ON?`<button class="sq" onclick="openChat()" aria-label="Discussion">${ICON_CHAT}${chatUnread()?`<span class="cnt">${chatUnread()}</span>`:""}</button>`:""}
       ${HW_ON?`<button class="sq" onclick="openFeedback()" aria-label="Messages au créateur">${ICON_MSG}${retours.length?`<span class="cnt">${retours.length}</span>`:""}</button>`:""}
       <button class="sq" onclick="toggleTheme()" aria-label="Mode clair ou sombre">${theme==="dark"?ICON_SUN:ICON_MOON}</button>
       ${HW_ON?`<button class="sq" onclick="openAnnList()" aria-label="Annonces">${ICON_ANN}${annCount()?`<span class="cnt">${annCount()}</span>`:""}</button>`:""}
@@ -350,6 +366,7 @@ function render(){
     </header>
     <div class="bar">
       <button class="btn nav" onclick="step(-1)" aria-label="Précédent" ${week<=minWeek() && (view!=="jour"||dayIdx===0)?"disabled":""}>${ICON_PREV}</button>
+      <div class="ttl" onclick="goToday()" title="Revenir à aujourd'hui"><h1>Semaine ${isoWeek(week)}</h1><div>${sub}</div></div>
       <button class="btn nav" onclick="step(1)" aria-label="Suivant">${ICON_NEXT}</button>
       <div class="seg"><button class="${view==="jour"?"on":""}" onclick="setView('jour')">Jour</button><button class="${view==="semaine"?"on":""}" onclick="setView('semaine')">Semaine</button></div>
     </div>`;
@@ -599,6 +616,64 @@ async function sendFeedback(){
   }catch{ toast("Erreur : message non envoyé"); $("fbsend").disabled = false; }
 }
 
+/* ======== discussion ouverte : un fil pour la promo, un par groupe de TD, un par TP ; chaque message est efface 1 semaine apres (purge Supabase) ======== */
+let chatMsgs = store.get("chat", []), chatSeen = store.get("chatSeen", {}), myMsgs = store.get("myMsgs", {});
+let chatGrp = null, chatOpen = false;
+const chatOf = g => chatMsgs.filter(m=>m.grp===g && Date.now()-new Date(m.created_at) < WEEK_MS);
+const chatNew = g => chatOf(g).filter(m=>!myMsgs[m.id] && (!chatSeen[g] || m.created_at > chatSeen[g])).length;
+const chatUnread = () => audiences().reduce((n,g)=>n+chatNew(g), 0);
+async function loadChat(){
+  if(!HW_ON || !tp) return;
+  try{
+    const since = encodeURIComponent(new Date(Date.now()-WEEK_MS).toISOString());
+    const r = await fetch(`${SUPA_URL}/rest/v1/messages?grp=in.(${audiences().map(encodeURIComponent).join(",")})&created_at=gte.${since}&order=created_at.asc&limit=1000`, {headers:hdr()});
+    if(!r.ok) throw 0;
+    chatMsgs = await r.json(); store.set("chat", chatMsgs);
+    if(chatOpen) renderChatList(); else if(!sheetKey && !annOpen) render();
+  }catch{}
+}
+function openChat(g){
+  sheetKey = null; annOpen = true; chatOpen = true;
+  chatGrp = g || chatGrp || tdOf(tp) || tp;
+  $("sheet").innerHTML = `<div class="grab"></div>
+    <div class="chathead"><b>Discussion</b><small>Ouverte à tous · chaque message s'efface 1 semaine après</small></div>
+    <div class="chattabs" id="chattabs"></div>
+    <div class="chatlist" id="chatlist"></div>
+    <div class="chatsend">
+      <input id="chatwho" class="field" maxlength="40" placeholder="Ton prénom (facultatif)" value="${esc(store.get("pseudo",""))}">
+      <div class="chatrow"><textarea id="chattx" maxlength="1000" rows="1" placeholder="Écrire un message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&matchMedia('(pointer:fine)').matches){event.preventDefault();sendChat();}" oninput="$('chatgo').disabled=!this.value.trim()"></textarea>
+      <button class="btn dark" id="chatgo" disabled onclick="sendChat()">Envoyer</button></div>
+    </div>
+    <div class="row"><button class="btn" onclick="closeSheet()">Fermer</button></div>`;
+  $("sheet").classList.add("open"); $("veil").style.display="block";
+  renderChatList(true); loadChat();
+}
+function renderChatList(toBottom){
+  const box = $("chatlist"); if(!box) return;
+  const nearBottom = toBottom || box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+  const l = chatOf(chatGrp);
+  if(l.length){ chatSeen[chatGrp] = l[l.length-1].created_at; store.set("chatSeen", chatSeen); }
+  $("chattabs").innerHTML = audiences().map(g=>{ const n=chatNew(g);
+    return `<button class="${g===chatGrp?"on":""}" onclick="openChat('${esc(g)}')">${esc(audShort(g))}${n?`<span class="cnt">${n}</span>`:""}</button>`; }).join("");
+  box.innerHTML = l.length ? l.map(m=>{ const d=new Date(m.created_at), mine=!!myMsgs[m.id];
+    return `<div class="msg ${mine?"me":""}"><div class="who">${esc(m.pseudo||"Anonyme")} <span>${esc(fmtD(d,{weekday:"short"}))} ${hm(d)}</span></div><div class="tx">${esc(m.texte)}</div></div>`; }).join("")
+    : `<div class="note" style="text-align:center;margin:30px 0">Aucun message cette semaine.<br>Lance la discussion !</div>`;
+  if(nearBottom) box.scrollTop = box.scrollHeight;
+}
+async function sendChat(){
+  const texte = $("chattx").value.trim(), pseudo = $("chatwho").value.trim() || null;
+  if(!texte) return;
+  store.set("pseudo", pseudo||"");
+  $("chatgo").disabled = true;
+  try{
+    const r = await fetch(`${SUPA_URL}/rest/v1/messages`, {method:"POST", headers:hdr({Prefer:"return=representation"}), body:JSON.stringify({grp:chatGrp, pseudo, texte})});
+    if(!r.ok) throw 0;
+    const [m] = await r.json(); myMsgs[m.id] = 1; store.set("myMsgs", myMsgs);
+    $("chattx").value = ""; await loadChat(); renderChatList(true);
+  }catch{ toast("Erreur : message non envoyé"); $("chatgo").disabled = false; }
+}
+setInterval(()=>{ if(chatOpen && !document.hidden) loadChat(); }, 8000);
+
 /* ======== choix du groupe ======== */
 function renderPick(){
   const groups = DATA.groups || {};
@@ -617,7 +692,7 @@ function renderPick(){
 }
 function startPick(){ pickStep=1; pickTd=null; render(); }
 function pickGroup(td){ pickTd=td; const l=DATA.groups[td]; if(td && l.length===1) return pickTp(l[0]); render(); }
-function pickTp(t){ tp=t; store.set("tp",t); pickStep=null; pickTd=null; homework=[]; store.set("hw",[]); annonces=[]; store.set("ann",[]); render(); loadHw(); loadAnn(); }
+function pickTp(t){ tp=t; store.set("tp",t); pickStep=null; pickTd=null; homework=[]; store.set("hw",[]); annonces=[]; store.set("ann",[]); chatMsgs=[]; render(); loadHw(); loadAnn(); loadChat(); }
 function cancelPick(){ pickStep=null; pickTd=null; render(); }
 
 /* ======== navigation ======== */
@@ -693,7 +768,7 @@ function openSheet(key, keep){
   if(!HW_ON) h+=`<div class="row"><button class="btn" onclick="closeSheet()">Fermer</button></div>`;
   $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
 }
-function closeSheet(){ sheetKey=null; editing=null; annOpen=false; $("sheet").classList.remove("open"); $("veil").style.display="none"; }
+function closeSheet(){ sheetKey=null; editing=null; annOpen=false; chatOpen=false; $("sheet").classList.remove("open"); $("veil").style.display="none"; }
 async function saveNew(){
   const t=$("newhw").value.trim(); if(!t) return;
   const e=events().find(x=>x.key===sheetKey); if(!e) return;
@@ -705,10 +780,10 @@ $("veil").onclick=closeSheet;
 
 /* ======== demarrage ======== */
 addEventListener("keydown",e=>{ if(["TEXTAREA","INPUT","SELECT"].includes(e.target.tagName)) return; if(e.key==="ArrowLeft") step(-1); if(e.key==="ArrowRight") step(1); if(e.key==="Escape") closeSheet(); });
-document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ loadData(); loadHw(); loadAnn(); loadFb(); } });
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ loadData(); loadHw(); loadAnn(); loadFb(); loadChat(); } });
 setInterval(()=>{ if(!sheetKey && !annOpen) render(); }, 60000);
-setInterval(()=>{ if(!document.hidden){ loadHw(); loadAnn(); loadFb(); } }, 90000);
-render(); loadData(); loadHw(); loadAnn(); loadFb();
+setInterval(()=>{ if(!document.hidden){ loadHw(); loadAnn(); loadFb(); loadChat(); } }, 90000);
+render(); loadData(); loadHw(); loadAnn(); loadFb(); loadChat();
 </script>
 </body>
 </html>
