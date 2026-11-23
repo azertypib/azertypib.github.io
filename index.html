@@ -291,7 +291,7 @@ footer{margin-top:22px;color:var(--muted);font-size:12px;display:flex;justify-co
 <div class="wrap" id="app"></div>
 <div class="veil" id="veil"></div>
 <div id="warn" role="alertdialog" aria-modal="true" aria-labelledby="warnh"><div><h3 id="warnh">Attention</h3>
-<p>Ton message contenait des mots vulgaires ou insultants : ils ont été remplacés par des étoiles. Arrête ça tout de suite, ce n'est pas bien. Fais autrement : cette appli appartient aux étudiants.</p>
+<p id="warnp"></p>
 <button class="btn dark" style="width:100%" onclick="$('warn').classList.remove('on')">J'ai compris</button></div></div>
 <div class="sheet" id="sheet"></div>
 <div class="toast" id="toast"></div>
@@ -363,7 +363,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-23x";
+const APP_V = "2026-11-24a";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -434,7 +434,7 @@ function tdOf(t){ for(const [td,l] of Object.entries(DATA?.groups||{})) if(l.inc
 function render(){
   now = new Date();
   const app = $("app");
-  if(!store.get("charte4")) return renderWelcome();
+  if(!charteOk()) return renderWelcome();
   if(!DATA){ app.innerHTML = `<div class="pick"><img src="icon.png" width="72" style="border-radius:16px"><h1>Chargement…</h1></div>`; return; }
   if(!tp || !DATA.events[tp] || pickStep){ renderPick(); return; }
   track(false);   // une fois par jour et par appareil, TP connu
@@ -845,10 +845,25 @@ function rude(w){
   const n = w.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[013457@$]/g,c=>LEET[c]);
   return isBad(n) || isBad(n.replace(/(.)\1{2,}/g,"$1")) || isBad(n.replace(/(.)\1{2,}/g,"$1$1"));   // merdeeee, connnnard
 }
+// liens autorisés : l'université (ENT, Moodle, IUT…), le gouvernement et des sites du bâtiment ; même liste côté serveur (public.filtre_texte)
+const OK_HOSTS = ["univ-larochelle.fr","gouv.fr","cerema.fr","cstb.fr","afnor.org","ademe.fr","ffbatiment.fr","batiweb.com","lemoniteur.fr","qualiteconstruction.com","guiboutilan-cyber.github.io"];
+const LINK = /\b(?:https?:\/\/|www\.)\S+|\b(?:[a-z0-9-]+\.)+(?:com|fr|net|org|io|ly|gg|xyz|be|tv|app|link|info|ru|cn|site|shop|top|online|eu|uk)\b(?:\/\S*)?/gi;
+function linkOk(l){
+  const host = l.replace(/^https?:\/\//i,"").split(/[/?#:]/)[0].toLowerCase();
+  return OK_HOSTS.some(h => host===h || host.endsWith("."+h));
+}
 function clean(s, lieu){
-  if(!s) return s; let bad = false;
-  const out = s.replace(/[\p{L}\p{N}@$]+/gu, w => rude(w) ? (bad=true, "*".repeat(w.length)) : w);
-  if(bad){ $("warn").classList.add("on"); setTimeout(()=>$("warn").querySelector("button").focus(),50); if(lieu) report(lieu, s); }
+  if(!s) return s; let rudeW = false, link = false;
+  const out = s.replace(LINK, l => linkOk(l) ? l : (link=true, "[lien retiré]"))
+               .replace(/[\p{L}\p{N}@$]+/gu, w => rude(w) ? (rudeW=true, "*".repeat(w.length)) : w);
+  if(rudeW || link){
+    $("warnp").textContent = (rudeW && link ? "Ton message contenait des mots vulgaires et un lien sans rapport avec l'IUT ou le bâtiment : ils ont été retirés."
+      : rudeW ? "Ton message contenait des mots vulgaires ou insultants : ils ont été remplacés par des étoiles. Arrête ça tout de suite, ce n'est pas bien."
+      : "Ton message contenait un lien sans rapport avec l'IUT ou le bâtiment : il a été retiré.")
+      + " Reste vigilant : cette appli sert aux cours et aux devoirs, elle appartient aux étudiants.";
+    $("warn").classList.add("on"); setTimeout(()=>$("warn").querySelector("button").focus(),50);
+    if(lieu) report(lieu, s);
+  }
   return out;
 }
 
@@ -895,6 +910,8 @@ function renderWelcome(){
   <button class="btn dark go" id="welgo" ${ok?"":"disabled"} onclick="acceptCharte()">J'accepte et j'entre</button></div>`;
 }
 // clé "charte4" (23/11 soir, avec les astuces) : tout le monde re-signe une fois ; une fois signée sur cet appareil, plus jamais redemandée
+// une charte signée une fois (n'importe quelle version) sur cet appareil ne revient JAMAIS : ne plus changer de clé
+const charteOk = () => ["charte","charte2","charte3","charte4"].some(k => store.get(k));
 function acceptCharte(){ if(!$("welok").checked) return; store.set("charte4", 1); track(true); render(); scrollTo(0,0); }
 function openCharte(){
   $("sheet").innerHTML = `<div class="grab"></div><h3>La charte</h3>
