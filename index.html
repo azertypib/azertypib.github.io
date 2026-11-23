@@ -265,7 +265,7 @@ textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:1
 .wel li b{display:block;font-weight:650}
 .wel .ok{display:flex;justify-content:center;gap:10px;align-items:center;margin:4px 2px 14px;font-size:15px;line-height:1.4;cursor:pointer;text-align:left}
 .wel .ok input{width:22px;height:22px;flex:none;margin:0;accent-color:var(--ok)}
-.wel .go{width:100%;padding:14px;font-size:16px}
+.wel .go{width:100%;height:52px;padding:0 14px;font-size:16px;display:flex;align-items:center;justify-content:center}
 .wel .go:disabled{opacity:.35}
 #warn{position:fixed;inset:0;z-index:100;display:none;place-items:center;background:rgba(0,0,0,.55);padding:20px}
 #warn.on{display:grid}
@@ -363,7 +363,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-23v";
+const APP_V = "2026-11-23w";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -890,6 +890,7 @@ function renderWelcome(){
   const ok = $("welok")?.checked;
   $("app").innerHTML = `<div class="wel"><div class="hd"><img src="icon.png" alt=""><h1>Bonjour à tous !</h1><p>Voici votre nouvel emploi du temps, fait par un étudiant pour tous les étudiants.</p></div>
   <div class="wcard"><h2>La charte</h2><p>Cette application a été créée par un étudiant pour les étudiants. C'est un objet de solidarité : elle marche seulement si chacun joue le jeu.</p>${CHARTE}</div>
+  <div class="wcard"><h2>Ce que tu peux faire</h2>${ASTUCES}</div>
   <label class="ok"><input type="checkbox" id="welok" ${ok?"checked":""} onchange="$('welgo').disabled=!this.checked"><span>J'ai lu la charte et je m'engage à la respecter.</span></label>
   <button class="btn dark go" id="welgo" ${ok?"":"disabled"} onclick="acceptCharte()">J'accepte et j'entre</button></div>`;
 }
