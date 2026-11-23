@@ -96,6 +96,7 @@ html{touch-action:manipulation}
 .ev .x{opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ev.exam{box-shadow:inset 0 0 0 2px var(--c)}
 .dpanel.done .dc,.dpanel.done .sm{opacity:.5}
+.dpanel:not(.on),.wpanel:not(.on){cursor:pointer}
 .now{position:absolute;left:0;right:0;height:2px;background:var(--accent);z-index:3}
 .now::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
 
@@ -270,6 +271,7 @@ textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:1
 .wel li b{color:var(--c,inherit)}
 .wel .wcard>.info,.wel .info{margin:14px 0 0;padding:10px 12px;border-radius:10px;background:var(--soft);font-size:13.5px;line-height:1.45;color:var(--ink)}
 .wel .info b{display:block;margin-bottom:2px}
+.wel .info.essai{border-left:4px solid #e8833a}
 .wel .guide{background:linear-gradient(135deg,rgba(13,42,71,.10),rgba(18,128,138,.14));border-color:rgba(18,128,138,.45)}
 .wel .guide h2{color:#12808a}
 .wel .guide li{border-left-color:rgba(18,128,138,.55)}
@@ -392,7 +394,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-24j";
+const APP_V = "2026-11-24m";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -455,7 +457,7 @@ function toggleDone(id, v){ if(v) done[id]=true; else delete done[id]; store.set
 /* ======== groupes ======== */
 const tdLabel = g => "Groupe " + g.replace(/^S\d/,"");
 const tpLabel = g => g.replace(/^S\d/,"");
-let PROMO = annee || "S1";   // la promo = l'année choisie (S1, S3) : devoirs, annonces, discussion et messages restent dans l'année
+let PROMO = annee || "S1";   // la promo = l'année choisie (S1, S3) : devoirs et discussion restent dans l'année ; annonces, messages au créateur et dons sont communs
 // publics dont on voit les devoirs : la promo, son groupe de TD, son TP
 const audiences = () => [PROMO, tdOf(tp), tp].filter(Boolean);
 const audLabel = g => g===PROMO ? "toute la promo" : /TP/.test(g) ? "le "+tpLabel(g) : "tout le groupe "+tpLabel(g);
@@ -620,10 +622,10 @@ function renderHwSection(all){
   return h+`</div>`;
 }
 
-/* ======== annonces : pour la promo, un groupe de TD ou un TP ; date facultative (disparait apres), sinon reste jusqu'a suppression ======== */
+/* ======== annonces : communes à tous les semestres ; public = promo, groupe de TD ou TP (étiquette) ; date facultative ======== */
 let annonces = store.get("ann", []);
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-const audShort = g => g===PROMO ? "Promo "+PROMO : /TP/.test(g) ? tpLabel(g) : tdLabel(g);
+const audShort = g => /^S\d$/.test(g) ? "Promo "+g : !g.startsWith(PROMO) ? g.slice(0,2)+" "+(/TP/.test(g) ? tpLabel(g) : tdLabel(g)) : /TP/.test(g) ? tpLabel(g) : tdLabel(g);
 // une couleur par public pour les pastilles de la discussion : promo orange, groupe bleu, TP vert
 const AUD_COL = g => g===PROMO ? "#e8833a" : /TP/.test(g) ? "#2fbf6a" : "#2e86d4";
 // sans date, une annonce disparait 1 semaine apres sa publication
@@ -647,7 +649,7 @@ function toggleSeen(id, ev){
 async function loadAnn(){
   if(!HW_ON || !tp) return;
   try{
-    const r = await fetch(`${SUPA_URL}/rest/v1/annonces?grp=in.(${audiences().map(encodeURIComponent).join(",")})&deleted=is.false&or=(jour.gte.${ymd(new Date())},and(jour.is.null,created_at.gte.${encodeURIComponent(new Date(Date.now()-WEEK_MS).toISOString())}))&order=jour.asc.nullslast,created_at.asc`, {headers:hdr()});
+    const r = await fetch(`${SUPA_URL}/rest/v1/annonces?deleted=is.false&or=(jour.gte.${ymd(new Date())},and(jour.is.null,created_at.gte.${encodeURIComponent(new Date(Date.now()-WEEK_MS).toISOString())}))&order=jour.asc.nullslast,created_at.asc`, {headers:hdr()});
     if(!r.ok) throw 0;
     annonces = await r.json(); store.set("ann", annonces); if(!sheetKey && !annOpen) render();
   }catch{}
@@ -751,9 +753,8 @@ const retNew = () => retours.filter(m=>m.id>retSeen).length;
 async function loadFb(){
   if(!HW_ON) return;
   try{
-    // messages au créateur de son année seulement (les anciens sans TP sont ceux de la 1re année)
-    const yr = PROMO==="S1" ? "or=(tp.is.null,tp.like.S1*)" : `tp=like.${PROMO}*`;
-    const r = await fetch(`${SUPA_URL}/rest/v1/retours?select=id,created_at,contact,tp,texte&${yr}&order=created_at.desc`, {headers:hdr()});
+    // messages au créateur : communs à tous les semestres
+    const r = await fetch(`${SUPA_URL}/rest/v1/retours?select=id,created_at,contact,tp,texte&order=created_at.desc`, {headers:hdr()});
     if(!r.ok) throw 0;
     retours = await r.json(); store.set("ret", retours); if(!sheetKey && !annOpen) render();
   }catch{}
@@ -789,7 +790,7 @@ function openFeedback(){
 }
 function fbBox(m){
   const d = new Date(m.created_at);
-  return `<div class="annbox" style="cursor:default"><div class="d">${esc(fmtD(d,{day:"numeric",month:"short"}))}<span>${m.tp?esc(tpLabel(m.tp)):""}</span><em>${esc(m.contact||"Anonyme")}</em></div>
+  return `<div class="annbox" style="cursor:default"><div class="d">${esc(fmtD(d,{day:"numeric",month:"short"}))}<span>${esc((m.tp||"S1").replace(/^(S\d)/,"$1 "))}</span><em>${esc(m.contact||"Anonyme")}</em></div>
       <div class="tx">${esc(m.texte)}</div></div>`;
 }
 function openFbList(){
@@ -944,7 +945,8 @@ const CHARTE = `<ul>
     <li style="--c:#2e86d4"><b>Confiance</b>On écrit seulement ce qu'on sait vraiment : la bonne date, la bonne consigne. Les autres comptent sur toi.</li>
     <li style="--c:#8e6bd8"><b>Esprit critique</b>N'écoute pas tout le monde : en cas de doute, vérifie auprès du prof ou sur l'ENT.</li>
     <li style="--c:#12808a"><b>Entraide</b>Quelqu'un est perdu ? On l'aide. Pas de dérapage, on reste entre gens bien.</li></ul>
-    <p class="info"><b>Bon à savoir</b>Ta connexion à l'appli est anonyme. Tu peux donner ton prénom si tu le souhaites (dans la discussion ou dans un message au créateur). Tout ce qui est publié et l'activité de l'appli remontent au créateur, qui veille au respect de la charte.</p>`;
+    <p class="info"><b>Bon à savoir</b>Ta connexion à l'appli est anonyme. Tu peux donner ton prénom si tu le souhaites (dans la discussion ou dans un message au créateur). Tout ce qui est publié et l'activité de l'appli remontent au créateur, qui veille au respect de la charte.</p>
+    <p class="info essai"><b>Version d'essai</b>Cette application est expérimentale : c'est un essai, encore en cours de développement. Elle peut contenir des erreurs (horaires, salles, devoirs). Garde ta vigilance et ne t'y fie pas à 100 % : en cas de doute, la référence reste l'emploi du temps officiel de l'IUT.</p>`;
 const ASTUCES = `<ul>
     <li><b>Changer de jour ou de semaine</b>Glisse à gauche ou à droite, ou utilise les flèches. Touche le cartouche « Semaine » pour aller à une date précise.</li>
     <li><b>Voir un cours et ajouter un devoir</b>Touche un cours pour voir la salle, le prof et les horaires. Tu peux y ajouter un devoir : il sera visible par tous les étudiants qui suivent ce cours (ton TP, ton groupe ou toute l'année, selon le cours).</li>
@@ -958,7 +960,7 @@ function renderWelcome(){
   $("app").innerHTML = `<div class="wel"><div class="hd"><img src="icon.png" alt=""><h1>Bonjour à tous !</h1><p>Voici votre nouvel emploi du temps, fait par un étudiant pour tous les étudiants.</p></div>
   <div class="wcard"><h2>La charte</h2><p>Cette application a été créée par un étudiant pour les étudiants. C'est un objet de solidarité : elle marche seulement si chacun joue le jeu.</p>${CHARTE}</div>
   ${GUIDE}
-  <label class="ok"><input type="checkbox" id="welok" ${ok?"checked":""} onchange="$('welgo').disabled=!this.checked"><span>J'ai lu la charte et je m'engage à la respecter.</span></label>
+  <label class="ok"><input type="checkbox" id="welok" ${ok?"checked":""} onchange="$('welgo').disabled=!this.checked"><span>J'ai lu la charte et l'avertissement « Version d'essai », et je m'engage à respecter la charte.</span></label>
   <button class="btn dark go" id="welgo" ${ok?"":"disabled"} onclick="acceptCharte()">J'accepte et j'entre</button></div>`;
 }
 // clé "charte4" (23/11 soir, avec les astuces) : tout le monde re-signe une fois ; une fois signée sur cet appareil, plus jamais redemandée
@@ -986,7 +988,7 @@ function renderYear(msg){
 function setYear(y){
   if(y!==annee){   // autre année = autre espace : on oublie le TP et les listes de l'ancienne année
     annee=y; PROMO=y; store.set("annee",y); DATA=yearData();
-    tp=null; store.set("tp",null); homework=[]; store.set("hw",[]); annonces=[]; store.set("ann",[]); chatMsgs=[]; retours=[]; store.set("ret",[]); loadFb();
+    tp=null; store.set("tp",null); homework=[]; store.set("hw",[]); chatMsgs=[];
   }
   pickYear=false; pickStep=1; pickTd=null; render();
 }
@@ -1085,7 +1087,10 @@ function bindSwipe(){
   v.addEventListener("pointerdown", e=>{ if(e.pointerType!=="mouse" || e.button) return; start(e.clientX, e.clientY); });
   v.addEventListener("pointermove", e=>{ if(e.pointerType==="mouse" && move(e.clientX, e.clientY) && !v.hasPointerCapture(e.pointerId)) try{ v.setPointerCapture(e.pointerId); }catch{} });
   v.addEventListener("pointerup", e=>{ if(e.pointerType==="mouse") end(); });
-  v.addEventListener("click", e=>{ if(swiped){ e.stopPropagation(); e.preventDefault(); swiped=false; } }, true);
+  // toucher le jour (ou la semaine) voisin à moitié visible = y aller, comme les flèches ; ses cours ne s'ouvrent pas tant qu'il n'est pas au centre
+  v.addEventListener("click", e=>{ if(swiped){ e.stopPropagation(); e.preventDefault(); swiped=false; return; }
+    const p=e.target.closest(".dpanel,.wpanel"); if(!p || p.classList.contains("on")) return;
+    e.stopPropagation(); e.preventDefault(); slideTo(P.indexOf(p)); }, true);
 }
 // iPhone : on empeche le pincement pour zoomer
 addEventListener("gesturestart", e=>e.preventDefault());
