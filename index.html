@@ -89,7 +89,7 @@ html{touch-action:manipulation}
 .ev .r{font-weight:800;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ev .x{opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ev.exam{box-shadow:inset 0 0 0 2px var(--c)}
-.ev.past{opacity:.5}
+.ev.past,.dc.past,.sm.past{opacity:.5}
 .now{position:absolute;left:0;right:0;height:2px;background:var(--accent);z-index:3}
 .now::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
 
@@ -363,7 +363,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-24a";
+const APP_V = "2026-11-24b";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -545,15 +545,17 @@ function dayList(d, de, Hc, B, L){
       if(g>25 && px>=34) full+=`<div class="brk" style="top:${y1}px;height:${px}px"><i></i><span>${fmtH(prev)} – ${fmtH(e.s)}</span><i></i></div>`;
       else if(g>=15) full+=`<div class="dash" style="top:${y1+px/2-9}px"></div>`; }   // trait seulement a partir de 15 min
     const y=Y(e.s), hh=Math.max(18, Y(e.e)-y-4), sz=hh<50?"s1":hh<70?"s2":"";      // cours courts : carte compacte
-    full+=`<div class="dc ${sz}" style="top:${y}px;height:${hh}px;${colors(e.code)}" onclick="openSheet('${esc(e.key)}')">
+    full+=`<div class="dc ${sz} ${e.e<now?"past":""}" style="top:${y}px;height:${hh}px;${colors(e.code)}" onclick="openSheet('${esc(e.key)}')">
         <div class="tm">${fmtH(e.s)}${sz==="s1"?"":` – ${fmtH(e.e)}`}</div><div class="rm">${esc((e.room||"").split(/[,/]/)[0].trim())}</div>
         <div class="cd">${esc(e.code)}${e.type?`<span class="badge">${esc(typeLbl(e.type))}</span>`:""}</div>
         <div class="nm">${esc(e.name)}${e.prof?` · ${esc(e.prof)}`:""}</div>${hwBadge(e.key)}</div>`;
     // resume (jour voisin) : memes positions, heure de debut + module
-    sum+=`<div class="sm ${hh<44?"s1":""}" style="top:${y}px;height:${hh}px;${colors(e.code)}"><b>${fmtH(e.s)}</b>${esc(e.code)}</div>`;
+    sum+=`<div class="sm ${hh<44?"s1":""} ${e.e<now?"past":""}" style="top:${y}px;height:${hh}px;${colors(e.code)}"><b>${fmtH(e.s)}</b>${esc(e.code)}</div>`;
     prev = prev && prev>e.e ? prev : e.e;
   });
   if(mins(prev)<=1040){ const y=Y(prev); full+=`<div class="brk tail" style="top:${y}px;height:${H-y}px"><i></i><span>Fin des cours à ${fmtH(prev)}</span></div>`; }
+  // trait rouge de l'heure actuelle, comme en vue Semaine
+  if(sameDay(d,now) && mins(now)>=480 && mins(now)<=1080) full+=`<div class="now" style="top:${Y(now)}px"></div>`;
   return `<div class="dbody" style="height:${H}px"><div class="full">${full}</div><div class="sum">${sum}</div></div>`;
 }
 
@@ -1002,8 +1004,9 @@ function bindSwipe(){
   v.addEventListener("touchmove", e=>{ if(swipe && move(e.touches[0].clientX, e.touches[0].clientY) && e.cancelable) e.preventDefault(); }, {passive:false});
   v.addEventListener("touchend", end); v.addEventListener("touchcancel", end);
   // souris (PC)
-  v.addEventListener("pointerdown", e=>{ if(e.pointerType!=="mouse" || e.button) return; start(e.clientX, e.clientY); try{ v.setPointerCapture(e.pointerId); }catch{} });
-  v.addEventListener("pointermove", e=>{ if(e.pointerType==="mouse") move(e.clientX, e.clientY); });
+  // capture seulement une fois le glisser commencé : capturer dès l'appui envoyait le clic à la bande, pas au cours (plus de fiche sur PC)
+  v.addEventListener("pointerdown", e=>{ if(e.pointerType!=="mouse" || e.button) return; start(e.clientX, e.clientY); });
+  v.addEventListener("pointermove", e=>{ if(e.pointerType==="mouse" && move(e.clientX, e.clientY) && !v.hasPointerCapture(e.pointerId)) try{ v.setPointerCapture(e.pointerId); }catch{} });
   v.addEventListener("pointerup", e=>{ if(e.pointerType==="mouse") end(); });
   v.addEventListener("click", e=>{ if(swiped){ e.stopPropagation(); e.preventDefault(); swiped=false; } }, true);
 }
