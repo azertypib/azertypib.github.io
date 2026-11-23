@@ -189,6 +189,8 @@ html{touch-action:manipulation}
 .support>b,.support p{grid-column:1/-1;margin:0}.support p{color:var(--muted);font-size:13.5px}
 .support a{height:auto;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;color:var(--ink)}
 .support a b{font-size:15px}.support a em{font-style:normal;font-size:11.5px;color:#2fbf6a;font-weight:700}.support a span{font-size:12.5px;color:var(--muted);text-align:center}
+.support.charte .btn{grid-column:1/-1;height:44px;font-weight:650}
+.ann .more{width:100%;height:38px;font-size:14px;font-weight:650}
 .annbox .d em{display:block;font-style:normal;font-weight:700;font-size:11.5px;color:var(--ink);margin-top:3px}
 .lbl{display:block;font-weight:700;font-size:13.5px;margin:12px 0 6px}
 .lbl small{font-weight:500;color:var(--muted)}
@@ -250,10 +252,10 @@ textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:1
 .pick .opts button{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:18px 10px;font-size:20px;font-weight:800;box-shadow:var(--shadow)}
 .pick .back{margin-top:18px;border:0;background:none;color:var(--muted);text-decoration:underline}
 .wel{max-width:520px;margin:5vh auto 40px}
-.wel .hd{display:flex;align-items:center;gap:14px;margin-bottom:18px}
-.wel .hd img{width:60px;height:60px;border-radius:14px;flex:none}
-.wel h1{font-size:23px;margin:0;line-height:1.2}
-.wel .hd p{margin:3px 0 0;color:var(--muted)}
+.wel .hd{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;margin-bottom:18px}
+.wel .hd img{width:72px;height:72px;border-radius:16px;flex:none;margin-bottom:4px}
+.wel h1{font-size:24px;margin:0;line-height:1.2}
+.wel .hd p{margin:0;color:var(--muted);max-width:340px}
 .wel .wcard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow);margin-bottom:14px}
 .wel h2{font-size:17px;margin:0 0 4px}
 .wel .wcard>p{margin:0 0 8px;color:var(--muted);font-size:14px;line-height:1.45}
@@ -261,7 +263,7 @@ textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:1
 .wel li{padding:3px 0 3px 12px;border-left:3px solid #2e86d4;margin:10px 0;font-size:14.5px;line-height:1.45}
 .wel li:nth-child(3n+2){border-color:#12808a} .wel li:nth-child(3n){border-color:#2fbf6a}
 .wel li b{display:block;font-weight:650}
-.wel .ok{display:flex;gap:10px;align-items:flex-start;margin:4px 2px 16px;font-size:15px;line-height:1.4;cursor:pointer}
+.wel .ok{display:flex;justify-content:center;gap:10px;align-items:center;margin:4px 2px 14px;font-size:15px;line-height:1.4;cursor:pointer;text-align:left}
 .wel .ok input{width:22px;height:22px;flex:none;margin:0;accent-color:var(--ok)}
 .wel .go{width:100%;padding:14px;font-size:16px}
 .wel .go:disabled{opacity:.35}
@@ -361,7 +363,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-23u";
+const APP_V = "2026-11-23v";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -432,8 +434,7 @@ function tdOf(t){ for(const [td,l] of Object.entries(DATA?.groups||{})) if(l.inc
 function render(){
   now = new Date();
   const app = $("app");
-  if(!store.get("charte2")) return renderWelcome();
-  if(welRecap) return renderRecap();
+  if(!store.get("charte3")) return renderWelcome();
   if(!DATA){ app.innerHTML = `<div class="pick"><img src="icon.png" width="72" style="border-radius:16px"><h1>Chargement…</h1></div>`; return; }
   if(!tp || !DATA.events[tp] || pickStep){ renderPick(); return; }
   track(false);   // une fois par jour et par appareil, TP connu
@@ -726,18 +727,27 @@ function openFeedback(){
     <p class="note" style="font-size:14px">Tu as repéré un bug, une erreur dans l'emploi du temps, ou tu as une idée pour l'appli ? Écris-le ici. Ton message sera <b>visible par tout le monde</b> et disparaîtra une fois le problème réglé.</p>
     <button class="btn dark" style="width:100%;height:44px;margin:4px 0 14px" onclick="newFeedback()">Écrire un message</button>
     <div class="ann"><div class="head"><b>Messages en attente${retours.length?` (${retours.length})`:""}</b></div>`;
+  // un seul message affiché ici (sinon le soutien et la charte descendent trop bas) ; tous en touchant « Voir les N messages »
   if(!retours.length) h += `<div class="note" style="margin:0 2px 4px">Aucun message pour l'instant.</div>`;
-  retours.forEach(m=>{
-    const d = new Date(m.created_at);
-    h += `<div class="annbox" style="cursor:default"><div class="d">${esc(fmtD(d,{day:"numeric",month:"short"}))}<span>${m.tp?esc(tpLabel(m.tp)):""}</span><em>${esc(m.contact||"Anonyme")}</em></div>
-      <div class="tx">${esc(m.texte)}</div></div>`;
-  });
+  else h += fbBox(retours[0]) + (retours.length>1 ? `<button class="btn more" onclick="openFbList()">Voir les ${retours.length} messages</button>` : "");
   h += `</div>
     <div class="support"><b>Envie de soutenir l'appli ?</b><p>Rien d'obligatoire, mais ça fait toujours plaisir.</p>
       <a class="btn" href="${KOFI}" target="_blank" rel="noopener"><b>1 €</b><span>Un repas au resto U</span>${supLbl(supCount(1))}</a>
       <a class="btn" href="${KOFI}" target="_blank" rel="noopener"><b>3 €</b><span>T'es vraiment le GOAT</span>${supLbl(supCount(3))}</a>${(()=>{const o=soutiens.length-supCount(1)-supCount(3); return o?`<p style="grid-column:1/-1;margin:0;font-size:12.5px;color:var(--muted)">+ ${o} autre${o>1?"s":""} don${o>1?"s":""}, merci !</p>`:"";})()}</div>
+    <div class="support charte"><b>La charte</b><p>Les règles de l'appli et ce que tu peux faire avec.</p>
+      <button class="btn" onclick="openCharte()">Relire la charte</button></div>
     <div class="row"><button class="btn" onclick="closeSheet()">Fermer</button></div>`;
   $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
+}
+function fbBox(m){
+  const d = new Date(m.created_at);
+  return `<div class="annbox" style="cursor:default"><div class="d">${esc(fmtD(d,{day:"numeric",month:"short"}))}<span>${m.tp?esc(tpLabel(m.tp)):""}</span><em>${esc(m.contact||"Anonyme")}</em></div>
+      <div class="tx">${esc(m.texte)}</div></div>`;
+}
+function openFbList(){
+  $("sheet").innerHTML = `<div class="grab"></div><h3>Messages en attente (${retours.length})</h3>${retours.map(fbBox).join("")}
+    <div class="row"><button class="btn" onclick="openFeedback()">Retour</button></div>`;
+  $("sheet").scrollTop = 0;
 }
 function newFeedback(){
   $("sheet").innerHTML = `<div class="grab"></div><h3>Message au créateur</h3>
@@ -860,34 +870,37 @@ function report(lieu, texte){
 console.assert(clean("TP béton, cône d'Abrams, batardeau, salopette, niquel")==="TP béton, cône d'Abrams, batardeau, salopette, niquel" && clean("t'es un c0nnard, merdeee")==="t'es un *******, *******", "filtre mots vulgaires");
 $("warn").classList.remove("on");
 
-/* ======== accueil + charte (à accepter une fois avant d'entrer) ======== */
-let welRecap = false;
-function renderWelcome(){
-  const ok = $("welok")?.checked;
-  $("app").innerHTML = `<div class="wel"><div class="hd"><img src="icon.png" alt=""><div><h1>Bonjour à tous !</h1><p>Voici votre nouvel emploi du temps, fait par un étudiant pour tous les étudiants.</p></div></div>
-  <div class="wcard"><h2>La charte</h2><p>Cette application a été créée par un étudiant pour les étudiants. C'est un objet de solidarité : elle marche seulement si chacun joue le jeu.</p><ul>
+/* ======== accueil + charte (à accepter une fois avant d'entrer ; relisible depuis la fiche Messages) ======== */
+const CHARTE = `<ul>
     <li><b>Solidarité</b>Ce que tu ajoutes (devoirs, annonces) sert à tout le monde. On partage, on ne garde pas les infos pour soi.</li>
-    <li><b>Respect</b>Aucune insulte, moquerie ou propos blessant, ni dans les devoirs, ni dans les annonces, ni dans la discussion. Les mots vulgaires sont masqués automatiquement.</li>
+    <li><b>Respect</b>Aucune insulte, moquerie ou propos blessant, ni dans les devoirs, ni dans les annonces, ni dans la discussion, ni dans les messages au créateur. Les mots vulgaires sont masqués automatiquement.</li>
     <li><b>On ne saccage rien</b>On ne supprime pas et on ne modifie pas les devoirs des autres pour s'amuser. Une fausse info pénalise tout le monde.</li>
     <li><b>Confiance</b>On écrit seulement ce qu'on sait vraiment : la bonne date, la bonne consigne. Les autres comptent sur toi.</li>
     <li><b>Esprit critique</b>N'écoute pas tout le monde : en cas de doute, vérifie auprès du prof ou sur l'ENT.</li>
     <li><b>Entraide</b>Quelqu'un est perdu ? On l'aide. Pas de dérapage, on reste entre gens bien.</li></ul>
-    <p style="margin:12px 0 0">Bon à savoir : l'appli compte les connexions de façon anonyme, et un message avec des insultes est signalé au créateur.</p></div>
-  <label class="ok"><input type="checkbox" id="welok" ${ok?"checked":""} onchange="$('welgo').disabled=!this.checked">J'ai lu la charte et je m'engage à la respecter.</label>
-  <button class="btn dark go" id="welgo" ${ok?"":"disabled"} onclick="acceptCharte()">J'accepte et j'entre</button></div>`;
-}
-// clé "charte2" (23/11) : tout le monde re-signe une fois ; une fois signée sur cet appareil, plus jamais redemandée
-function acceptCharte(){ if(!$("welok").checked) return; store.set("charte2", 1); track(true); welRecap = true; render(); scrollTo(0,0); }
-function renderRecap(){
-  $("app").innerHTML = `<div class="wel"><div class="hd"><img src="icon.png" alt=""><div><h1>Bienvenue !</h1><p>Respect, entraide, infos vérifiées : merci de jouer le jeu.</p></div></div>
-  <div class="wcard"><h2>Ce que tu peux faire</h2><ul>
+    <p style="margin:12px 0 0">Bon à savoir : l'appli compte les connexions de façon anonyme, et un message avec des insultes est signalé au créateur.</p>`;
+const ASTUCES = `<ul>
     <li><b>Changer de jour ou de semaine</b>Glisse à gauche ou à droite, ou utilise les flèches. Touche le cartouche « Semaine » pour aller à une date précise.</li>
     <li><b>Voir un cours en détail</b>Touche un cours : salle, prof, horaires, et ajoute un devoir pour ceux qui ont ce cours.</li>
     <li><b>Suivre tes devoirs</b>Les devoirs sont partagés ; coche-les quand c'est fait (ça ne compte que pour toi). Ils disparaissent après la date de rendu.</li>
     <li><b>Annonces et discussion</b>Les infos importantes et un fil de discussion pour tout le monde, ton groupe et ton TP.</li>
     <li><b>L'installer comme une appli</b>iPhone : Partager puis « Sur l'écran d'accueil ». Android : menu puis « Installer l'application ».</li>
-    <li><b>Une idée, un bug ?</b>Écris un message au créateur, il lit tout.</li></ul></div>
-  <button class="btn dark go" onclick="welRecap=false;render();scrollTo(0,0)">${tp&&DATA?.events?.[tp]?"Voir mon emploi du temps":"Choisir mon groupe"}</button></div>`;
+    <li><b>Une idée, un bug ?</b>Écris un message au créateur, il lit tout.</li></ul>`;
+function renderWelcome(){
+  const ok = $("welok")?.checked;
+  $("app").innerHTML = `<div class="wel"><div class="hd"><img src="icon.png" alt=""><h1>Bonjour à tous !</h1><p>Voici votre nouvel emploi du temps, fait par un étudiant pour tous les étudiants.</p></div>
+  <div class="wcard"><h2>La charte</h2><p>Cette application a été créée par un étudiant pour les étudiants. C'est un objet de solidarité : elle marche seulement si chacun joue le jeu.</p>${CHARTE}</div>
+  <label class="ok"><input type="checkbox" id="welok" ${ok?"checked":""} onchange="$('welgo').disabled=!this.checked"><span>J'ai lu la charte et je m'engage à la respecter.</span></label>
+  <button class="btn dark go" id="welgo" ${ok?"":"disabled"} onclick="acceptCharte()">J'accepte et j'entre</button></div>`;
+}
+// clé "charte3" (23/11 après-midi) : tout le monde re-signe une fois ; une fois signée sur cet appareil, plus jamais redemandée
+function acceptCharte(){ if(!$("welok").checked) return; store.set("charte3", 1); track(true); render(); scrollTo(0,0); }
+function openCharte(){
+  $("sheet").innerHTML = `<div class="grab"></div><h3>La charte</h3>
+    <div class="wel" style="margin:0"><p class="note" style="font-size:14px">Cette application a été créée par un étudiant pour les étudiants. C'est un objet de solidarité : elle marche seulement si chacun joue le jeu.</p>${CHARTE}
+    <h3 style="margin-top:20px">Ce que tu peux faire</h3>${ASTUCES}</div>
+    <div class="row"><button class="btn" onclick="openFeedback()">Retour</button></div>`;
+  $("sheet").scrollTop = 0;
 }
 
 /* ======== choix du groupe ======== */
