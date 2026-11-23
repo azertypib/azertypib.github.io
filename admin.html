@@ -75,12 +75,22 @@ async function load(){
       headers:{apikey:SUPA_KEY, "Content-Type":"application/json"}, body:JSON.stringify({cle})});
   }catch{ return askKey("Pas de connexion internet."); }
   if(!r.ok){ localStorage.removeItem("adm.cle"); return askKey("Clé refusée."); }
-  show(await r.json());
+  const s = await r.json();
+  try{ const e = await fetch(`${SUPA_URL}/rest/v1/etat?select=maintenance,jusqua&id=eq.1`, {headers:{apikey:SUPA_KEY}}); const [x] = await e.json(); s.maint = !!x?.maintenance && (!x.jusqua || new Date(x.jusqua) > new Date()); s.maintFin = x?.jusqua; }catch{}
+  show(s);
 }
 
 // accueil = 3 cartouches avec juste le nombre ; le détail s'ouvre en touchant un cartouche
 let S = null, view = null;
 function show(s){ S = s; draw(); }   // « Actualiser » garde la liste ouverte
+// maintenance : affiche un message à tous et bloque les publications (le serveur refuse) ; s'éteint seule au bout de 3 h
+async function toggleMaint(){
+  const on = !S.maint;
+  if(!confirm(on ? "Mettre l'appli en maintenance ? Tout le monde verra le message et rien ne pourra être publié." : "Remettre l'appli en ligne normalement ?")) return;
+  const r = await fetch(`${SUPA_URL}/rest/v1/rpc/set_maintenance`, {method:"POST", headers:{apikey:SUPA_KEY, "Content-Type":"application/json"}, body:JSON.stringify({cle:localStorage.getItem("adm.cle"), actif:on})});
+  if(!r.ok){ alert("Échec : clé refusée ?"); return; }
+  load();
+}
 function go(v){ view = v; draw(); scrollTo(0,0); }
 function draw(){
   const s = S, today = new Date().toISOString().slice(0,10);
@@ -95,6 +105,7 @@ function draw(){
       <button class="tile" onclick="go('alertes')"><b>${s.alertes.length}</b><span>Messages censurés</span><i>›</i></button>
       <button class="tile" onclick="go('dons')"><b>${dons.length}</b><span>Dons · ${total}</span><i>›</i></button>
       <button class="tile" onclick="go('appareils')"><b>${s.appareils.length}</b><span>Appareils · ${auj.personnes} aujourd'hui${auj.nouvelles ? `, ${auj.nouvelles} nouveau${auj.nouvelles>1?"x":""}` : ""}</span><i>›</i></button>
+<button class="tile" onclick="toggleMaint()"><b style="color:${s.maint?"#e8833a":"var(--ok)"}">${s.maint?"ON":"OFF"}</b><span>${s.maint?`Maintenance en cours : rien ne peut être publié (s'arrête seule à ${fmt(s.maintFin,{hour:"2-digit",minute:"2-digit"})})`:"Maintenance : appli normale. Touche pour la mettre en maintenance"}</span><i>›</i></button>
     </div>
     <p style="margin-top:28px"><button onclick="forget()">Oublier la clé sur cet appareil</button></p>`;
   }else if(view==="alertes"){
