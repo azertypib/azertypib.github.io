@@ -57,7 +57,7 @@ function Get-Iso($v) {
     if ($v -is [datetime]) { return $v.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:00'Z'", $Inv) }
     [string]$v
 }
-function Clean([string]$s) { ([Net.WebUtility]::HtmlDecode($s) -replace '\s+', ' ').Trim() }
+function Get-CleanText([string]$s) { ([Net.WebUtility]::HtmlDecode($s) -replace '\s+', ' ').Trim() }
 
 $Months = @{ janvier=1; fevrier=2; mars=3; avril=4; mai=5; juin=6; juillet=7; aout=8; septembre=9; octobre=10; novembre=11; decembre=12 }
 
@@ -72,8 +72,8 @@ function ConvertFrom-GroupPage([string]$html) {
         $rows = @{}
         $first = $null
         foreach ($m in [regex]::Matches($c, '<td nowrap>\s*(.*?)\s*</td>\s*<td>(.*?)</td>', 'Singleline')) {
-            $k = Remove-Accents (Clean $m.Groups[1].Value)
-            $v = Clean $m.Groups[2].Value
+            $k = Remove-Accents (Get-CleanText $m.Groups[1].Value)
+            $v = Get-CleanText $m.Groups[2].Value
             if (-not $first) { $first = @($k, $v) }
             $rows[$k] = $v
             if ($k -like 'Memo*') { break }
@@ -149,7 +149,7 @@ function Get-GpuTable($table) {
     $html = Get-Web "$Base/gpu/info_table.php?table=$table&champ=$table&filiere=$Filiere"
     foreach ($m in [regex]::Matches($html, "Valide\('$table','([^']+)'\)(.*?)</tr>", 'Singleline')) {
         $code = ($m.Groups[1].Value -split '\s+')[-1]
-        $vals = @([regex]::Matches($m.Groups[2].Value, '<P class="Police2G">(.*?)</P>', 'Singleline') | ForEach-Object { Clean $_.Groups[1].Value })
+        $vals = @([regex]::Matches($m.Groups[2].Value, '<P class="Police2G">(.*?)</P>', 'Singleline') | ForEach-Object { Get-CleanText $_.Groups[1].Value })
         [pscustomobject]@{ code = $code; vals = $vals }
     }
 }
