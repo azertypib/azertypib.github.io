@@ -56,9 +56,10 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .links a:hover,.links a:focus-visible{background:rgba(255,255,255,.08)}
 .bar .nav{width:44px;height:var(--h2);padding:0;display:grid;place-items:center;border-radius:12px;box-shadow:var(--shadow)}
 .ttl{cursor:pointer}
-.seg{position:relative;display:inline-grid;font:inherit;color:inherit;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:12px;padding:4px;height:var(--h2);margin-left:auto;background:var(--panel);cursor:pointer;box-shadow:var(--shadow)}
-.seg::before{content:"";position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:9px;background:linear-gradient(90deg,#0d2a47,#12808a);box-shadow:0 1px 4px rgba(0,0,0,.25);transition:transform .22s ease}
-.seg.sem::before{transform:translateX(100%)}
+.seg{position:relative;display:inline-grid;font:inherit;color:inherit;grid-template-columns:auto auto;border:1px solid var(--line);border-radius:12px;padding:4px;height:var(--h2);margin-left:auto;background:var(--panel);cursor:pointer;box-shadow:var(--shadow)}
+.seg::before{content:"";position:absolute;top:4px;bottom:4px;left:0;width:var(--w,0);transform:translateX(var(--x,4px));border-radius:9px;background:linear-gradient(90deg,#0d2a47,#12808a);box-shadow:0 1px 4px rgba(0,0,0,.25);}   /* pastille calée sur le mot actif (seatSeg) */
+.seg.ready::before{transition:transform .22s ease,width .22s ease}   /* pas d'animation au premier affichage */
+.bar button.nav:nth-of-type(2){margin-right:8px}   /* petit espace entre la flèche et l'interrupteur */
 .seg span{position:relative;z-index:1;display:grid;place-items:center;padding:0 14px;font-weight:600;color:var(--muted);transition:color .22s}
 .seg span.on{color:#fff}
 
@@ -67,7 +68,7 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .sq small{font-size:10.5px;font-weight:700;color:var(--muted);margin-top:2px}
 .sq .cnt{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--accent);color:#fff;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .ttl h1{white-space:nowrap}
-@media (max-width:420px){ header{gap:6px} .sq{width:42px;height:42px} .ban{height:42px;margin-right:2px;gap:1px;padding:0 14px 0 0} .ban .tel b{font-size:13.5px} .ban .tel span{font-size:10.5px} .bar{gap:5px;--h2:48px} .bar .nav{width:34px} .links{height:42px} .ttl h1{font-size:17px} .ttl div{font-size:11.5px} .seg span{padding:0 9px} }
+@media (max-width:420px){ header{gap:6px} .sq{width:42px;height:42px} .ban{height:42px;margin-right:2px;gap:1px;padding:0 14px 0 0} .ban .tel b{font-size:13.5px} .ban .tel span{font-size:10.5px} .bar{gap:5px;--h2:48px} .bar .nav{width:34px} .links{height:42px} .ttl h1{font-size:17px} .ttl div{font-size:11.5px} .seg span{padding:0 8px} }
 
 /* ---------- grille semaine ---------- */
 .grid{display:grid;grid-template-columns:30px repeat(var(--days),1fr);background:var(--panel);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
@@ -144,9 +145,9 @@ html{touch-action:manipulation}
 .dc .hw{right:10px;bottom:8px}
 /* pauses : 15 min = un pointille ; dejeuner = deux pointilles avec les heures entre ; debut / fin de journee */
 .dash{height:14px;display:flex;align-items:center}.dash::before{content:"";flex:1;border-top:2px dashed color-mix(in srgb,var(--muted) 50%,transparent)}
-.brk{display:flex;flex-direction:column;justify-content:space-between;padding:5px 0}
+.brk{display:flex;flex-direction:column;justify-content:space-between;padding:3px 0}
 .brk i{display:block;border-top:2px dashed color-mix(in srgb,var(--muted) 50%,transparent)}
-.brk span{text-align:center;font-size:12.5px;font-weight:700;color:var(--muted)}
+.brk span{text-align:center;font-size:12px;line-height:14px;font-weight:700;color:var(--muted)}
 .brk.lead{justify-content:flex-end;gap:7px}.brk.tail{justify-content:flex-start;gap:7px}
 /* resume du jour voisin : seulement l'heure de debut et le module */
 .sm{display:flex;flex-direction:column;justify-content:flex-start;font-size:15px;font-weight:700;padding:9px 11px;border-radius:14px;background:var(--bgc);color:var(--fg);border-left:4px solid var(--c);overflow:hidden}.sm b{font-size:12px;opacity:.85}
@@ -379,7 +380,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-24d";
+const APP_V = "2026-11-24e";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -489,7 +490,7 @@ function render(){
   h += renderHwSection(all);
   h += `<footer><span>${DATA.updated?"Emploi du temps vérifié le "+fmtD(new Date(DATA.updated),{day:"numeric",month:"short"})+" à "+fmtH(new Date(DATA.updated)):""}</span>
         <span><a href="#" onclick="shareLink();return false" style="color:inherit">Partager l'appli</a></span></footer>`;
-  app.innerHTML = h; bindSwipe();
+  app.innerHTML = h; bindSwipe(); seatSeg(document.querySelector(".seg"));
   // telephone : on mesure ou commence la bande puis on redessine une fois pour qu'elle finisse pile en bas de l'ecran
   const tr=$("dtrack");
   if(tr && phone() && !render.fit){ const t=Math.round(tr.getBoundingClientRect().top+scrollY);
@@ -541,7 +542,8 @@ function renderDay(all){
   const W=nearWeeks(all); SLOTS=[]; let ci=0, h="";
   dayFit = phone() ? fitH() : 0;
   // meme cadre pour tous les jours : hauteur fixe (telephone = jusqu'en bas de l'ecran, PC = 520 px pour tout le monde)
-  const Hc = dayFit ? Math.max(300, dayFit-60) : 520, L=48, B=(Hc-L)/2;
+  // même échelle 8h-12h15 et 13h45-18h (B px chacun) ; la pause de midi (L px) est plus serrée ; cadre de même hauteur
+  const Hc = dayFit ? Math.max(300, dayFit-60) : 520, L=32, B=(Hc-L)/2;
   W.forEach(x=>{ const cw=+x.w===+week; if(cw && dayIdx>=x.n) dayIdx=x.n-1;
     for(let i=0;i<x.n;i++){ const d=new Date(x.w); d.setDate(d.getDate()+i); const on=cw && i===dayIdx;
       if(on) ci=SLOTS.length; SLOTS.push({w:x.w, i});
@@ -560,7 +562,7 @@ function dayList(d, de, Hc, B, L){
   if(mins(de[0].s)>=520) full+=`<div class="brk lead" style="top:0;height:${Y(de[0].s)}px"><span>Début des cours à ${fmtH(de[0].s)}</span><i></i></div>`;
   de.forEach(e=>{
     if(prev){ const g=(e.s-prev)/6e4, y1=Y(prev), px=Y(e.s)-y1;
-      if(g>25 && px>=34) full+=`<div class="brk" style="top:${y1}px;height:${px}px"><i></i><span>${fmtH(prev)} – ${fmtH(e.s)}</span><i></i></div>`;
+      if(g>25 && (px>=34 || px>=L)) full+=`<div class="brk" style="top:${y1}px;height:${px}px"><i></i><span>${fmtH(prev)} – ${fmtH(e.s)}</span><i></i></div>`;
       else if(g>=15) full+=`<div class="dash" style="top:${y1+px/2-9}px"></div>`; }   // trait seulement a partir de 15 min
     const y=Y(e.s), hh=Math.max(18, Y(e.e)-y-4), sz=hh<50?"s1":hh<70?"s2":"";      // cours courts : carte compacte
     full+=`<div class="dc ${sz}" style="top:${y}px;height:${hh}px;${colors(e.code)}" onclick="openSheet('${esc(e.key)}')">
@@ -976,7 +978,9 @@ function goToday(){ now=new Date(); const d=startDay(); week=monday(d); dayIdx=(
   if(dayIdx>4){ week.setDate(week.getDate()+7); dayIdx=0; } render(); }
 function setView(v){ view=v; store.set("view",v); render(); }
 // interrupteur : la pastille glisse d'abord (animation), puis on change de vue
-function toggleView(el){ el.classList.toggle("sem"); el.querySelectorAll("span").forEach(s=>s.classList.toggle("on")); setTimeout(()=>setView(view==="jour"?"semaine":"jour"), 200); }
+// la pastille prend la largeur et la place du mot actif (Jour est plus court que Semaine)
+function seatSeg(el){ const s=el?.querySelector("span.on"); if(!s) return; el.style.setProperty("--x", s.offsetLeft+"px"); el.style.setProperty("--w", s.offsetWidth+"px"); requestAnimationFrame(()=>el.classList.add("ready")); }
+function toggleView(el){ el.classList.toggle("sem"); el.querySelectorAll("span").forEach(s=>s.classList.toggle("on")); seatSeg(el); setTimeout(()=>setView(view==="jour"?"semaine":"jour"), 200); }
 // glisser (doigt ou souris) sur la bande Jour ou Semaine : la bande suit le doigt et le voisin apparait peu a peu (--o de 0 a 1).
 // Au lacher elle finit de glisser ; on peut enchainer les glisser sans attendre. On ne redessine (recentrage) qu'une fois le doigt au repos.
 let swipe=null, swiped=false, recentre=0;
