@@ -53,7 +53,7 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt = (d, o) => new Date(d).toLocaleString("fr-FR", o || {day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"});
 const day = d => new Date(d + "T12:00").toLocaleDateString("fr-FR", {weekday:"short", day:"numeric", month:"short"});
-const tpLbl = t => !t ? "?" : t.replace(/^S\d/, "").replace("TP", "TP ") || t;
+const tpLbl = t => !t ? "?" : t.replace("TP"," TP");   // garde l'année : S1 TP1, S3 TP4
 
 function askKey(msg){
   $("app").innerHTML = `<header><img src="icon.png" alt=""><div><h1>Suivi de l'appli</h1><p>Page privée</p></div></header>
