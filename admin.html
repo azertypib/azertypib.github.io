@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>EDT · suivi</title>
+<link rel="icon" href="icon.png">
+<style>
+:root{--bg:#141312;--panel:#1d1c1a;--ink:#f1ede7;--muted:#9a948c;--line:#2d2b28;--accent:#e0533d;--ok:#2fbf6a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Segoe UI",system-ui,-apple-system,sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:20px 14px 60px}
+header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+header img{width:44px;height:44px;border-radius:11px}
+h1{font-size:20px;margin:0}
+header p{margin:0;color:var(--muted);font-size:13px}
+header button{margin-left:auto}
+h2{font-size:16px;margin:26px 0 8px}
+.nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.num{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.num b{display:block;font-size:28px;font-variant-numeric:tabular-nums}
+.num span{color:var(--muted);font-size:13px}
+table{width:100%;border-collapse:collapse;background:var(--panel);border-radius:12px;overflow:hidden;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:12.5px}
+td.n{font-variant-numeric:tabular-nums}
+.bar{height:8px;border-radius:4px;background:#2e86d4;min-width:2px}
+.al{background:var(--panel);border-left:4px solid var(--accent);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.al .m{color:var(--muted);font-size:12.5px;margin-bottom:4px}
+.al .t{white-space:pre-wrap;word-break:break-word}
+.note{color:var(--muted);font-size:13px;margin:6px 0 0}
+button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:8px 14px;cursor:pointer}
+button.dark{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+input{font:inherit;font-size:16px;width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);margin:8px 0}
+a{color:#6fb6f0}
+.err{color:var(--accent)}
+.scroll{overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+// Page privée de suivi : tout passe par la fonction Supabase admin_stats(cle) ; sans la bonne clé, rien n'est lisible.
+const SUPA_URL = "https://oysfbsdpdcjpufrfpmjx.supabase.co";
+const SUPA_KEY = "sb_publishable_qHE46e33ZJ-_AFLZkXG4YA_ty7QAaXx";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = (d, o) => new Date(d).toLocaleString("fr-FR", o || {day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"});
+const day = d => new Date(d + "T12:00").toLocaleDateString("fr-FR", {weekday:"short", day:"numeric", month:"short"});
+const tpLbl = t => !t ? "?" : t.replace(/^S\d/, "").replace("TP", "TP ") || t;
+
+function askKey(msg){
+  $("app").innerHTML = `<header><img src="icon.png" alt=""><div><h1>Suivi de l'appli</h1><p>Page privée</p></div></header>
+    <p>Colle ta clé (fichier <b>admin-cle.txt</b> sur ton ordinateur). Elle reste enregistrée sur cet appareil seulement.</p>
+    <input id="k" type="password" autocomplete="off" placeholder="Clé">
+    <button class="dark" onclick="saveKey()">Entrer</button> ${msg ? `<p class="err">${esc(msg)}</p>` : ""}`;
+}
+function saveKey(){ const k = $("k").value.trim(); if(!k) return; localStorage.setItem("adm.cle", k); load(); }
+function forget(){ localStorage.removeItem("adm.cle"); askKey(); }
+
+async function load(){
+  const cle = localStorage.getItem("adm.cle");
+  if(!cle) return askKey();
+  $("app").innerHTML = `<p class="note">Chargement…</p>`;
+  let r;
+  try{
+    r = await fetch(`${SUPA_URL}/rest/v1/rpc/admin_stats`, {method:"POST",
+      headers:{apikey:SUPA_KEY, "Content-Type":"application/json"}, body:JSON.stringify({cle})});
+  }catch{ return askKey("Pas de connexion internet."); }
+  if(!r.ok){ localStorage.removeItem("adm.cle"); return askKey("Clé refusée."); }
+  show(await r.json());
+}
+
+function show(s){
+  const today = new Date().toISOString().slice(0,10);
+  const auj = s.jours.find(j => j.jour === today) || {personnes:0, nouvelles:0};
+  const dons = s.dons.filter(d => !String(d.kofi_id).startsWith("00000000-1111"));   // dons de test Ko-fi exclus
+  const total = dons.reduce((a,d) => a + Number(d.montant||0), 0);
+  const max = Math.max(1, ...s.jours.map(j => j.personnes));
+  $("app").innerHTML = `<header><img src="icon.png" alt=""><div><h1>Suivi de l'appli</h1><p>Mis à jour ${fmt(new Date())}</p></div>
+      <button onclick="load()">Actualiser</button></header>
+    <div class="nums">
+      <div class="num"><b>${s.appareils.length}</b><span>appareils en tout (charte signée)</span></div>
+      <div class="num"><b>${auj.personnes}</b><span>appareils aujourd'hui</span></div>
+      <div class="num"><b>${auj.nouvelles}</b><span>nouveaux aujourd'hui</span></div>
+      <div class="num"><b>${dons.length}</b><span>dons · ${total.toLocaleString("fr-FR",{style:"currency",currency:"EUR"})}</span></div>
+      <div class="num"><b>${s.alertes.length}</b><span>mots limites signalés</span></div>
+    </div>
+
+    <h2>Mots limites</h2>
+    ${s.alertes.length ? s.alertes.map(a => `<div class="al"><div class="m">${esc(fmt(a.created_at))} · ${esc(a.lieu)} · ${esc(tpLbl(a.tp))} · pseudo : ${esc(a.pseudo || "aucun")} · appareil ${esc(String(a.device||"?").slice(0,8))}</div><div class="t">${esc(a.texte)}</div></div>`).join("")
+      : `<p class="note">Aucun pour l'instant.</p>`}
+    <p class="note">Pas de nom réel : l'appli n'a pas de comptes. Le numéro d'appareil permet de repérer quelqu'un qui recommence (il apparaît aussi dans la liste des appareils).</p>
+
+    <h2>Dons</h2>
+    ${dons.length ? `<table><tr><th>Date</th><th>Montant</th></tr>${dons.map(d => `<tr><td>${esc(fmt(d.created_at))}</td><td class="n">${esc(Number(d.montant).toLocaleString("fr-FR"))} ${esc(d.devise)}</td></tr>`).join("")}</table>`
+      : `<p class="note">Aucun don pour l'instant.</p>`}
+    <p class="note">Les noms, messages et e-mails des donateurs sont sur Ko-fi : <a href="https://ko-fi.com/manage/supportreceived" target="_blank" rel="noopener">Payments &amp; orders</a> et <a href="https://ko-fi.com/manage/supporters" target="_blank" rel="noopener">My supporters</a>. Les virements vers ta banque : tableau de bord Stripe, rubrique Virements.</p>
+
+    <h2>Appareils par jour</h2>
+    <div class="scroll"><table><tr><th>Jour</th><th>Appareils</th><th>Nouveaux</th><th style="width:45%"></th></tr>
+    ${s.jours.map(j => `<tr><td>${esc(day(j.jour))}</td><td class="n">${j.personnes}</td><td class="n">${j.nouvelles}</td><td><div class="bar" style="width:${Math.round(j.personnes/max*100)}%"></div></td></tr>`).join("")}</table></div>
+
+    <h2>Liste des appareils (${s.appareils.length})</h2>
+    <div class="scroll"><table><tr><th>Appareil</th><th>TP</th><th>Premier jour</th><th>Dernier jour</th><th>Jours</th></tr>
+    ${s.appareils.map(a => `<tr><td>${esc(String(a.device).slice(0,8))}</td><td>${esc(tpLbl(a.tp))}</td><td>${esc(day(a.premier))}</td><td>${esc(day(a.dernier))}</td><td class="n">${a.jours}</td></tr>`).join("")}</table></div>
+    <p class="note">Un appareil = un téléphone ou un navigateur. Quelqu'un qui utilise son téléphone et son PC compte pour 2.</p>
+    <p style="margin-top:28px"><button onclick="forget()">Oublier la clé sur cet appareil</button></p>`;
+}
+load();
+</script>
+</body>
+</html>
