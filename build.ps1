@@ -143,19 +143,6 @@ $null = Get-Web $LoginUrl @{ modeconnect = 'connect'; util = $login; acct_pass =
 if ((Get-Web $StudUrl) -notmatch 'Inscrit dans les groupes') { throw 'Connexion GPU refusee' }
 Write-Host 'Connecte a GPU'
 
-# ---- decouverte (temporaire) : noms des groupes d'autres filieres, sans rien de personnel (seulement les <option> des listes filiere/groupe) ----
-$gpuListe = [ordered]@{}
-foreach ($f in @('S3')) {
-    try { $h = Get-Web $GroupUrl @{ filiere = $f } } catch { Write-Host "Decouverte $f impossible : $($_.Exception.Message)"; continue }   # ne doit jamais bloquer la mise a jour S1
-    $sel = [ordered]@{}
-    foreach ($s in [regex]::Matches($h, '<select[^>]*name="?([A-Za-z_]+)"?[^>]*>(.*?)</select>', 'Singleline')) {
-        $n = $s.Groups[1].Value
-        if ($n -notmatch 'filiere|groupe') { continue }
-        $sel[$n] = @([regex]::Matches($s.Groups[2].Value, '<option[^>]*value="?([^" >]*)"?[^>]*>([^<]*)') | ForEach-Object { $_.Groups[1].Value } | Select-Object -First 120)
-    }
-    $gpuListe[$f] = $sel
-    Write-Host "Decouverte $f : $(($sel.Keys | ForEach-Object { "$_=$($sel[$_] -join ',')" }) -join ' ; ')"
-}
 
 # ---------- tables GPU : noms des profs et des modules ----------
 # lignes <tr> : <a onclick="return Valide('table','CODE')"> puis des <P class="Police2G">&nbsp;valeur</P>
@@ -203,6 +190,8 @@ function Get-GroupWeek($g, $w) {
                idedtselect='0'; left='0'; top='0'; taillepolice='15'; filiere=$Filiere; groupe=$g }
     ConvertFrom-GroupPage (Get-Web $GroupUrl $body) | Where-Object { $_.local -ge $w -and $_.local -lt $w.AddDays(7) }
 }
+# emploi du temps de chaque TP d'une annee (utilise $Filiere pour la page groupe)
+function Get-YearEvents($Groups) {
 $tdWeeks = @{}
 $out = [ordered]@{}
 foreach ($td in $Groups.Keys) {
@@ -235,6 +224,9 @@ foreach ($td in $Groups.Keys) {
         $out[$tp] = @($list | Sort-Object { $_.start })
     }
 }
+$out
+}
+$out = Get-YearEvents $Groups
 
 $total = ($out.Values | ForEach-Object { $_.Count } | Measure-Object -Sum).Sum
 if ($total -eq 0) { throw 'Aucun cours recupere : on ne remplace pas data.json' }
@@ -253,7 +245,36 @@ $data = [ordered]@{
     names   = $names
     profs   = $usedProfs
     events  = $out
-    gpuListe = $gpuListe   # temporaire : decouverte des groupes S3
 }
-[IO.File]::WriteAllText($OutFile, ($data | ConvertTo-Json -Depth 6 -Compress), (New-Object Text.UTF8Encoding $false))
-Write-Host "OK : $total cours ecrits dans data.json"
+# ---------- autres annees (2e annee = S3) : meme travail, publie dans data.json sous years.<filiere> ----------
+# groupes vus dans GPU le 23/11 : S3A, S3B, S3C et S3TP1 a S3TP6 (TP 1-2 = A, 3-4 = B, 5-6 = C, comme en S1)
+$Years = [ordered]@{
+    'S3' = [ordered]@{ 'S3A' = @('S3TP1', 'S3TP2'); 'S3B' = @('S3TP3', 'S3TP4'); 'S3C' = @('S3TP5', 'S3TP6') }
+}
+$data.years = [ordered]@{}
+foreach ($f in $Years.Keys) {
+    $prev = if ($old -and $old.years) { $old.years.$f } else { $null }
+    try {
+        $Filiere = $f   # lu par Get-GpuTable et Get-GroupWeek
+        $yp = @{}
+        foreach ($r in Get-GpuTable 'enseignant') { $n = (@($r.vals | Where-Object { $_ }) -join ' ').Trim(); if ($n) { $yp[$r.code] = $n } }
+        $yn = @{}
+        if ($prev -and $prev.names) { foreach ($q in $prev.names.PSObject.Properties) { $yn[$q.Name] = $q.Value } }
+        foreach ($r in Get-GpuTable 'matiere') { if ($r.vals[0] -and -not $yn[$r.code]) { $yn[$r.code] = $r.vals[0] } }
+        $yo = Get-YearEvents $Years[$f]
+        $yt = ($yo.Values | ForEach-Object { $_.Count } | Measure-Object -Sum).Sum
+        if ($yt -eq 0) { throw "aucun cours" }
+        $yu = [ordered]@{}
+        foreach ($e in ($yo.Values | ForEach-Object { $_ })) { foreach ($c in ($e.prof -split ' / ')) { if ($c -and $yp[$c]) { $yu[$c] = $yp[$c] } } }
+        $data.years[$f] = [ordered]@{ groups = $Years[$f]; names = $yn; profs = $yu; events = $yo }
+        Write-Host "OK $f : $yt cours"
+    } catch {
+        # une annee en panne ne bloque jamais la 1re annee : on garde ses donnees precedentes
+        Write-Host "Annee $f non mise a jour : $($_.Exception.Message)"
+        if ($prev) { $data.years[$f] = $prev }
+    }
+}
+$Filiere = 'S1'
+
+[IO.File]::WriteAllText($OutFile, ($data | ConvertTo-Json -Depth 7 -Compress), (New-Object Text.UTF8Encoding $false))
+Write-Host "OK : $total cours S1 ecrits dans data.json"
