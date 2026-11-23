@@ -278,11 +278,12 @@ textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:1
 .wel .ok input{width:22px;height:22px;flex:none;margin:0;accent-color:var(--ok)}
 .wel .go{width:100%;height:52px;padding:0 14px;font-size:16px;display:flex;align-items:center;justify-content:center}
 .wel .go:disabled{opacity:.35}
-#warn{position:fixed;inset:0;z-index:100;display:none;place-items:center;background:rgba(0,0,0,.55);padding:20px}
-#warn.on{display:grid}
-#warn>div{max-width:380px;background:var(--panel);color:var(--ink);border-radius:16px;padding:20px;border-top:5px solid var(--accent);box-shadow:0 10px 40px rgba(0,0,0,.3)}
-#warn h3{margin:0 0 8px;font-size:19px;color:var(--accent)}
-#warn p{margin:0 0 16px;line-height:1.45}
+#warn,#maint{position:fixed;inset:0;z-index:100;display:none;place-items:center;background:rgba(0,0,0,.55);padding:20px}
+#warn.on,#maint.on{display:grid}
+#warn>div,#maint>div{max-width:380px;background:var(--panel);color:var(--ink);border-radius:16px;padding:20px;border-top:5px solid var(--accent);box-shadow:0 10px 40px rgba(0,0,0,.3)}
+#warn h3,#maint h3{margin:0 0 8px;font-size:19px;color:var(--accent)}
+#warn p,#maint p{margin:0 0 16px;line-height:1.45}
+#maint>div{border-top-color:#12808a;text-align:center}#maint h3{color:var(--ink)}#maint img{width:56px;height:56px;border-radius:13px;display:block;margin:0 auto 10px}
 
 footer{margin-top:22px;color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .toast{position:fixed;left:50%;bottom:calc(20px + var(--bot));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:10px;font-size:14px;z-index:30;display:none}
@@ -301,6 +302,7 @@ footer{margin-top:22px;color:var(--muted);font-size:12px;display:flex;justify-co
 <body>
 <div class="wrap" id="app"></div>
 <div class="veil" id="veil"></div>
+<div id="maint" role="alertdialog" aria-modal="true" aria-labelledby="mainth"><div><img src="icon.png" alt="EDT"><h3 id="mainth"></h3><p id="maintp"></p><button class="btn dark" style="width:100%;height:44px" onclick="$('maint').classList.remove('on')">J'ai compris</button></div></div>
 <div id="warn" role="alertdialog" aria-modal="true" aria-labelledby="warnh"><div><h3 id="warnh">Attention</h3>
 <p id="warnp"></p>
 <button class="btn dark" style="width:100%" onclick="$('warn').classList.remove('on')">J'ai compris</button></div></div>
@@ -381,7 +383,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-24g";
+const APP_V = "2026-11-24h";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -411,6 +413,7 @@ async function loadHw(){
   }catch{}
 }
 async function addHw(ev, texte){
+  if(!canWrite()) return;
   // le devoir va au public du cours selon GPU : S1 = promo, S1A = groupe de TD, S1TP1 = TP seul
   const who = audiences().includes(ev.group) ? ev.group : tp;
   const body={tp:who, ckey:ev.key, code:ev.code, due:ev.start, texte:clean(texte,"devoir")};
@@ -419,6 +422,7 @@ async function addHw(ev, texte){
   toast("Devoir ajouté pour "+audLabel(who)); await loadHw();
 }
 async function patchHw(id, fields, msg){
+  if(!canWrite()) return;
   if(fields.texte) fields.texte = clean(fields.texte, "devoir modifié");
   const r = await fetch(`${SUPA_URL}/rest/v1/devoirs?id=eq.${id}`, {method:"PATCH", headers:hdr(), body:JSON.stringify({...fields, updated_at:new Date().toISOString()})});
   if(!r.ok){ toast("Erreur : modification non enregistrée"); return; }
@@ -709,6 +713,7 @@ async function annReq(method, query, body){
   if(!r.ok) throw 0;
 }
 async function saveAnn(id){
+  if(!canWrite()) return;
   const jour = $("anndate").value || null, t = clean($("anntx").value.trim(), "annonce");
   if(!annWho){ toast("Choisis à qui s'adresse l'annonce"); return; }
   if(!t){ toast("Écris l'information"); return; }
@@ -721,6 +726,7 @@ async function saveAnn(id){
   }catch{ toast("Erreur : annonce non enregistrée"); }
 }
 async function delAnn(id){
+  if(!canWrite()) return;
   if(!confirm("Supprimer cette annonce pour tout le monde ?")) return;
   try{ await annReq("PATCH", `?id=eq.${id}`, {deleted:true, updated_at:new Date().toISOString()}); toast("Annonce supprimée"); await loadAnn(); render(); openAnnList(); }
   catch{ toast("Erreur"); }
@@ -788,6 +794,7 @@ function newFeedback(){
     <div class="row"><button class="btn" onclick="openFeedback()">Annuler</button><button class="btn dark" id="fbsend" disabled onclick="sendFeedback()">Envoyer</button></div>`;
 }
 async function sendFeedback(){
+  if(!canWrite()) return;
   const texte = clean($("fbtx").value.trim(), "message au créateur"), contact = clean($("fbwho").value.trim(), "contact") || null;
   if(!texte) return;
   $("fbsend").disabled = true;
@@ -845,6 +852,7 @@ function renderChatList(toBottom){
   if(nearBottom) box.scrollTop = box.scrollHeight;
 }
 async function sendChat(){
+  if(!canWrite()) return;
   const pseudo = clean($("chatwho").value.trim(), "pseudo") || null;
   store.set("pseudo", pseudo||"");   // avant le texte : l'alerte au créateur donne le pseudo actuel
   const texte = clean($("chattx").value.trim(), "discussion");
@@ -1123,7 +1131,22 @@ setInterval(()=>{ if(!sheetKey && !annOpen) render(); }, 60000);
 let openDay = ymd(startDay());   // change aussi à 18h
 document.addEventListener("visibilitychange", ()=>{ if(document.hidden || ymd(startDay())===openDay) return; openDay = ymd(startDay()); if(!sheetKey && !annOpen) goToday(); });
 setInterval(()=>{ if(!document.hidden){ loadHw(); loadAnn(); loadFb(); loadChat(); loadSupport(); } }, 90000);
-render(); loadData(); loadHw(); loadAnn(); loadFb(); loadChat(); loadSupport();
+/* ======== maintenance : interrupteur Supabase « etat » (allumé par le créateur pendant qu'il modifie l'appli) ======== */
+// pendant la maintenance : emploi du temps consultable, mais rien ne peut être publié (le serveur refuse aussi) ; message affiché une fois au début et une fois à la fin
+let maint = false;
+function canWrite(){ if(!maint) return true; toast("Maintenance en cours : rien ne peut être publié pour l'instant"); return false; }
+function showMaint(on){ $("mainth").textContent = on ? "Maintenance en cours" : "L'application est de retour"; $("maintp").textContent = on ? "Le créateur fait des modifications. Tu peux consulter ton emploi du temps, mais rien ne peut être publié pour l'instant (devoirs, annonces, discussion, messages)." : "L'application est de retour à la normale : tout fonctionne en ligne."; $("maint").classList.add("on"); }
+async function loadEtat(){
+  try{ const r = await fetch(`${SUPA_URL}/rest/v1/etat?select=maintenance,depuis,jusqua&id=eq.1`, {headers:hdr()}); if(!r.ok) return;
+    const [e] = await r.json(); if(!e) return;
+    maint = !!e.maintenance && (!e.jusqua || new Date(e.jusqua) > new Date());
+    if(maint && store.get("maintVu")!==e.depuis){ store.set("maintVu", e.depuis); showMaint(true); }
+    else if(!maint && store.get("maintVu") && store.get("maintFin")!==store.get("maintVu")){ store.set("maintFin", store.get("maintVu")); showMaint(false); }
+  }catch{}
+}
+setInterval(()=>{ if(!document.hidden) loadEtat(); }, 60000);
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) loadEtat(); });
+render(); loadData(); loadHw(); loadAnn(); loadFb(); loadChat(); loadSupport(); loadEtat();
 </script>
 </body>
 </html>
