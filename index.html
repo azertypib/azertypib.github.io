@@ -338,7 +338,11 @@ const store = {
 };
 
 /* ======== etat ======== */
-let DATA = store.get("data", null);
+// data.json = S1 (racine) + autres années dans "years" (ex. years.S3) ; DATA = la partie de l'année choisie
+let RAW = store.get("data", null);
+let annee = store.get("annee", null) || (String(store.get("tp","")).startsWith("S3") ? "S3" : store.get("tp") ? "S1" : null);
+const yearData = () => !RAW ? null : (!annee || annee==="S1") ? RAW : (RAW.years?.[annee] || null);
+let DATA = yearData();
 let tp = store.get("tp", null);
 let view = store.get("view", innerWidth < 800 ? "jour" : "semaine");
 let hwTab = "todo";
@@ -349,7 +353,7 @@ let now = new Date();
 function startDay(){ const d=new Date(); d.setHours(12,0,0,0); if(new Date().getHours()>=18) d.setDate(d.getDate()+1); while(d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()+1); return d; }
 let week = monday(startDay());
 let dayIdx = (startDay().getDay()+6)%7;
-let pickStep = null, pickTd = null;
+let pickStep = null, pickTd = null, pickYear = false;
 let sheetKey = null, editing = null;
 
 /* ======== theme clair / sombre (par defaut : celui du telephone) ======== */
@@ -383,7 +387,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-24h";
+const APP_V = "2026-11-24i";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -396,7 +400,7 @@ async function loadData(){
   try{
     const r = await fetch("data.json?t="+Date.now(), {cache:"no-store"});
     if(!r.ok) throw 0;
-    DATA = await r.json(); store.set("data", DATA);
+    RAW = await r.json(); store.set("data", RAW); DATA = yearData();
   }catch{ if(!DATA) toast("Pas de connexion"); }
   render();
 }
@@ -446,7 +450,7 @@ function toggleDone(id, v){ if(v) done[id]=true; else delete done[id]; store.set
 /* ======== groupes ======== */
 const tdLabel = g => "Groupe " + g.replace(/^S\d/,"");
 const tpLabel = g => g.replace(/^S\d/,"");
-const PROMO = "S1";
+let PROMO = annee || "S1";   // la promo = l'année choisie (S1, S3) : devoirs, annonces, discussion et messages restent dans l'année
 // publics dont on voit les devoirs : la promo, son groupe de TD, son TP
 const audiences = () => [PROMO, tdOf(tp), tp].filter(Boolean);
 const audLabel = g => g===PROMO ? "toute la promo" : /TP/.test(g) ? "le "+tpLabel(g) : "tout le groupe "+tpLabel(g);
@@ -457,7 +461,9 @@ function render(){
   now = new Date();
   const app = $("app");
   if(!charteOk()) return renderWelcome();
-  if(!DATA){ app.innerHTML = `<div class="pick"><img src="icon.png" width="72" style="border-radius:16px"><h1>Chargement…</h1></div>`; return; }
+  if(!RAW){ app.innerHTML = `<div class="pick"><img src="icon.png" width="72" style="border-radius:16px"><h1>Chargement…</h1></div>`; return; }
+  if(!annee || pickYear) return renderYear();
+  if(!DATA) return renderYear("L'emploi du temps de cette année n'est pas encore disponible.");
   if(!tp || !DATA.events[tp] || pickStep){ renderPick(); return; }
   track(false);   // une fois par jour et par appareil, TP connu
 
@@ -474,7 +480,7 @@ function render(){
   let h = `<header>
       <div class="ban"><img class="lg" src="icon.png?l" alt="EDT"><div class="bars pc"><i></i><i></i><i></i></div>
         <div class="tel"><b>IUT</b><span>La Rochelle</span></div>
-        <div class="pc bt"><b>EDT</b><span>· Emploi du temps · IUT La Rochelle</span></div><em class="pc">Génie civil · S1</em></div>
+        <div class="pc bt"><b>EDT</b><span>· Emploi du temps · IUT La Rochelle</span></div><em class="pc">Génie civil · ${esc(PROMO)}</em></div>
       ${HW_ON?`<button class="sq" onclick="openChat()" aria-label="Discussion">${ICON_CHAT}${chatBadges()}</button>`:""}
       ${HW_ON?`<button class="sq" onclick="openFeedback()" aria-label="Messages au créateur">${ICON_MSG}${retNew()?`<span class="cnt">${retNew()}</span>`:""}</button>`:""}
       <button class="sq" onclick="toggleTheme()" aria-label="Mode clair ou sombre">${theme==="dark"?ICON_SUN:ICON_MOON}</button>
@@ -612,7 +618,7 @@ function renderHwSection(all){
 /* ======== annonces : pour la promo, un groupe de TD ou un TP ; date facultative (disparait apres), sinon reste jusqu'a suppression ======== */
 let annonces = store.get("ann", []);
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-const audShort = g => g===PROMO ? "Promo S1" : /TP/.test(g) ? tpLabel(g) : tdLabel(g);
+const audShort = g => g===PROMO ? "Promo "+PROMO : /TP/.test(g) ? tpLabel(g) : tdLabel(g);
 // une couleur par public pour les pastilles de la discussion : promo orange, groupe bleu, TP vert
 const AUD_COL = g => g===PROMO ? "#e8833a" : /TP/.test(g) ? "#2fbf6a" : "#2e86d4";
 // sans date, une annonce disparait 1 semaine apres sa publication
@@ -740,7 +746,9 @@ const retNew = () => retours.filter(m=>m.id>retSeen).length;
 async function loadFb(){
   if(!HW_ON) return;
   try{
-    const r = await fetch(`${SUPA_URL}/rest/v1/retours?select=id,created_at,contact,tp,texte&order=created_at.desc`, {headers:hdr()});
+    // messages au créateur de son année seulement (les anciens sans TP sont ceux de la 1re année)
+    const yr = PROMO==="S1" ? "or=(tp.is.null,tp.like.S1*)" : `tp=like.${PROMO}*`;
+    const r = await fetch(`${SUPA_URL}/rest/v1/retours?select=id,created_at,contact,tp,texte&${yr}&order=created_at.desc`, {headers:hdr()});
     if(!r.ok) throw 0;
     retours = await r.json(); store.set("ret", retours); if(!sheetKey && !annOpen) render();
   }catch{}
@@ -960,14 +968,32 @@ function openCharte(){
   $("sheet").scrollTop = 0;
 }
 
+/* ======== choix de l'année (S1 = 1re année, S3 = 2e année...) : chaque année a son espace (devoirs, annonces, discussion, messages) ======== */
+const YEAR_LBL = {S1:"1re année", S2:"1re année", S3:"2e année", S4:"2e année", S5:"3e année", S6:"3e année"};
+function renderYear(msg){
+  const ys = ["S1", ...Object.keys(RAW?.years||{})];
+  let h = `<div class="pick"><img src="icon.png" width="72" style="border-radius:16px"><h1>Ton année ?</h1><p>${msg?esc(msg):"On s'en souviendra sur ce téléphone."}</p><div class="opts">`;
+  for(const y of ys) h += `<button onclick="setYear('${esc(y)}')">${esc(y)}<small style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-top:4px">${esc(YEAR_LBL[y]||"")}</small></button>`;
+  h += `</div>`;
+  if(tp && annee && DATA?.events?.[tp]) h += `<div><button class="back" onclick="cancelPick()">Annuler</button></div>`;
+  $("app").innerHTML = h + `</div>`;
+}
+function setYear(y){
+  if(y!==annee){   // autre année = autre espace : on oublie le TP et les listes de l'ancienne année
+    annee=y; PROMO=y; store.set("annee",y); DATA=yearData();
+    tp=null; store.set("tp",null); homework=[]; store.set("hw",[]); annonces=[]; store.set("ann",[]); chatMsgs=[]; retours=[]; store.set("ret",[]); loadFb();
+  }
+  pickYear=false; pickStep=1; pickTd=null; render();
+}
+
 /* ======== choix du groupe ======== */
 function renderPick(){
   const groups = DATA.groups || {};
   let h=`<div class="pick"><img src="icon.png" width="72" style="border-radius:16px">`;
   if(!pickTd){
-    h+=`<h1>Ton groupe ?</h1><p>On s'en souviendra sur ce téléphone.</p><div class="opts">`;
+    h+=`<h1>Ton groupe ?</h1><p>${esc(PROMO)} · ${esc(YEAR_LBL[PROMO]||"")}</p><div class="opts">`;
     for(const td of Object.keys(groups)) h+=`<button onclick="pickGroup('${esc(td)}')">${esc(tdLabel(td).replace("Groupe ",""))}</button>`;
-    h+=`</div>`;
+    h+=`</div><button class="back" onclick="pickYear=true;render()">‹ Changer d'année</button>`;
   }else{
     h+=`<h1>Ton TP ?</h1><p>${esc(tdLabel(pickTd))}</p><div class="opts">`;
     for(const t of groups[pickTd]) h+=`<button onclick="pickTp('${esc(t)}')">${esc(tpLabel(t))}</button>`;
@@ -976,10 +1002,10 @@ function renderPick(){
   if(tp && DATA.events[tp]) h+=`<div><button class="back" onclick="cancelPick()">Annuler</button></div>`;
   $("app").innerHTML = h+`</div>`;
 }
-function startPick(){ pickStep=1; pickTd=null; render(); }
+function startPick(){ pickYear=true; pickStep=1; pickTd=null; render(); }
 function pickGroup(td){ pickTd=td; const l=DATA.groups[td]; if(td && l.length===1) return pickTp(l[0]); render(); }
 function pickTp(t){ tp=t; store.set("tp",t); pickStep=null; pickTd=null; homework=[]; store.set("hw",[]); annonces=[]; store.set("ann",[]); chatMsgs=[]; render(); loadHw(); loadAnn(); loadChat(); }
-function cancelPick(){ pickStep=null; pickTd=null; render(); }
+function cancelPick(){ pickYear=false; pickStep=null; pickTd=null; render(); }
 
 /* ======== navigation ======== */
 // on ne remonte pas plus loin que la semaine derniere
