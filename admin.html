@@ -17,12 +17,15 @@ header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
 header img{width:44px;height:44px;border-radius:11px}
 h1{font-size:20px;margin:0}
 header p{margin:0;color:var(--muted);font-size:13px}
-header button{margin-left:auto}
+header button:last-child{margin-left:auto}
+header button{flex:none}
 h2{font-size:16px;margin:26px 0 8px}
-.nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-.num{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
-.num b{display:block;font-size:28px;font-variant-numeric:tabular-nums}
-.num span{color:var(--muted);font-size:13px}
+.tiles{display:grid;gap:12px}
+.tile{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 18px}
+.tile b{font-size:34px;font-variant-numeric:tabular-nums;min-width:56px}
+.tile span{flex:1;color:var(--muted);font-size:15px}
+.tile i{font-style:normal;font-size:26px;color:var(--muted)}
+.tile:active{transform:scale(.99)}
 table{width:100%;border-collapse:collapse;background:var(--panel);border-radius:12px;overflow:hidden;font-size:14px}
 th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
 th{color:var(--muted);font-weight:600;font-size:12.5px}
@@ -75,41 +78,45 @@ async function load(){
   show(await r.json());
 }
 
-function show(s){
-  const today = new Date().toISOString().slice(0,10);
+// accueil = 3 cartouches avec juste le nombre ; le détail s'ouvre en touchant un cartouche
+let S = null, view = null;
+function show(s){ S = s; draw(); }   // « Actualiser » garde la liste ouverte
+function go(v){ view = v; draw(); scrollTo(0,0); }
+function draw(){
+  const s = S, today = new Date().toISOString().slice(0,10);
   const auj = s.jours.find(j => j.jour === today) || {personnes:0, nouvelles:0};
   const dons = s.dons.filter(d => !String(d.kofi_id).startsWith("00000000-1111"));   // dons de test Ko-fi exclus
-  const total = dons.reduce((a,d) => a + Number(d.montant||0), 0);
-  const max = Math.max(1, ...s.jours.map(j => j.personnes));
-  $("app").innerHTML = `<header><img src="icon.png" alt=""><div><h1>Suivi de l'appli</h1><p>Mis à jour ${fmt(new Date())}</p></div>
-      <button onclick="load()">Actualiser</button></header>
-    <div class="nums">
-      <div class="num"><b>${s.appareils.length}</b><span>appareils en tout (charte signée)</span></div>
-      <div class="num"><b>${auj.personnes}</b><span>appareils aujourd'hui</span></div>
-      <div class="num"><b>${auj.nouvelles}</b><span>nouveaux aujourd'hui</span></div>
-      <div class="num"><b>${dons.length}</b><span>dons · ${total.toLocaleString("fr-FR",{style:"currency",currency:"EUR"})}</span></div>
-      <div class="num"><b>${s.alertes.length}</b><span>mots limites signalés</span></div>
+  const total = dons.reduce((a,d) => a + Number(d.montant||0), 0).toLocaleString("fr-FR",{style:"currency",currency:"EUR"});
+  const head = (t, back) => `<header>${back ? `<button onclick="go(null)" aria-label="Retour">‹ Retour</button>` : `<img src="icon.png" alt="">`}
+      <div><h1>${t}</h1><p>Mis à jour ${fmt(new Date())}</p></div><button onclick="load()">Actualiser</button></header>`;
+  let h;
+  if(!view){
+    h = head("Suivi de l'appli") + `<div class="tiles">
+      <button class="tile" onclick="go('alertes')"><b>${s.alertes.length}</b><span>Messages censurés</span><i>›</i></button>
+      <button class="tile" onclick="go('dons')"><b>${dons.length}</b><span>Dons · ${total}</span><i>›</i></button>
+      <button class="tile" onclick="go('appareils')"><b>${s.appareils.length}</b><span>Appareils · ${auj.personnes} aujourd'hui${auj.nouvelles ? `, ${auj.nouvelles} nouveau${auj.nouvelles>1?"x":""}` : ""}</span><i>›</i></button>
     </div>
-
-    <h2>Mots limites</h2>
-    ${s.alertes.length ? s.alertes.map(a => `<div class="al"><div class="m">${esc(fmt(a.created_at))} · ${esc(a.lieu)} · ${esc(tpLbl(a.tp))} · pseudo : ${esc(a.pseudo || "aucun")} · appareil ${esc(String(a.device||"?").slice(0,8))}</div><div class="t">${esc(a.texte)}</div></div>`).join("")
-      : `<p class="note">Aucun pour l'instant.</p>`}
-    <p class="note">Pas de nom réel : l'appli n'a pas de comptes. Le numéro d'appareil permet de repérer quelqu'un qui recommence (il apparaît aussi dans la liste des appareils).</p>
-
-    <h2>Dons</h2>
-    ${dons.length ? `<table><tr><th>Date</th><th>Montant</th></tr>${dons.map(d => `<tr><td>${esc(fmt(d.created_at))}</td><td class="n">${esc(Number(d.montant).toLocaleString("fr-FR"))} ${esc(d.devise)}</td></tr>`).join("")}</table>`
-      : `<p class="note">Aucun don pour l'instant.</p>`}
-    <p class="note">Les noms, messages et e-mails des donateurs sont sur Ko-fi : <a href="https://ko-fi.com/manage/supportreceived" target="_blank" rel="noopener">Payments &amp; orders</a> et <a href="https://ko-fi.com/manage/supporters" target="_blank" rel="noopener">My supporters</a>. Les virements vers ta banque : tableau de bord Stripe, rubrique Virements.</p>
-
-    <h2>Appareils par jour</h2>
-    <div class="scroll"><table><tr><th>Jour</th><th>Appareils</th><th>Nouveaux</th><th style="width:45%"></th></tr>
-    ${s.jours.map(j => `<tr><td>${esc(day(j.jour))}</td><td class="n">${j.personnes}</td><td class="n">${j.nouvelles}</td><td><div class="bar" style="width:${Math.round(j.personnes/max*100)}%"></div></td></tr>`).join("")}</table></div>
-
-    <h2>Liste des appareils (${s.appareils.length})</h2>
-    <div class="scroll"><table><tr><th>Appareil</th><th>TP</th><th>Premier jour</th><th>Dernier jour</th><th>Jours</th></tr>
-    ${s.appareils.map(a => `<tr><td>${esc(String(a.device).slice(0,8))}</td><td>${esc(tpLbl(a.tp))}</td><td>${esc(day(a.premier))}</td><td>${esc(day(a.dernier))}</td><td class="n">${a.jours}</td></tr>`).join("")}</table></div>
-    <p class="note">Un appareil = un téléphone ou un navigateur. Quelqu'un qui utilise son téléphone et son PC compte pour 2.</p>
     <p style="margin-top:28px"><button onclick="forget()">Oublier la clé sur cet appareil</button></p>`;
+  }else if(view==="alertes"){
+    h = head(`Messages censurés (${s.alertes.length})`, 1) + (s.alertes.length
+      ? s.alertes.map(a => `<div class="al"><div class="m">${esc(fmt(a.created_at))} · ${esc(a.lieu)} · ${esc(tpLbl(a.tp))} · pseudo : ${esc(a.pseudo || "aucun")} · appareil ${esc(String(a.device||"?").slice(0,8))}</div><div class="t">${esc(a.texte)}</div></div>`).join("")
+      : `<p class="note">Aucun pour l'instant.</p>`)
+      + `<p class="note">Texte tel qu'il a été écrit, avant censure. Pas de nom réel : l'appli n'a pas de comptes. Le numéro d'appareil permet de repérer quelqu'un qui recommence.</p>`;
+  }else if(view==="dons"){
+    h = head(`Dons (${dons.length} · ${total})`, 1) + (dons.length
+      ? `<table><tr><th>Date</th><th>Montant</th></tr>${dons.map(d => `<tr><td>${esc(fmt(d.created_at))}</td><td class="n">${esc(Number(d.montant).toLocaleString("fr-FR"))} ${esc(d.devise)}</td></tr>`).join("")}</table>`
+      : `<p class="note">Aucun don pour l'instant.</p>`)
+      + `<p class="note">Noms, messages et e-mails des donateurs : sur Ko-fi, <a href="https://ko-fi.com/manage/supportreceived" target="_blank" rel="noopener">Payments &amp; orders</a> et <a href="https://ko-fi.com/manage/supporters" target="_blank" rel="noopener">My supporters</a>. Virements vers ta banque : Stripe, rubrique Virements.</p>`;
+  }else{
+    const max = Math.max(1, ...s.jours.map(j => j.personnes));
+    h = head(`Appareils (${s.appareils.length})`, 1)
+      + `<h2>Par jour</h2><div class="scroll"><table><tr><th>Jour</th><th>Appareils</th><th>Nouveaux</th><th style="width:40%"></th></tr>
+      ${s.jours.map(j => `<tr><td>${esc(day(j.jour))}</td><td class="n">${j.personnes}</td><td class="n">${j.nouvelles}</td><td><div class="bar" style="width:${Math.round(j.personnes/max*100)}%"></div></td></tr>`).join("")}</table></div>
+      <h2>Liste</h2><div class="scroll"><table><tr><th>Appareil</th><th>TP</th><th>Premier jour</th><th>Dernier jour</th><th>Jours</th></tr>
+      ${s.appareils.map(a => `<tr><td>${esc(String(a.device).slice(0,8))}</td><td>${esc(tpLbl(a.tp))}</td><td>${esc(day(a.premier))}</td><td>${esc(day(a.dernier))}</td><td class="n">${a.jours}</td></tr>`).join("")}</table></div>
+      <p class="note">Un appareil = un téléphone ou un navigateur. Quelqu'un qui utilise son téléphone et son PC compte pour 2.</p>`;
+  }
+  $("app").innerHTML = h;
 }
 // zoom bloqué comme dans l'appli (pincer, double-tap)
 addEventListener("gesturestart", e=>e.preventDefault());
