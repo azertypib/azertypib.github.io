@@ -48,17 +48,17 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .btn{border:1px solid var(--line);background:var(--panel);height:36px;min-width:36px;padding:0 12px;border-radius:10px;font-weight:600}
 .btn.dark{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .btn:disabled{opacity:.4;cursor:default}
-/* bandeau du bas : Moodle + Messagerie dans un seul cartouche coloré (sans trait), ENT à part sans couleur ; PC : alignés sur le bandeau et les carrés du haut (fitLinks) */
-.links{display:flex;gap:var(--lg,8px);height:46px;margin:10px 0 14px}
-.links .lk{flex:1;min-width:0;display:flex;border-radius:12px;overflow:hidden;background:linear-gradient(90deg,#0d2a47 0%,#0d2a47 30%,#12808a 100%);box-shadow:var(--shadow)}
+/* bandeau du bas : Moodle + Messagerie (un cartouche coloré, sans trait, calé à gauche) et ENT sans couleur à droite ; PC : ENT va du carré Discussion au carré du groupe, Moodle/Messagerie = 2 fois sa largeur (fitLinks) */
+.links{display:flex;justify-content:space-between;gap:8px;height:46px;margin:10px 0 14px}
+.links .lk{flex:none;width:var(--lkw,auto);min-width:0;display:flex;border-radius:12px;overflow:hidden;background:linear-gradient(90deg,#0d2a47 0%,#0d2a47 30%,#12808a 100%);box-shadow:var(--shadow)}
 .links a{display:grid;place-items:center;text-decoration:none;font-size:15px;font-weight:700}
-.links .lk a{flex:1;color:#fff}
+.links .lk a{flex:1;padding:0 18px;color:#fff}
 .links .lk a:hover,.links .lk a:focus-visible{background:rgba(255,255,255,.08)}
 .links .ent{flex:none;width:var(--entw,auto);padding:0 18px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:12px;box-shadow:var(--shadow)}
 .bar .nav{width:44px;height:var(--h2);padding:0;display:grid;place-items:center;border-radius:12px;box-shadow:var(--shadow)}
 .ttl{cursor:pointer}
-.seg{position:relative;display:inline-grid;font:inherit;color:inherit;grid-template-columns:auto auto;border:1px solid var(--line);border-radius:12px;padding:4px;height:var(--h2);margin-left:auto;background:var(--panel);cursor:pointer;box-shadow:var(--shadow)}
-.seg::before{content:"";position:absolute;top:4px;bottom:4px;left:0;width:var(--w,0);transform:translateX(var(--x,4px));border-radius:9px;background:linear-gradient(90deg,#0d2a47,#12808a);box-shadow:0 1px 4px rgba(0,0,0,.25);}   /* pastille calée sur le mot actif (seatSeg) */
+.seg{position:relative;display:inline-grid;font:inherit;color:inherit;grid-template-columns:auto auto;border:1px solid var(--line);border-radius:12px;padding:2px;height:var(--h2);margin-left:auto;background:var(--panel);cursor:pointer;box-shadow:var(--shadow)}
+.seg::before{content:"";position:absolute;top:2px;bottom:2px;left:0;width:var(--w,0);transform:translateX(var(--x,2px));border-radius:10px;background:linear-gradient(90deg,#0d2a47,#12808a);box-shadow:0 1px 4px rgba(0,0,0,.25);}   /* pastille calée sur le mot actif (seatSeg) */
 .seg.ready::before{transition:transform .22s ease,width .22s ease}   /* pas d'animation au premier affichage */
 .bar button.nav:nth-of-type(2){margin-right:8px}   /* petit espace entre la flèche et l'interrupteur */
 .seg span{position:relative;z-index:1;display:grid;place-items:center;padding:0 14px;font-weight:600;color:var(--muted);transition:color .22s}
@@ -381,7 +381,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-24f";
+const APP_V = "2026-11-24g";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -561,18 +561,24 @@ function dayList(d, de, Hc, B, L){
   const H=Math.max(Hc, ...de.map(e=>Y(e.e)));
   let full="", sum="", prev=null;
   if(mins(de[0].s)>=520) full+=`<div class="brk lead" style="top:0;height:${Y(de[0].s)}px"><span>Début des cours à ${fmtH(de[0].s)}</span><i></i></div>`;
-  de.forEach(e=>{
-    if(prev){ const g=(e.s-prev)/6e4, y1=Y(prev), px=Y(e.s)-y1;
-      if(g>25 && (px>=34 || px>=L)) full+=`<div class="brk" style="top:${y1}px;height:${px}px"><i></i><span>${fmtH(prev)} – ${fmtH(e.s)}</span><i></i></div>`;
-      else if(g>=15) full+=`<div class="dash" style="top:${y1+px/2-9}px"></div>`; }   // trait seulement a partir de 15 min
-    const y=Y(e.s), hh=Math.max(18, Y(e.e)-y-4), sz=hh<50?"s1":hh<70?"s2":"";      // cours courts : carte compacte
+  // écart entre deux cours : "brk" = vraie pause (horaires affichés), "recre" = 15-25 min (petit trait, écart serré pour ne pas ressembler à midi)
+  const kind=(a,b)=>{ const g=(b-a)/6e4, px=Y(b)-Y(a); return g>25 && (px>=34 || px>=L) ? "brk" : g>=15 ? "recre" : ""; };
+  // chaque carte commence 2 px sous son heure et finit 2 px au-dessus : même distance (5 px) entre un trait de pause et les cartes au-dessus et au-dessous
+  de.forEach((e,i)=>{
+    if(prev){ const k=kind(prev,e.s), y1=Y(prev), px=Y(e.s)-y1;
+      if(k==="brk") full+=`<div class="brk" style="top:${y1}px;height:${px}px"><i></i><span>${fmtH(prev)} – ${fmtH(e.s)}</span><i></i></div>`;
+      else if(k==="recre") full+=`<div class="dash" style="top:${Y(e.s)-10}px"></div>`; }   // trait seulement à partir de 15 min
+    const end=prev && prev>e.e ? prev : e.e, nx=de[i+1];
+    // avant une récré, la carte descend jusqu'à 8 px de la suivante (écart visible 10 px) ; l'heure de début de chaque carte reste exacte
+    const bot = nx && e.e>=end && kind(end,nx.s)==="recre" ? Y(nx.s)-8 : Y(e.e)-2;
+    const y=Y(e.s)+2, hh=Math.max(18, bot-y), sz=hh<50?"s1":hh<70?"s2":"";      // cours courts : carte compacte
     full+=`<div class="dc ${sz}" style="top:${y}px;height:${hh}px;${colors(e.code)}" onclick="openSheet('${esc(e.key)}')">
         <div class="tm">${fmtH(e.s)}${sz==="s1"?"":` – ${fmtH(e.e)}`}</div><div class="rm">${esc((e.room||"").split(/[,/]/)[0].trim())}</div>
         <div class="cd">${esc(e.code)}${e.type?`<span class="badge">${esc(typeLbl(e.type))}</span>`:""}</div>
         <div class="nm">${esc(e.name)}${e.prof?` · ${esc(e.prof)}`:""}</div>${hwBadge(e.key)}</div>`;
     // resume (jour voisin) : memes positions, heure de debut + module
     sum+=`<div class="sm ${hh<44?"s1":""}" style="top:${y}px;height:${hh}px;${colors(e.code)}"><b>${fmtH(e.s)}</b>${esc(e.code)}</div>`;
-    prev = prev && prev>e.e ? prev : e.e;
+    prev = end;
   });
   if(mins(prev)<=1040){ const y=Y(prev); full+=`<div class="brk tail" style="top:${y}px;height:${H-y}px"><i></i><span>Fin des cours à ${fmtH(prev)}</span></div>`; }
   // trait rouge de l'heure actuelle, comme en vue Semaine
@@ -980,10 +986,10 @@ function goToday(){ now=new Date(); const d=startDay(); week=monday(d); dayIdx=(
 function setView(v){ view=v; store.set("view",v); render(); }
 // interrupteur : la pastille glisse d'abord (animation), puis on change de vue
 // la pastille prend la largeur et la place du mot actif (Jour est plus court que Semaine)
-// PC : le cartouche Moodle/Messagerie finit comme le bandeau du haut, ENT va du carré Discussion au carré du groupe (téléphone : tailles libres)
+// PC : ENT va du carré Discussion au carré du groupe, Moodle/Messagerie fait 2 fois sa largeur, calé à gauche (téléphone : tailles au plus juste)
 function fitLinks(){ const nav=document.querySelector(".links"), ban=document.querySelector("header .ban"), sq=document.querySelectorAll("header .sq"); if(!nav||!ban||!sq.length) return;
-  if(phone()){ nav.style.removeProperty("--lg"); nav.style.removeProperty("--entw"); return; }
-  const a=sq[0].getBoundingClientRect(), z=sq[sq.length-1].getBoundingClientRect(); nav.style.setProperty("--lg", (a.left-ban.getBoundingClientRect().right)+"px"); nav.style.setProperty("--entw", (z.right-a.left)+"px"); }
+  if(phone()){ nav.style.removeProperty("--lkw"); nav.style.removeProperty("--entw"); return; }
+  const a=sq[0].getBoundingClientRect(), z=sq[sq.length-1].getBoundingClientRect(), w=z.right-a.left; nav.style.setProperty("--entw", w+"px"); nav.style.setProperty("--lkw", 2*w+"px"); }
 addEventListener("resize", fitLinks);
 function seatSeg(el){ const s=el?.querySelector("span.on"); if(!s) return; el.style.setProperty("--x", s.offsetLeft+"px"); el.style.setProperty("--w", s.offsetWidth+"px"); requestAnimationFrame(()=>el.classList.add("ready")); }
 function toggleView(el){ el.classList.toggle("sem"); el.querySelectorAll("span").forEach(s=>s.classList.toggle("on")); seatSeg(el); setTimeout(()=>setView(view==="jour"?"semaine":"jour"), 200); }
