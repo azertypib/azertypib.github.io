@@ -54,6 +54,9 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt
 const fmt = (d, o) => new Date(d).toLocaleString("fr-FR", o || {day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"});
 const day = d => new Date(d + "T12:00").toLocaleDateString("fr-FR", {weekday:"short", day:"numeric", month:"short"});
 const tpLbl = t => !t ? "?" : t.replace("TP"," TP");   // garde l'année : S1 TP1, S3 TP4
+// répartition par année (S1, S3…) d'une liste qui porte un TP
+const parAn = l => { const n = {}; l.forEach(x => { const y = (String(x.tp||"").match(/^S\d/)||["?"])[0]; n[y] = (n[y]||0)+1; });
+  return Object.keys(n).sort().map(y => `${y} ${n[y]}`).join(" · "); };
 
 function askKey(msg){
   $("app").innerHTML = `<header><img src="icon.png" alt=""><div><h1>Suivi de l'appli</h1><p>Page privée</p></div></header>
@@ -102,9 +105,9 @@ function draw(){
   let h;
   if(!view){
     h = head("Suivi de l'appli") + `<div class="tiles">
-      <button class="tile" onclick="go('alertes')"><b>${s.alertes.length}</b><span>Messages censurés</span><i>›</i></button>
+      <button class="tile" onclick="go('alertes')"><b>${s.alertes.length}</b><span>Messages censurés${s.alertes.length ? " · "+parAn(s.alertes) : ""}</span><i>›</i></button>
       <button class="tile" onclick="go('dons')"><b>${dons.length}</b><span>Dons · ${total}</span><i>›</i></button>
-      <button class="tile" onclick="go('appareils')"><b>${s.appareils.length}</b><span>Appareils · ${auj.personnes} aujourd'hui${auj.nouvelles ? `, ${auj.nouvelles} nouveau${auj.nouvelles>1?"x":""}` : ""}</span><i>›</i></button>
+      <button class="tile" onclick="go('appareils')"><b>${s.appareils.length}</b><span>Appareils${s.appareils.length ? " ("+parAn(s.appareils)+")" : ""} · ${auj.personnes} aujourd'hui${auj.nouvelles ? `, ${auj.nouvelles} nouveau${auj.nouvelles>1?"x":""}` : ""}</span><i>›</i></button>
 <button class="tile" onclick="toggleMaint()"><b style="color:${s.maint?"#e8833a":"var(--ok)"}">${s.maint?"ON":"OFF"}</b><span>${s.maint?`Maintenance en cours : rien ne peut être publié (s'arrête seule à ${fmt(s.maintFin,{hour:"2-digit",minute:"2-digit"})})`:"Maintenance : appli normale. Touche pour la mettre en maintenance"}</span><i>›</i></button>
     </div>
     <p style="margin-top:28px"><button onclick="forget()">Oublier la clé sur cet appareil</button></p>`;
@@ -120,7 +123,7 @@ function draw(){
       + `<p class="note">Noms, messages et e-mails des donateurs : sur Ko-fi, <a href="https://ko-fi.com/manage/supportreceived" target="_blank" rel="noopener">Payments &amp; orders</a> et <a href="https://ko-fi.com/manage/supporters" target="_blank" rel="noopener">My supporters</a>. Virements vers ta banque : Stripe, rubrique Virements.</p>`;
   }else{
     const max = Math.max(1, ...s.jours.map(j => j.personnes));
-    h = head(`Appareils (${s.appareils.length})`, 1)
+    h = head(`Appareils (${s.appareils.length})`, 1) + (s.appareils.length ? `<p class="note">Par année : ${parAn(s.appareils)}</p>` : "")
       + `<h2>Par jour</h2><div class="scroll"><table><tr><th>Jour</th><th>Appareils</th><th>Nouveaux</th><th style="width:40%"></th></tr>
       ${s.jours.map(j => `<tr><td>${esc(day(j.jour))}</td><td class="n">${j.personnes}</td><td class="n">${j.nouvelles}</td><td><div class="bar" style="width:${Math.round(j.personnes/max*100)}%"></div></td></tr>`).join("")}</table></div>
       <h2>Liste</h2><div class="scroll"><table><tr><th>Appareil</th><th>TP</th><th>Premier jour</th><th>Dernier jour</th><th>Jours</th></tr>
