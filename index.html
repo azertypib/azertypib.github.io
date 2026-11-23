@@ -39,21 +39,27 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .ban em{margin-left:auto;font-style:normal;font-size:13px;font-weight:600;color:#eafaf0;white-space:nowrap}
 @media (min-width:760px){ .ban{padding:0 16px;gap:12px} .ban .tel,.ban .lg{display:none} .ban .bars{height:24px} .ban .bars i{width:6px;height:24px} .ban .bars i:nth-child(2){height:15px} .ban .pc{display:block} .ban .pc.bt,.ban .bars.pc{display:flex} }
 /* cartouche semaine (a gauche) : on le touche pour choisir une date ; le champ date invisible le recouvre */
-.ttl{position:relative;flex:0 1 auto;min-width:0;text-align:left;overflow:hidden;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:4px 14px;box-shadow:var(--shadow)}
+.ttl{position:relative;flex:0 1 auto;min-width:0;text-align:left;overflow:hidden;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:0 14px;height:var(--h2);display:flex;flex-direction:column;justify-content:center;box-shadow:var(--shadow)}
 .ttl input{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0;margin:0;cursor:pointer;-webkit-appearance:none;appearance:none}
 .ttl h1{margin:0;font-size:20px;letter-spacing:-.02em;line-height:1.15}
 .ttl div{color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 12px;font-weight:650;font-size:14px}
-.bar{display:flex;gap:6px;align-items:center;margin-bottom:12px}
+.bar{display:flex;gap:6px;align-items:stretch;margin-bottom:10px;--h2:54px}   /* 2e ligne : 4 cartouches alignés haut et bas, un peu plus hauts que la 1re (48) */
 .btn{border:1px solid var(--line);background:var(--panel);height:36px;min-width:36px;padding:0 12px;border-radius:10px;font-weight:600}
 .btn.dark{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .btn:disabled{opacity:.4;cursor:default}
-.bar .nav{width:44px;height:44px;padding:0;display:grid;place-items:center;border-radius:12px;box-shadow:var(--shadow)}
+.links{display:flex;height:46px;margin:10px 0 14px;border-radius:12px;overflow:hidden;background:linear-gradient(90deg,#0d2a47 0%,#0d2a47 30%,#12808a 100%);box-shadow:var(--shadow)}
+.links a{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-decoration:none;border-left:1px solid rgba(255,255,255,.18);line-height:1.15}
+.links a:first-child{border-left:0}
+.links a b{font-size:15px;font-weight:700}
+.links a small{font-size:11px;opacity:.75}
+.links a:hover,.links a:focus-visible{background:rgba(255,255,255,.08)}
+.bar .nav{width:44px;height:var(--h2);padding:0;display:grid;place-items:center;border-radius:12px;box-shadow:var(--shadow)}
 .ttl{cursor:pointer}
-.seg{position:relative;display:inline-grid;font:inherit;color:inherit;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:999px;padding:3px;margin-left:auto;background:var(--panel);cursor:pointer}
-.seg::before{content:"";position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:999px;background:linear-gradient(90deg,#0d2a47,#12808a);box-shadow:0 1px 4px rgba(0,0,0,.25);transition:transform .22s ease}
+.seg{position:relative;display:inline-grid;font:inherit;color:inherit;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:12px;padding:4px;height:var(--h2);margin-left:auto;background:var(--panel);cursor:pointer;box-shadow:var(--shadow)}
+.seg::before{content:"";position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:9px;background:linear-gradient(90deg,#0d2a47,#12808a);box-shadow:0 1px 4px rgba(0,0,0,.25);transition:transform .22s ease}
 .seg.sem::before{transform:translateX(100%)}
-.seg span{position:relative;z-index:1;display:grid;place-items:center;height:34px;padding:0 12px;font-weight:600;color:var(--muted);transition:color .22s}
+.seg span{position:relative;z-index:1;display:grid;place-items:center;padding:0 14px;font-weight:600;color:var(--muted);transition:color .22s}
 .seg span.on{color:#fff}
 
 .sq{position:relative;width:48px;height:48px;flex:none;border:1px solid var(--line);background:var(--panel);border-radius:12px;
@@ -61,7 +67,7 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .sq small{font-size:10.5px;font-weight:700;color:var(--muted);margin-top:2px}
 .sq .cnt{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--accent);color:#fff;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .ttl h1{white-space:nowrap}
-@media (max-width:420px){ header{gap:6px} .sq{width:42px;height:42px} .ban{height:42px;margin-right:2px;gap:1px;padding:0 14px 0 0} .ban .tel b{font-size:13.5px} .ban .tel span{font-size:10.5px} .bar{gap:5px} .bar .nav{width:34px} .ttl h1{font-size:17px} .ttl div{font-size:11.5px} .seg span{padding:0 9px} }
+@media (max-width:420px){ header{gap:6px} .sq{width:42px;height:42px} .ban{height:42px;margin-right:2px;gap:1px;padding:0 14px 0 0} .ban .tel b{font-size:13.5px} .ban .tel span{font-size:10.5px} .bar{gap:5px;--h2:48px} .bar .nav{width:34px} .links{height:42px} .ttl h1{font-size:17px} .ttl div{font-size:11.5px} .seg span{padding:0 9px} }
 
 /* ---------- grille semaine ---------- */
 .grid{display:grid;grid-template-columns:30px repeat(var(--days),1fr);background:var(--panel);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
@@ -301,6 +307,9 @@ footer{margin-top:22px;color:var(--muted);font-size:12px;display:flex;justify-co
 
 <script>
 /* ======== Configuration de la base des devoirs (Supabase) ======== */
+// 3e ligne : liens directs vers les pages de connexion de l'université (ENT, messagerie, Moodle)
+// adresses générales, sans rien de personnel : sans session ouverte, chacune mène à la page de connexion (vérifié le 23/11 avec un navigateur vierge)
+const LINKS = [["https://authentification.univ-lr.fr/kc/realms/lruniv/protocol/cas/login?service=https://entfront.univ-lr.fr/uPortal/Login","ENT","Espace numérique"],["https://bluemind-etudiant.univ-lr.fr/","Messagerie","Mail étudiant"],["https://moodle.univ-lr.fr/","Moodle","Cours en ligne"]];
 const SUPA_URL = "https://oysfbsdpdcjpufrfpmjx.supabase.co";
 const SUPA_KEY = "sb_publishable_qHE46e33ZJ-_AFLZkXG4YA_ty7QAaXx";   // cle publique, faite pour etre dans la page
 
@@ -332,8 +341,10 @@ let hwTab = "todo";
 let homework = store.get("hw", []);           // devoirs partages du TP (cache local)
 let done = store.get("done", {});              // coches personnelles : { idDevoir: true }
 let now = new Date();
-let week = monday(now); if (now.getDay()===0 || now.getDay()===6) week.setDate(week.getDate()+7);
-let dayIdx = Math.min(4, Math.max(0, (now.getDay()+6)%7)); if (now.getDay()===0||now.getDay()===6) dayIdx = 0;
+// jour affiché à l'ouverture : aujourd'hui, ou le jour de cours suivant après 18h (vendredi 18h, samedi, dimanche → lundi)
+function startDay(){ const d=new Date(); d.setHours(12,0,0,0); if(new Date().getHours()>=18) d.setDate(d.getDate()+1); while(d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()+1); return d; }
+let week = monday(startDay());
+let dayIdx = (startDay().getDay()+6)%7;
 let pickStep = null, pickTd = null;
 let sheetKey = null, editing = null;
 
@@ -368,7 +379,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-24c";
+const APP_V = "2026-11-24d";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -473,6 +484,8 @@ function render(){
     </div>`;
 
   h += view==="semaine" ? renderWeek(all) : renderDay(all);
+  // liens de l'université sous l'emploi du temps (téléphone : collés au bas de l'écran, voir fitH)
+  h += `<nav class="links" aria-label="Liens de l'université">${LINKS.map(([u,t,s])=>`<a href="${u}" target="_blank" rel="noopener"><b>${t}</b><small>${s}</small></a>`).join("")}</nav>`;
   h += renderHwSection(all);
   h += `<footer><span>${DATA.updated?"Emploi du temps vérifié le "+fmtD(new Date(DATA.updated),{day:"numeric",month:"short"})+" à "+fmtH(new Date(DATA.updated)):""}</span>
         <span><a href="#" onclick="shareLink();return false" style="color:inherit">Partager l'appli</a></span></footer>`;
@@ -488,7 +501,7 @@ function weekSpan(all, w){ const e=new Date(w); e.setDate(e.getDate()+7); const 
 function nearWeeks(all){ const out=[]; for(const k of [-1,0,1]){ const w=new Date(week); w.setDate(w.getDate()+7*k); if(w>=minWeek()) out.push(weekSpan(all,w)); } return out; }
 let SLOTS=[], fitTop=170, dayFit=0;
 const phone = () => innerWidth < 760;
-const fitH = () => Math.max(320, innerHeight - fitTop - 28);   // petite marge en bas (+ barre de l'iPhone)
+const fitH = () => Math.max(320, innerHeight - fitTop - 28 - 52);   // petite marge en bas (+ barre de l'iPhone) + bandeau de liens (42 + 10)
 
 function renderWeek(all){
   const W=nearWeeks(all); let h0=8,h1=18;
@@ -853,7 +866,7 @@ function rude(w){
   return isBad(n) || isBad(n.replace(/(.)\1{2,}/g,"$1")) || isBad(n.replace(/(.)\1{2,}/g,"$1$1"));   // merdeeee, connnnard
 }
 // liens autorisés : l'université (ENT, Moodle, IUT…), le gouvernement et des sites du bâtiment ; même liste côté serveur (public.filtre_texte)
-const OK_HOSTS = ["univ-larochelle.fr","gouv.fr","cerema.fr","cstb.fr","afnor.org","ademe.fr","ffbatiment.fr","batiweb.com","lemoniteur.fr","qualiteconstruction.com","guiboutilan-cyber.github.io"];
+const OK_HOSTS = ["univ-lr.fr","univ-larochelle.fr","gouv.fr","cerema.fr","cstb.fr","afnor.org","ademe.fr","ffbatiment.fr","batiweb.com","lemoniteur.fr","qualiteconstruction.com","guiboutilan-cyber.github.io"];
 const LINK = /\b(?:https?:\/\/|www\.)\S+|\b(?:[a-z0-9-]+\.)+(?:com|fr|net|org|io|ly|gg|xyz|be|tv|app|link|info|ru|cn|site|shop|top|online|eu|uk)\b(?:\/\S*)?/gi;
 function linkOk(l){
   const host = l.replace(/^https?:\/\//i,"").split(/[/?#:]/)[0].toLowerCase();
@@ -959,7 +972,7 @@ function step(n){ const t=$("dtrack"); if(t) slideTo(+t.style.getPropertyValue("
 // toucher le cartouche semaine = choisir une date precise
 function jumpDate(v){ if(!v) return; const d=new Date(v+"T12:00"); week=monday(d); dayIdx=(d.getDay()+6)%7;
   if(dayIdx>5){ week.setDate(week.getDate()+7); dayIdx=0; } if(week<minWeek()) week=minWeek(); render(); }
-function goToday(){ now=new Date(); week=monday(now); dayIdx=(now.getDay()+6)%7;
+function goToday(){ now=new Date(); const d=startDay(); week=monday(d); dayIdx=(d.getDay()+6)%7;
   if(dayIdx>4){ week.setDate(week.getDate()+7); dayIdx=0; } render(); }
 function setView(v){ view=v; store.set("view",v); render(); }
 // interrupteur : la pastille glisse d'abord (animation), puis on change de vue
@@ -1091,8 +1104,8 @@ addEventListener("keydown",e=>{ if(["TEXTAREA","INPUT","SELECT"].includes(e.targ
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ loadData(); loadHw(); loadAnn(); loadFb(); loadChat(); loadSupport(); } });
 setInterval(()=>{ if(!sheetKey && !annOpen) render(); }, 60000);
 // appli rouverte un autre jour (iPhone : elle ne se recharge pas toute seule) : on revient sur aujourd'hui
-let openDay = ymd(new Date());
-document.addEventListener("visibilitychange", ()=>{ if(document.hidden || ymd(new Date())===openDay) return; openDay = ymd(new Date()); if(!sheetKey && !annOpen) goToday(); });
+let openDay = ymd(startDay());   // change aussi à 18h
+document.addEventListener("visibilitychange", ()=>{ if(document.hidden || ymd(startDay())===openDay) return; openDay = ymd(startDay()); if(!sheetKey && !annOpen) goToday(); });
 setInterval(()=>{ if(!document.hidden){ loadHw(); loadAnn(); loadFb(); loadChat(); loadSupport(); } }, 90000);
 render(); loadData(); loadHw(); loadAnn(); loadFb(); loadChat(); loadSupport();
 </script>
