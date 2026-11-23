@@ -143,6 +143,20 @@ $null = Get-Web $LoginUrl @{ modeconnect = 'connect'; util = $login; acct_pass =
 if ((Get-Web $StudUrl) -notmatch 'Inscrit dans les groupes') { throw 'Connexion GPU refusee' }
 Write-Host 'Connecte a GPU'
 
+# ---- decouverte (temporaire) : noms des groupes d'autres filieres, sans rien de personnel (seulement les <option> des listes filiere/groupe) ----
+$gpuListe = [ordered]@{}
+foreach ($f in @('S3')) {
+    try { $h = Get-Web $GroupUrl @{ filiere = $f } } catch { Write-Host "Decouverte $f impossible : $($_.Exception.Message)"; continue }   # ne doit jamais bloquer la mise a jour S1
+    $sel = [ordered]@{}
+    foreach ($s in [regex]::Matches($h, '<select[^>]*name="?([A-Za-z_]+)"?[^>]*>(.*?)</select>', 'Singleline')) {
+        $n = $s.Groups[1].Value
+        if ($n -notmatch 'filiere|groupe') { continue }
+        $sel[$n] = @([regex]::Matches($s.Groups[2].Value, '<option[^>]*value="?([^" >]*)"?[^>]*>([^<]*)') | ForEach-Object { $_.Groups[1].Value } | Select-Object -First 120)
+    }
+    $gpuListe[$f] = $sel
+    Write-Host "Decouverte $f : $(($sel.Keys | ForEach-Object { "$_=$($sel[$_] -join ',')" }) -join ' ; ')"
+}
+
 # ---------- tables GPU : noms des profs et des modules ----------
 # lignes <tr> : <a onclick="return Valide('table','CODE')"> puis des <P class="Police2G">&nbsp;valeur</P>
 function Get-GpuTable($table) {
@@ -239,6 +253,7 @@ $data = [ordered]@{
     names   = $names
     profs   = $usedProfs
     events  = $out
+    gpuListe = $gpuListe   # temporaire : decouverte des groupes S3
 }
 [IO.File]::WriteAllText($OutFile, ($data | ConvertTo-Json -Depth 6 -Compress), (New-Object Text.UTF8Encoding $false))
 Write-Host "OK : $total cours ecrits dans data.json"
