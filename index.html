@@ -336,6 +336,11 @@ const store = {
   get(k,d){ try{ const v=localStorage.getItem("edt."+k); return v==null?d:JSON.parse(v);}catch{ return d; } },
   set(k,v){ localStorage.setItem("edt."+k, JSON.stringify(v)); }
 };
+// déménagement (23/11) : l'ancienne adresse renvoie ici avec les réglages de l'appareil dans #migr=… (JSON en base64url des clés edt.*) ; on ne remplace rien d'existant
+try{ const m = location.hash.match(/^#migr=([A-Za-z0-9_-]+)$/);
+  if(m){ const o = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g,"+").replace(/_/g,"/")))));
+    for(const [k,v] of Object.entries(o)) if(/^edt\.[A-Za-z0-9]+$/.test(k) && typeof v==="string" && localStorage.getItem(k)==null) localStorage.setItem(k, v);
+    history.replaceState(null, "", location.pathname); } }catch{}
 
 /* ======== etat ======== */
 // data.json = S1 (racine) + autres années dans "years" (ex. years.S3) ; DATA = la partie de l'année choisie
@@ -387,7 +392,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-24i";
+const APP_V = "2026-11-24j";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -891,7 +896,7 @@ function rude(w){
   return isBad(n) || isBad(n.replace(/(.)\1{2,}/g,"$1")) || isBad(n.replace(/(.)\1{2,}/g,"$1$1"));   // merdeeee, connnnard
 }
 // liens autorisés : l'université (ENT, Moodle, IUT…), le gouvernement et des sites du bâtiment ; même liste côté serveur (public.filtre_texte)
-const OK_HOSTS = ["univ-lr.fr","univ-larochelle.fr","gouv.fr","cerema.fr","cstb.fr","afnor.org","ademe.fr","ffbatiment.fr","batiweb.com","lemoniteur.fr","qualiteconstruction.com","guiboutilan-cyber.github.io"];
+const OK_HOSTS = ["univ-lr.fr","univ-larochelle.fr","gouv.fr","cerema.fr","cstb.fr","afnor.org","ademe.fr","ffbatiment.fr","batiweb.com","lemoniteur.fr","qualiteconstruction.com","azertypib.github.io"];
 const LINK = /\b(?:https?:\/\/|www\.)\S+|\b(?:[a-z0-9-]+\.)+(?:com|fr|net|org|io|ly|gg|xyz|be|tv|app|link|info|ru|cn|site|shop|top|online|eu|uk)\b(?:\/\S*)?/gi;
 function linkOk(l){
   const host = l.replace(/^https?:\/\//i,"").split(/[/?#:]/)[0].toLowerCase();
