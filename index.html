@@ -363,7 +363,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-23w";
+const APP_V = "2026-11-23x";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -434,7 +434,7 @@ function tdOf(t){ for(const [td,l] of Object.entries(DATA?.groups||{})) if(l.inc
 function render(){
   now = new Date();
   const app = $("app");
-  if(!store.get("charte3")) return renderWelcome();
+  if(!store.get("charte4")) return renderWelcome();
   if(!DATA){ app.innerHTML = `<div class="pick"><img src="icon.png" width="72" style="border-radius:16px"><h1>Chargement…</h1></div>`; return; }
   if(!tp || !DATA.events[tp] || pickStep){ renderPick(); return; }
   track(false);   // une fois par jour et par appareil, TP connu
@@ -894,8 +894,8 @@ function renderWelcome(){
   <label class="ok"><input type="checkbox" id="welok" ${ok?"checked":""} onchange="$('welgo').disabled=!this.checked"><span>J'ai lu la charte et je m'engage à la respecter.</span></label>
   <button class="btn dark go" id="welgo" ${ok?"":"disabled"} onclick="acceptCharte()">J'accepte et j'entre</button></div>`;
 }
-// clé "charte3" (23/11 après-midi) : tout le monde re-signe une fois ; une fois signée sur cet appareil, plus jamais redemandée
-function acceptCharte(){ if(!$("welok").checked) return; store.set("charte3", 1); track(true); render(); scrollTo(0,0); }
+// clé "charte4" (23/11 soir, avec les astuces) : tout le monde re-signe une fois ; une fois signée sur cet appareil, plus jamais redemandée
+function acceptCharte(){ if(!$("welok").checked) return; store.set("charte4", 1); track(true); render(); scrollTo(0,0); }
 function openCharte(){
   $("sheet").innerHTML = `<div class="grab"></div><h3>La charte</h3>
     <div class="wel" style="margin:0"><p class="note" style="font-size:14px">Cette application a été créée par un étudiant pour les étudiants. C'est un objet de solidarité : elle marche seulement si chacun joue le jeu.</p>${CHARTE}
