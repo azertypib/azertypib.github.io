@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>EDT · suivi</title>
@@ -10,6 +10,7 @@
 <style>
 :root{--bg:#141312;--panel:#1d1c1a;--ink:#f1ede7;--muted:#9a948c;--line:#2d2b28;--accent:#e0533d;--ok:#2fbf6a}
 *{box-sizing:border-box}
+html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Segoe UI",system-ui,-apple-system,sans-serif}
 .wrap{max-width:900px;margin:0 auto;padding:20px 14px 60px}
 header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
@@ -54,8 +55,9 @@ const tpLbl = t => !t ? "?" : t.replace(/^S\d/, "").replace("TP", "TP ") || t;
 function askKey(msg){
   $("app").innerHTML = `<header><img src="icon.png" alt=""><div><h1>Suivi de l'appli</h1><p>Page privée</p></div></header>
     <p>Colle ta clé (fichier <b>admin-cle.txt</b> sur ton ordinateur). Elle reste enregistrée sur cet appareil seulement.</p>
-    <input id="k" type="password" autocomplete="off" placeholder="Clé">
+    <input id="k" type="password" autocomplete="off" placeholder="Clé" oninput="if(this.value.trim().length>=32) saveKey()" onkeydown="if(event.key==='Enter') saveKey()">
     <button class="dark" onclick="saveKey()">Entrer</button> ${msg ? `<p class="err">${esc(msg)}</p>` : ""}`;
+  $("k").focus();   // la clé collée suffit : ça s'ouvre tout seul dès qu'elle est complète
 }
 function saveKey(){ const k = $("k").value.trim(); if(!k) return; localStorage.setItem("adm.cle", k); load(); }
 function forget(){ localStorage.removeItem("adm.cle"); askKey(); }
@@ -109,6 +111,8 @@ function show(s){
     <p class="note">Un appareil = un téléphone ou un navigateur. Quelqu'un qui utilise son téléphone et son PC compte pour 2.</p>
     <p style="margin-top:28px"><button onclick="forget()">Oublier la clé sur cet appareil</button></p>`;
 }
+// zoom bloqué comme dans l'appli (pincer, double-tap)
+addEventListener("gesturestart", e=>e.preventDefault());
 load();
 </script>
 </body>
