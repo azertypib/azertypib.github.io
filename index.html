@@ -50,16 +50,18 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .btn:disabled{opacity:.4;cursor:default}
 .bar .nav{width:44px;height:44px;padding:0;display:grid;place-items:center;border-radius:12px;box-shadow:var(--shadow)}
 .ttl{cursor:pointer}
-.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-left:auto}
-.seg button{border:0;background:var(--panel);height:40px;padding:0 12px;font-weight:600;color:var(--muted)}
-.seg button.on{background:var(--ink);color:var(--bg)}
+.seg{position:relative;display:inline-grid;font:inherit;color:inherit;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:999px;padding:3px;margin-left:auto;background:var(--panel);cursor:pointer}
+.seg::before{content:"";position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:999px;background:linear-gradient(90deg,#0d2a47,#12808a);box-shadow:0 1px 4px rgba(0,0,0,.25);transition:transform .22s ease}
+.seg.sem::before{transform:translateX(100%)}
+.seg span{position:relative;z-index:1;display:grid;place-items:center;height:34px;padding:0 12px;font-weight:600;color:var(--muted);transition:color .22s}
+.seg span.on{color:#fff}
 
 .sq{position:relative;width:48px;height:48px;flex:none;border:1px solid var(--line);background:var(--panel);border-radius:12px;
   font-size:19px;font-weight:800;line-height:1;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:var(--shadow)}
 .sq small{font-size:10.5px;font-weight:700;color:var(--muted);margin-top:2px}
 .sq .cnt{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--accent);color:#fff;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .ttl h1{white-space:nowrap}
-@media (max-width:420px){ header{gap:6px} .sq{width:42px;height:42px} .ban{height:42px;margin-right:2px;gap:1px;padding:0 14px 0 0} .ban .tel b{font-size:13.5px} .ban .tel span{font-size:10.5px} .bar{gap:5px} .bar .nav{width:34px} .ttl h1{font-size:17px} .ttl div{font-size:11.5px} .seg button{padding:0 9px} }
+@media (max-width:420px){ header{gap:6px} .sq{width:42px;height:42px} .ban{height:42px;margin-right:2px;gap:1px;padding:0 14px 0 0} .ban .tel b{font-size:13.5px} .ban .tel span{font-size:10.5px} .bar{gap:5px} .bar .nav{width:34px} .ttl h1{font-size:17px} .ttl div{font-size:11.5px} .seg span{padding:0 9px} }
 
 /* ---------- grille semaine ---------- */
 .grid{display:grid;grid-template-columns:30px repeat(var(--days),1fr);background:var(--panel);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
@@ -68,11 +70,7 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .dh span{font-size:17px;font-weight:700}
 /* vue Semaine : la journee d'aujourd'hui est juste encadree d'un trait fin, de haut en bas */
 /* trait par-dessus (::after) : 1 px a l'ecran normal, 1 pixel physique sur ecran dense ou zoome (jamais arrondi a 0) */
-.dh.today,.col.today{position:relative;--tw:1px}
-@media (min-resolution:2dppx){ .dh.today,.col.today{--tw:.5px} }
-.dh.today::after,.col.today::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:4;border:var(--tw) solid var(--accent)}
-.dh.today::after{border-bottom:0;border-radius:12px 12px 0 0}
-.col.today::after{border-top:0;border-radius:0 0 12px 12px}
+.col.done .ev{opacity:.5}   /* journée finie (après 18h ou jour passé) : grisée */
 /* telephone : pas de zoom (double toucher, champs < 16 px qui font zoomer iOS) */
 html{touch-action:manipulation}
 @media (max-width:759px){ input,textarea,select{font-size:16px} }
@@ -89,7 +87,7 @@ html{touch-action:manipulation}
 .ev .r{font-weight:800;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ev .x{opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ev.exam{box-shadow:inset 0 0 0 2px var(--c)}
-.ev.past,.dc.past,.sm.past{opacity:.5}
+.dpanel.done .dc,.dpanel.done .sm{opacity:.5}
 .now{position:absolute;left:0;right:0;height:2px;background:var(--accent);z-index:3}
 .now::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
 
@@ -260,8 +258,13 @@ textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:1
 .wel h2{font-size:17px;margin:0 0 4px}
 .wel .wcard>p{margin:0 0 8px;color:var(--muted);font-size:14px;line-height:1.45}
 .wel ul{list-style:none;margin:0;padding:0}
-.wel li{padding:3px 0 3px 12px;border-left:3px solid #2e86d4;margin:10px 0;font-size:14.5px;line-height:1.45}
-.wel li:nth-child(3n+2){border-color:#12808a} .wel li:nth-child(3n){border-color:#2fbf6a}
+.wel li{padding:3px 0 3px 12px;border-left:3px solid var(--c,var(--line));margin:10px 0;font-size:14.5px;line-height:1.45}
+.wel li b{color:var(--c,inherit)}
+.wel .wcard>.info,.wel .info{margin:14px 0 0;padding:10px 12px;border-radius:10px;background:var(--soft);font-size:13.5px;line-height:1.45;color:var(--ink)}
+.wel .info b{display:block;margin-bottom:2px}
+.wel .guide{background:linear-gradient(135deg,rgba(13,42,71,.10),rgba(18,128,138,.14));border-color:rgba(18,128,138,.45)}
+.wel .guide h2{color:#12808a}
+.wel .guide li{border-left-color:rgba(18,128,138,.55)}
 .wel li b{display:block;font-weight:650}
 .wel .ok{display:flex;justify-content:center;gap:10px;align-items:center;margin:4px 2px 14px;font-size:15px;line-height:1.4;cursor:pointer;text-align:left}
 .wel .ok input{width:22px;height:22px;flex:none;margin:0;accent-color:var(--ok)}
@@ -310,6 +313,8 @@ const DAYS = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"]
 const TYPES = {DS:"Examen",PRTUT:"Projet",PRTUT1:"Projet",PRTUT2:"Projet"};
 const typeLbl = t => TYPES[t] || t || "";
 const sameDay = (a,b) => a.toDateString() === b.toDateString();
+// journée finie = jour passé, ou aujourd'hui après 18h : on la grise (avant, seul le trait rouge de l'heure bouge)
+const dayDone = d => { const f=new Date(d); f.setHours(18,0,0,0); return now>=f; };
 function monday(d){ const x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate()-((x.getDay()+6)%7)); return x; }
 function isoWeek(d){ const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())); const n=t.getUTCDay()||7;
   t.setUTCDate(t.getUTCDate()+4-n); const y=new Date(Date.UTC(t.getUTCFullYear(),0,1)); return Math.ceil(((t-y)/864e5+1)/7); }
@@ -363,7 +368,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-24b";
+const APP_V = "2026-11-24c";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -406,8 +411,8 @@ async function patchHw(id, fields, msg){
   if(!r.ok){ toast("Erreur : modification non enregistrée"); return; }
   if(msg) toast(msg); await loadHw();
 }
-// un devoir disparait a minuit apres sa date de rendu (il reste en base, mais n'est plus affiche ni telecharge)
-const dayStart = () => { const d=new Date(); d.setHours(0,0,0,0); return d; };
+// un devoir reste affiché 7 jours après sa date de rendu, puis disparait (il reste en base, mais n'est plus affiché ni téléchargé)
+const dayStart = () => { const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-7); return d; };   // minuit, il y a 7 jours
 const hwLive = () => homework.filter(h=>new Date(h.due)>=dayStart());
 const hwFor = key => hwLive().filter(h=>h.ckey===key);
 // coche et croix dessinees (pas de caracteres unicode, qui ressemblent a des emojis)
@@ -464,7 +469,7 @@ function render(){
       <label class="ttl" title="Choisir une date"><h1>Semaine ${isoWeek(week)}</h1><div>${sub}</div>
         <input type="date" aria-label="Choisir une date" value="${ymd(curD)}" min="${ymd(minWeek())}" onclick="try{this.showPicker()}catch{}" onchange="jumpDate(this.value)"></label>
       <button class="btn nav" onclick="step(1)" aria-label="Suivant">${ICON_NEXT}</button>
-      <div class="seg"><button class="${view==="jour"?"on":""}" onclick="setView('jour')">Jour</button><button class="${view==="semaine"?"on":""}" onclick="setView('semaine')">Semaine</button></div>
+      <button class="seg ${view==="semaine"?"sem":""}" onclick="toggleView(this)" role="switch" aria-checked="${view==="semaine"}" aria-label="Vue Jour ou Semaine"><span class="${view==="jour"?"on":""}">Jour</span><span class="${view==="semaine"?"on":""}">Semaine</span></button>
     </div>`;
 
   h += view==="semaine" ? renderWeek(all) : renderDay(all);
@@ -505,15 +510,15 @@ function weekGrid(week, wk, nDays, h0, h1, H){
   h+=`</div>`;
   for(let i=0;i<nDays;i++){
     const d=new Date(week); d.setDate(d.getDate()+i);
-    h+=`<div class="col ${sameDay(d,now)?"today":""}" style="height:${(h1-h0)*H}px">`;
+    h+=`<div class="col ${dayDone(d)?"done":""}" style="height:${(h1-h0)*H}px">`;
     wk.filter(e=>sameDay(e.s,d)).forEach(e=>{
       const y=top(e.s), hg=top(e.e)-y-2;
-      h+=`<div class="ev ${e.type==="DS"?"exam":""} ${e.e<now?"past":""}" style="top:${y+1}px;height:${hg}px;${colors(e.code)}" onclick="openSheet('${esc(e.key)}')">
+      h+=`<div class="ev ${e.type==="DS"?"exam":""}" style="top:${y+1}px;height:${hg}px;${colors(e.code)}" onclick="openSheet('${esc(e.key)}')">
         ${hg>48?`<div class="tm">${fmtH(e.s)}<span class="te"> – ${fmtH(e.e)}</span></div>`:""}<div class="t">${esc(e.code)}</div><div class="r">${esc((e.room||"").split(/[,/]/)[0].trim())}</div>
         ${hg>70?`<div class="x">${esc(typeLbl(e.type))}${e.prof?" · "+esc(e.prof):""}</div>`:""}
         ${hwBadge(e.key)}</div>`;
     });
-    if(sameDay(d,now)&&now.getHours()>=h0&&now.getHours()<h1) h+=`<div class="now" style="top:${top(now)}px"></div>`;
+    if(sameDay(d,now)&&now.getHours()>=Math.max(h0,8)&&now.getHours()<Math.min(h1,18)) h+=`<div class="now" style="top:${top(now)}px"></div>`;
     h+=`</div>`;
   }
   return h+`</div>` + (wk.length?"":`<div class="empty">Pas de cours cette semaine (ou semaine pas encore publiée par l'IUT).</div>`);
@@ -528,7 +533,7 @@ function renderDay(all){
     for(let i=0;i<x.n;i++){ const d=new Date(x.w); d.setDate(d.getDate()+i); const on=cw && i===dayIdx;
       if(on) ci=SLOTS.length; SLOTS.push({w:x.w, i});
       const de=x.wk.filter(e=>sameDay(e.s,d)).sort((a,b)=>a.s-b.s);
-      h+=`<div class="dpanel ${on?"on":""}" style="--o:${on?1:0}"><h3>${DAYS[i]} ${d.getDate()}</h3>${dayList(d, de, Hc, B, L)}</div>`; } });
+      h+=`<div class="dpanel ${on?"on":""} ${dayDone(d)?"done":""}" style="--o:${on?1:0}"><h3>${DAYS[i]} ${d.getDate()}</h3>${dayList(d, de, Hc, B, L)}</div>`; } });
   return `<div class="dview" id="dview"><div class="dtrack" id="dtrack" style="--i:${ci}">${h}</div></div>`;
 }
 // echelle universelle : 8h-12h15 = B px, 12h15-13h45 = L px (midi tasse), 13h45-18h = B px (symetrique du matin)
@@ -545,17 +550,17 @@ function dayList(d, de, Hc, B, L){
       if(g>25 && px>=34) full+=`<div class="brk" style="top:${y1}px;height:${px}px"><i></i><span>${fmtH(prev)} – ${fmtH(e.s)}</span><i></i></div>`;
       else if(g>=15) full+=`<div class="dash" style="top:${y1+px/2-9}px"></div>`; }   // trait seulement a partir de 15 min
     const y=Y(e.s), hh=Math.max(18, Y(e.e)-y-4), sz=hh<50?"s1":hh<70?"s2":"";      // cours courts : carte compacte
-    full+=`<div class="dc ${sz} ${e.e<now?"past":""}" style="top:${y}px;height:${hh}px;${colors(e.code)}" onclick="openSheet('${esc(e.key)}')">
+    full+=`<div class="dc ${sz}" style="top:${y}px;height:${hh}px;${colors(e.code)}" onclick="openSheet('${esc(e.key)}')">
         <div class="tm">${fmtH(e.s)}${sz==="s1"?"":` – ${fmtH(e.e)}`}</div><div class="rm">${esc((e.room||"").split(/[,/]/)[0].trim())}</div>
         <div class="cd">${esc(e.code)}${e.type?`<span class="badge">${esc(typeLbl(e.type))}</span>`:""}</div>
         <div class="nm">${esc(e.name)}${e.prof?` · ${esc(e.prof)}`:""}</div>${hwBadge(e.key)}</div>`;
     // resume (jour voisin) : memes positions, heure de debut + module
-    sum+=`<div class="sm ${hh<44?"s1":""} ${e.e<now?"past":""}" style="top:${y}px;height:${hh}px;${colors(e.code)}"><b>${fmtH(e.s)}</b>${esc(e.code)}</div>`;
+    sum+=`<div class="sm ${hh<44?"s1":""}" style="top:${y}px;height:${hh}px;${colors(e.code)}"><b>${fmtH(e.s)}</b>${esc(e.code)}</div>`;
     prev = prev && prev>e.e ? prev : e.e;
   });
   if(mins(prev)<=1040){ const y=Y(prev); full+=`<div class="brk tail" style="top:${y}px;height:${H-y}px"><i></i><span>Fin des cours à ${fmtH(prev)}</span></div>`; }
   // trait rouge de l'heure actuelle, comme en vue Semaine
-  if(sameDay(d,now) && mins(now)>=480 && mins(now)<=1080) full+=`<div class="now" style="top:${Y(now)}px"></div>`;
+  if(sameDay(d,now) && mins(now)>=480 && mins(now)<1080) full+=`<div class="now" style="top:${Y(now)}px"></div>`;
   return `<div class="dbody" style="height:${H}px"><div class="full">${full}</div><div class="sum">${sum}</div></div>`;
 }
 
@@ -888,26 +893,28 @@ console.assert(clean("TP béton, cône d'Abrams, batardeau, salopette, niquel")=
 $("warn").classList.remove("on");
 
 /* ======== accueil + charte (à accepter une fois avant d'entrer ; relisible depuis la fiche Messages) ======== */
+// une couleur par valeur (--c) : solidarité vert, respect rouge, saccage orange, confiance bleu, esprit critique violet, entraide canard
 const CHARTE = `<ul>
-    <li><b>Solidarité</b>Ce que tu ajoutes (devoirs, annonces) sert à tout le monde. On partage, on ne garde pas les infos pour soi.</li>
-    <li><b>Respect</b>Aucune insulte, moquerie ou propos blessant, ni dans les devoirs, ni dans les annonces, ni dans la discussion, ni dans les messages au créateur. Les mots vulgaires sont masqués automatiquement.</li>
-    <li><b>On ne saccage rien</b>On ne supprime pas et on ne modifie pas les devoirs des autres pour s'amuser. Une fausse info pénalise tout le monde.</li>
-    <li><b>Confiance</b>On écrit seulement ce qu'on sait vraiment : la bonne date, la bonne consigne. Les autres comptent sur toi.</li>
-    <li><b>Esprit critique</b>N'écoute pas tout le monde : en cas de doute, vérifie auprès du prof ou sur l'ENT.</li>
-    <li><b>Entraide</b>Quelqu'un est perdu ? On l'aide. Pas de dérapage, on reste entre gens bien.</li></ul>
-    <p style="margin:12px 0 0">Bon à savoir : l'appli compte les connexions de façon anonyme, et un message avec des insultes est signalé au créateur.</p>`;
+    <li style="--c:#2fbf6a"><b>Solidarité</b>Ce que tu ajoutes (devoirs, annonces) sert à tout le monde. On partage, on ne garde pas les infos pour soi.</li>
+    <li style="--c:#e0533d"><b>Respect</b>Aucune insulte, moquerie ou propos blessant : ni dans les devoirs, ni dans les annonces, ni dans la discussion, ni dans les messages au créateur. Dans tous les cas, les mots et les liens qui n'ont pas leur place ici sont masqués automatiquement.</li>
+    <li style="--c:#e8833a"><b>On ne saccage rien</b>On ne supprime pas et on ne modifie pas les devoirs des autres pour s'amuser. Une fausse info pénalise tout le monde.</li>
+    <li style="--c:#2e86d4"><b>Confiance</b>On écrit seulement ce qu'on sait vraiment : la bonne date, la bonne consigne. Les autres comptent sur toi.</li>
+    <li style="--c:#8e6bd8"><b>Esprit critique</b>N'écoute pas tout le monde : en cas de doute, vérifie auprès du prof ou sur l'ENT.</li>
+    <li style="--c:#12808a"><b>Entraide</b>Quelqu'un est perdu ? On l'aide. Pas de dérapage, on reste entre gens bien.</li></ul>
+    <p class="info"><b>Bon à savoir</b>Ta connexion à l'appli est anonyme. Tu peux donner ton prénom si tu le souhaites (dans la discussion ou dans un message au créateur). Tout ce qui est publié et l'activité de l'appli remontent au créateur, qui veille au respect de la charte.</p>`;
 const ASTUCES = `<ul>
     <li><b>Changer de jour ou de semaine</b>Glisse à gauche ou à droite, ou utilise les flèches. Touche le cartouche « Semaine » pour aller à une date précise.</li>
-    <li><b>Voir un cours en détail</b>Touche un cours : salle, prof, horaires, et ajoute un devoir pour ceux qui ont ce cours.</li>
-    <li><b>Suivre tes devoirs</b>Les devoirs sont partagés ; coche-les quand c'est fait (ça ne compte que pour toi). Ils disparaissent après la date de rendu.</li>
+    <li><b>Voir un cours et ajouter un devoir</b>Touche un cours pour voir la salle, le prof et les horaires. Tu peux y ajouter un devoir : il sera visible par tous les étudiants qui suivent ce cours (ton TP, ton groupe ou toute l'année, selon le cours).</li>
+    <li><b>Cocher tes devoirs</b>Coche un devoir quand tu l'as fait : ça ne compte que pour toi, les autres ne le voient pas. Un devoir disparaît 7 jours après sa date de rendu.</li>
     <li><b>Annonces et discussion</b>Les infos importantes et un fil de discussion pour tout le monde, ton groupe et ton TP.</li>
-    <li><b>L'installer comme une appli</b>iPhone : Partager puis « Sur l'écran d'accueil ». Android : menu puis « Installer l'application ».</li>
+    <li><b>L'installer comme une appli</b>Ouvre d'abord le site dans ton navigateur (Safari sur iPhone, Chrome sur Android). iPhone : bouton Partager, puis « Sur l'écran d'accueil ». Android : menu (les trois points), puis « Installer l'application » ou « Ajouter à l'écran d'accueil ».</li>
     <li><b>Une idée, un bug ?</b>Écris un message au créateur, il lit tout.</li></ul>`;
+const GUIDE = `<div class="wcard guide"><h2>Mode d'emploi</h2><p>À lire aussi : ce n'est pas la charte, c'est ce que l'appli te permet de faire.</p>${ASTUCES}</div>`;
 function renderWelcome(){
   const ok = $("welok")?.checked;
   $("app").innerHTML = `<div class="wel"><div class="hd"><img src="icon.png" alt=""><h1>Bonjour à tous !</h1><p>Voici votre nouvel emploi du temps, fait par un étudiant pour tous les étudiants.</p></div>
   <div class="wcard"><h2>La charte</h2><p>Cette application a été créée par un étudiant pour les étudiants. C'est un objet de solidarité : elle marche seulement si chacun joue le jeu.</p>${CHARTE}</div>
-  <div class="wcard"><h2>Ce que tu peux faire</h2>${ASTUCES}</div>
+  ${GUIDE}
   <label class="ok"><input type="checkbox" id="welok" ${ok?"checked":""} onchange="$('welgo').disabled=!this.checked"><span>J'ai lu la charte et je m'engage à la respecter.</span></label>
   <button class="btn dark go" id="welgo" ${ok?"":"disabled"} onclick="acceptCharte()">J'accepte et j'entre</button></div>`;
 }
@@ -918,7 +925,7 @@ function acceptCharte(){ if(!$("welok").checked) return; store.set("charte4", 1)
 function openCharte(){
   $("sheet").innerHTML = `<div class="grab"></div><h3>La charte</h3>
     <div class="wel" style="margin:0"><p class="note" style="font-size:14px">Cette application a été créée par un étudiant pour les étudiants. C'est un objet de solidarité : elle marche seulement si chacun joue le jeu.</p>${CHARTE}
-    <h3 style="margin-top:20px">Ce que tu peux faire</h3>${ASTUCES}</div>
+    <div style="margin-top:18px">${GUIDE}</div></div>
     <div class="row"><button class="btn" onclick="openFeedback()">Retour</button></div>`;
   $("sheet").scrollTop = 0;
 }
@@ -955,6 +962,8 @@ function jumpDate(v){ if(!v) return; const d=new Date(v+"T12:00"); week=monday(d
 function goToday(){ now=new Date(); week=monday(now); dayIdx=(now.getDay()+6)%7;
   if(dayIdx>4){ week.setDate(week.getDate()+7); dayIdx=0; } render(); }
 function setView(v){ view=v; store.set("view",v); render(); }
+// interrupteur : la pastille glisse d'abord (animation), puis on change de vue
+function toggleView(el){ el.classList.toggle("sem"); el.querySelectorAll("span").forEach(s=>s.classList.toggle("on")); setTimeout(()=>setView(view==="jour"?"semaine":"jour"), 200); }
 // glisser (doigt ou souris) sur la bande Jour ou Semaine : la bande suit le doigt et le voisin apparait peu a peu (--o de 0 a 1).
 // Au lacher elle finit de glisser ; on peut enchainer les glisser sans attendre. On ne redessine (recentrage) qu'une fois le doigt au repos.
 let swipe=null, swiped=false, recentre=0;
@@ -1081,6 +1090,9 @@ $("veil").onclick=closeSheet;
 addEventListener("keydown",e=>{ if(["TEXTAREA","INPUT","SELECT"].includes(e.target.tagName)) return; if(e.key==="ArrowLeft") step(-1); if(e.key==="ArrowRight") step(1); if(e.key==="Escape") closeSheet(); });
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ loadData(); loadHw(); loadAnn(); loadFb(); loadChat(); loadSupport(); } });
 setInterval(()=>{ if(!sheetKey && !annOpen) render(); }, 60000);
+// appli rouverte un autre jour (iPhone : elle ne se recharge pas toute seule) : on revient sur aujourd'hui
+let openDay = ymd(new Date());
+document.addEventListener("visibilitychange", ()=>{ if(document.hidden || ymd(new Date())===openDay) return; openDay = ymd(new Date()); if(!sheetKey && !annOpen) goToday(); });
 setInterval(()=>{ if(!document.hidden){ loadHw(); loadAnn(); loadFb(); loadChat(); loadSupport(); } }, 90000);
 render(); loadData(); loadHw(); loadAnn(); loadFb(); loadChat(); loadSupport();
 </script>
