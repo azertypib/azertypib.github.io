@@ -79,7 +79,7 @@ async function load(){
   }catch{ return askKey("Pas de connexion internet."); }
   if(!r.ok){ localStorage.removeItem("adm.cle"); return askKey("Clé refusée."); }
   const s = await r.json();
-  try{ const e = await fetch(`${SUPA_URL}/rest/v1/etat?select=maintenance,jusqua&id=eq.1`, {headers:{apikey:SUPA_KEY}}); const [x] = await e.json(); s.maint = !!x?.maintenance && (!x.jusqua || new Date(x.jusqua) > new Date()); s.maintFin = x?.jusqua; }catch{}
+  try{ const e = await fetch(`${SUPA_URL}/rest/v1/etat?select=maintenance,ferme&id=eq.1`, {headers:{apikey:SUPA_KEY}}); const [x] = await e.json(); s.maint = !!x?.maintenance; s.ferme = !!x?.ferme; }catch{}
   try{ const c = await fetch(`${SUPA_URL}/rest/v1/rpc/admin_comptes`, {method:"POST", headers:{apikey:SUPA_KEY, "Content-Type":"application/json"}, body:JSON.stringify({cle})}); s.cpt = c.ok ? await c.json() : null; }catch{}
   show(s);
 }
@@ -87,11 +87,19 @@ async function load(){
 // accueil = 3 cartouches avec juste le nombre ; le détail s'ouvre en touchant un cartouche
 let S = null, view = null;
 function show(s){ S = s; draw(); }   // « Actualiser » garde la liste ouverte
-// maintenance : affiche un message à tous et bloque les publications (le serveur refuse) ; s'éteint seule au bout de 3 h
+// avis « modifications en cours » : message montré une fois à tous, ne bloque rien ; à éteindre soi-même quand on a fini
 async function toggleMaint(){
   const on = !S.maint;
-  if(!confirm(on ? "Mettre l'appli en maintenance ? Tout le monde verra le message et rien ne pourra être publié." : "Remettre l'appli en ligne normalement ?")) return;
+  if(!confirm(on ? "Afficher à tout le monde « Modifications en cours : si quelque chose bug, pas d'inquiétude » ? Tout continue de fonctionner." : "Retirer l'avis ? Tout le monde verra « Modifications terminées ».")) return;
   const r = await fetch(`${SUPA_URL}/rest/v1/rpc/set_maintenance`, {method:"POST", headers:{apikey:SUPA_KEY, "Content-Type":"application/json"}, body:JSON.stringify({cle:localStorage.getItem("adm.cle"), actif:on})});
+  if(!r.ok){ alert("Échec : clé refusée ?"); return; }
+  load();
+}
+// fermer le site : écran « Application fermée » pour tout le monde, plus rien ne marche (le serveur refuse aussi)
+async function toggleFerme(){
+  const on = !S.ferme;
+  if(!confirm(on ? "FERMER le site ? Plus personne ne pourra l'utiliser jusqu'à ce que tu le rouvres." : "Rouvrir le site pour tout le monde ?")) return;
+  const r = await fetch(`${SUPA_URL}/rest/v1/rpc/set_ferme`, {method:"POST", headers:{apikey:SUPA_KEY, "Content-Type":"application/json"}, body:JSON.stringify({cle:localStorage.getItem("adm.cle"), actif:on})});
   if(!r.ok){ alert("Échec : clé refusée ?"); return; }
   load();
 }
@@ -110,7 +118,8 @@ function draw(){
       <button class="tile" onclick="go('dons')"><b>${dons.length}</b><span>Dons · ${total}</span><i>›</i></button>
       <button class="tile" onclick="go('appareils')"><b>${s.appareils.length}</b><span>Appareils${s.appareils.length ? " ("+parAn(s.appareils)+")" : ""} · ${auj.personnes} aujourd'hui${auj.nouvelles ? `, ${auj.nouvelles} nouveau${auj.nouvelles>1?"x":""}` : ""}</span><i>›</i></button>
 ${s.cpt ? (()=>{ const c=s.cpt, j=c.jours.find(x=>x.jour===today)||{connexions:0}; return `<button class="tile" onclick="go('comptes')"><b>${c.comptes.length}</b><span>Comptes${c.comptes.length ? " ("+parAn(c.comptes.map(x=>({tp:x.tp||x.annee})))+")" : ""} · ${j.connexions} connecté${j.connexions>1?"s":""} aujourd'hui${c.blocages.length ? ` · <b style="font-size:inherit;color:#e8833a">${c.blocages.length} blocage${c.blocages.length>1?"s":""}</b>` : ""}</span><i>›</i></button>`; })() : ""}
-<button class="tile" onclick="toggleMaint()"><b style="color:${s.maint?"#e8833a":"var(--ok)"}">${s.maint?"ON":"OFF"}</b><span>${s.maint?`Maintenance en cours : rien ne peut être publié (s'arrête seule à ${fmt(s.maintFin,{hour:"2-digit",minute:"2-digit"})})`:"Maintenance : appli normale. Touche pour la mettre en maintenance"}</span><i>›</i></button>
+<button class="tile" onclick="toggleMaint()"><b style="color:${s.maint?"#e8833a":"var(--ok)"}">${s.maint?"ON":"OFF"}</b><span>${s.maint?"Avis « Modifications en cours » affiché. Touche quand tu as fini pour le retirer":"Avis « Modifications en cours » : éteint. Touche pour prévenir tout le monde que tu travailles sur l'appli"}</span><i>›</i></button>
+<button class="tile" onclick="toggleFerme()"><b style="color:${s.ferme?"var(--accent)":"var(--ok)"}">${s.ferme?"FERMÉ":"OUVERT"}</b><span>${s.ferme?"Site fermé : personne ne peut l'utiliser. Touche pour le rouvrir":"Site ouvert. Touche pour le fermer (plus rien ne marche)"}</span><i>›</i></button>
     </div>
     <p style="margin-top:28px"><button onclick="forget()">Oublier la clé sur cet appareil</button></p>`;
   }else if(view==="alertes"){
