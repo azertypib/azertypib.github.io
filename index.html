@@ -418,7 +418,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-25b";
+const APP_V = "2026-11-25c";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -1218,7 +1218,7 @@ function cptAppliquer(s, union){
 function cptOuvrir(s, union){ cpt = {...cpt, ps:s.pseudo, jeton:s.jeton || cpt.jeton}; store.set("cpt", cpt); sessionStorage.setItem("edt.ouvert", cpt.jeton); cptAppliquer(s, union); location.reload(); }
 // retour sur l'appli (ou tirer vers le bas) : coches et annonces vues des autres appareils
 async function cptTirer(tout){ if(!cptOuvert()) return; try{ const s = await rpc("compte_lire", {p_jeton:cpt.jeton});
-  if(!s.ok){ if(s.err==="jeton") cptOubli("connexion"); return; }   // compte supprimé ou déconnecté ailleurs
+  if(!s.ok){ if(s.err==="jeton") cptPerdu(); return; }   // compte supprimé ou déconnecté ailleurs
   if(tout){ if(s.annee && s.annee!==annee){ annee = PROMO = s.annee; localStorage.setItem("edt.annee", JSON.stringify(annee)); DATA = yearData(); }
     if(s.tp && s.tp!==tp){ tp = s.tp; localStorage.setItem("edt.tp", JSON.stringify(tp)); }
     if(s.etat?.charteCpt) localStorage.setItem("edt.charteCpt", "1"); }
@@ -1234,7 +1234,10 @@ function cptOubli(vers){ if(cpt?.jeton) rpc("compte_sortir", {p_jeton:cpt.jeton}
 // ouverture directe : l'appareil est déjà verrouillé par Face ID / empreinte / code du téléphone ; on ne redemande rien
 function cptAutoSet(on){ cpt.auto = !!on; delete cpt.face; store.set("cpt", cpt); }
 const cptDirect = () => !!(cpt?.auto || cpt?.face);   // face = ancien réglage (Face ID activé le 24/11)
+// compte supprimé (remise à zéro du 24/11) : retour à l'accueil (créer / se connecter / sans compte) en gardant année et TP
+function cptPerdu(){ ["cpt","charteCpt","sansCompte"].forEach(k=>localStorage.removeItem("edt."+k)); sessionStorage.removeItem("edt.ouvert"); sessionStorage.setItem("edt.cptVue","accueil"); location.reload(); }
 if(cpt?.jeton && cptDirect() && !cptOuvert()){ sessionStorage.setItem("edt.ouvert", cpt.jeton); setTimeout(()=>cptTirer(true)); }
+else if(cpt?.jeton && !cptOuvert()) rpc("compte_lire", {p_jeton:cpt.jeton}).then(s=>{ if(s.ok===false && s.err==="jeton") cptPerdu(); }).catch(()=>{});   // écran du code : vérifie que le compte existe encore
 // après inscription : compte neuf = rattaché à aucun groupe -> l'appli demande l'année puis le TP
 function cptFin(){ cptVue = null; cptSave(); render(); }
 async function cptInscrire(){
