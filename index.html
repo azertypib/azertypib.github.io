@@ -50,12 +50,13 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .btn.dark{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .btn:disabled{opacity:.4;cursor:default}
 /* bandeau du bas : Moodle + Messagerie (un cartouche coloré, sans trait, calé à gauche) et ENT sans couleur à droite ; PC : ENT va du carré Discussion au carré du groupe, Moodle/Messagerie = 2 fois sa largeur (fitLinks) */
-.links{display:flex;justify-content:space-between;gap:8px;height:46px;margin:10px 0 14px}
+.links{display:flex;gap:8px;height:46px;margin:10px 0 14px}
 .links .lk{flex:none;width:var(--lkw,auto);min-width:0;display:flex;border-radius:12px;overflow:hidden;background:linear-gradient(90deg,#0d2a47 0%,#0d2a47 30%,#12808a 100%);box-shadow:var(--shadow)}
 .links a{display:grid;place-items:center;text-decoration:none;font-size:15px;font-weight:700}
 .links .lk a{flex:1;padding:0 18px;color:#fff}
 .links .lk a:hover,.links .lk a:focus-visible{background:rgba(255,255,255,.08)}
-.links .ent{flex:none;width:var(--entw,auto);padding:0 18px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:12px;box-shadow:var(--shadow)}
+.links .shr{flex:none;width:var(--shw,48px);display:grid;place-items:center;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:12px;box-shadow:var(--shadow);padding:0}
+.links .ent{margin-left:auto;flex:none;width:var(--entw,auto);padding:0 18px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:12px;box-shadow:var(--shadow)}
 .bar .nav{width:44px;height:var(--h2);padding:0;display:grid;place-items:center;border-radius:12px;box-shadow:var(--shadow)}
 .ttl{cursor:pointer}
 .seg{position:relative;display:inline-grid;font:inherit;color:inherit;grid-template-columns:auto auto;border:1px solid var(--line);border-radius:12px;padding:2px;height:var(--h2);margin-left:auto;background:var(--panel);cursor:pointer;box-shadow:var(--shadow)}
@@ -213,6 +214,32 @@ input[type=date]{width:100%;border:1px solid var(--line);border-radius:10px;padd
 
 /* ---------- devoirs (bas de page) ---------- */
 .sect{margin-top:22px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 6px}
+@media (min-width:760px){ .tiles{grid-template-columns:repeat(4,1fr);gap:10px} .tiles.soir{grid-template-columns:repeat(3,1fr)} .tiles .tl.wide{grid-column:auto;flex-direction:column;align-items:flex-start;min-height:80px;gap:1px} .tiles .tl.wide .ico{margin-bottom:5px} .tiles .tl.wide .num{position:absolute} }
+.tl{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-height:80px;padding:10px 11px;border:1px solid var(--line);background:var(--panel);border-radius:14px;box-shadow:var(--shadow);text-align:left;color:var(--ink)}
+.tl .ico{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;margin-bottom:5px;background:var(--tc);color:#fff}.tl .ico svg{width:16px;height:16px}
+.tl b{font-size:15px}.tl .st{font-size:12px;color:var(--muted)}
+.tl .num{position:absolute;right:11px;top:9px;font-weight:800;font-size:20px;color:var(--tc);font-variant-numeric:tabular-nums}
+.tl.wide{grid-column:1/-1;min-height:0;flex-direction:row;align-items:center;gap:10px}.tl.wide .ico{margin:0}.tl.wide .num{position:static;margin-left:auto}
+.sseg{display:flex;border:2px solid var(--line);border-radius:12px;padding:3px;gap:3px;background:var(--bg);margin-bottom:10px}
+.sseg button{flex:1;border:0;background:none;padding:7px 0;border-radius:8px;font-weight:700;font-size:14px;color:var(--muted)}
+.sseg button.on{color:#fff;background:linear-gradient(90deg,#0d2a47,#12808a)}
+.hwl{display:flex;gap:9px;align-items:flex-start;border-radius:12px;background:var(--bg);border:1px solid var(--line);border-left:4px solid var(--c);padding:8px 10px;margin-bottom:6px}
+.hwl.fait{opacity:.75}.hwl .tx{flex:1;min-width:0;cursor:pointer}.hwl b{font-size:13.5px}
+.hwl p{margin:2px 0 0;font-size:13px;white-space:pre-wrap;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hwl .when{font-size:12px;font-weight:700;color:#e8833a;white-space:nowrap}.hwl.fait .when{color:var(--muted)}
+.dsr{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);cursor:pointer}.dsr:last-of-type{border:0}
+.dsr .j{min-width:50px;text-align:center;border-radius:10px;padding:4px 0;font-weight:800;line-height:1.1;color:var(--muted);background:var(--soft)}
+.dsr .j small{display:block;font-size:10px;font-weight:600}.dsr .j.r{color:#e0533d;background:color-mix(in srgb,#e0533d 18%,transparent)}.dsr .j.o{color:#e8833a;background:color-mix(in srgb,#e8833a 18%,transparent)}
+.dsr b{display:block;font-size:14px}.dsr small{color:var(--muted);font-size:12.5px}
+.room{display:inline-block;border-radius:8px;padding:5px 9px;font-weight:700;font-size:13px;background:color-mix(in srgb,#2fbf6a 20%,transparent);color:#2fbf6a;margin:0 5px 6px 0}
+.hbar{display:flex;align-items:center;gap:8px;margin:8px 0}.hbar span{min-width:64px;font-size:13px;font-weight:600}.hbar i{height:9px;border-radius:5px;background:var(--c)}.hbar em{font-style:normal;color:var(--muted);font-size:12.5px;margin-left:auto}
+.pgrp{font-size:12.5px;font-weight:700;color:var(--muted);margin:6px 0 6px}
+.themes{display:grid;grid-template-columns:1fr 1fr;gap:8px}.themes button{border:2px solid var(--line);background:var(--bg);border-radius:12px;padding:11px;font-weight:700;color:var(--ink)}
+.themes button.on{border-color:#12808a;background:color-mix(in srgb,#12808a 15%,transparent)}
+textarea.mynote{width:100%;min-height:64px;border-radius:10px;border:1px solid var(--line);border-left:4px solid #d9b44a;background:color-mix(in srgb,#d9b44a 10%,var(--bg));color:var(--ink);padding:8px 10px;font:inherit;font-size:16px}
+.hw.me{background:#d9b44a;color:#1a1917}
+.dc .hw.me.sh{right:32px}.ev .hw.me.sh{right:21px}.dc.s1 .hw.me~.hw{margin-left:4px}
 .sect h2{font-size:18px;margin:0 0 8px;display:flex;align-items:center;gap:10px}
 .tabs{display:flex;gap:6px;margin-bottom:10px}
 .tabs button{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 14px;font-weight:650}
@@ -397,6 +424,11 @@ const ICON_SUN  = svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4
 const ICON_MOON = svg('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>');
 const ICON_MSG  = svg('<path d="M20 15.5a2 2 0 0 1-2 2H8l-4 3.5V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 12.5h5"/>');
 const ICON_CHAT = svg('<path d="M21 11.5a8.4 8.4 0 0 1-12.2 7.5L3 21l2-5.6A8.4 8.4 0 1 1 21 11.5z"/><path d="M8.5 11.5h.01M12.5 11.5h.01M16.5 11.5h.01" stroke-width="3"/>');
+const ICON_GEAR = svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>');
+const ICON_SHARE = svg('<path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/>');
+const ICO_PEN = `<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const TI = { hw:'<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>', ds:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/>',
+  room:'<path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M14 12h.01"/>', hours:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>' };
 const ICON_PREV = svg('<path d="m15 5-7 7 7 7"/>');
 const ICON_NEXT = svg('<path d="m9 5 7 7-7 7"/>');
 let theme = store.get("theme", matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light");
@@ -421,7 +453,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-25f";
+const APP_V = "2026-11-26a";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -478,6 +510,10 @@ function hwBadge(key){
   const ok = l.every(h=>done[h.id]);
   return `<span class="hw ${ok?"ok":"todo"}" title="${ok?"Devoir fait":"Devoir à faire"}">${ok?ICO_OK:ICO_X}</span>`;
 }
+// note perso sur un cours (visible par soi seul ; suit le compte)
+let notes = store.get("notes", {});
+const noteBadge = key => notes[key] ? `<span class="hw me${hwFor(key).length?" sh":""}" title="Ma note">${ICO_PEN}</span>` : "";
+function saveNote(v){ if(!sheetKey) return; v = v.trim().slice(0, 1000); if(v) notes[sheetKey] = v; else delete notes[sheetKey]; store.set("notes", notes); }
 function setCourseDone(v){ hwFor(sheetKey).forEach(x=>{ if(v) done[x.id]=true; else delete done[x.id]; }); store.set("done", done); render(); openSheet(sheetKey,true); }
 function toggleDone(id, v){ if(v) done[id]=true; else delete done[id]; store.set("done", done); render(); if(sheetKey) openSheet(sheetKey,true); }
 
@@ -525,7 +561,7 @@ function render(){
         <div class="pc bt"><b>EDT</b><span>· Emploi du temps · IUT La Rochelle</span></div><em class="pc">Génie civil · ${esc(PROMO)}</em></div>
       ${HW_ON?`<button class="sq" onclick="openChat()" aria-label="Discussion">${ICON_CHAT}${chatBadges()}</button>`:""}
       ${HW_ON?`<button class="sq" onclick="openFeedback()" aria-label="Messages au créateur">${ICON_MSG}${retNew()?`<span class="cnt">${retNew()}</span>`:""}</button>`:""}
-      <button class="sq" onclick="toggleTheme()" aria-label="Mode clair ou sombre">${theme==="dark"?ICON_SUN:ICON_MOON}</button>
+      <button class="sq" onclick="openParams()" aria-label="Paramètres">${ICON_GEAR}</button>
       ${HW_ON?`<button class="sq" onclick="openAnnList()" aria-label="Annonces">${ICON_ANN}${annCount()?`<span class="cnt">${annCount()}</span>`:""}</button>`:""}
       <button class="sq" onclick="startPick()" aria-label="Changer de groupe">${esc(tdLabel(tdOf(tp)).replace("Groupe ",""))}<small>${esc(tpLabel(tp))}</small></button>
     </header>
@@ -539,10 +575,10 @@ function render(){
 
   h += view==="semaine" ? renderWeek(all) : renderDay(all);
   // liens de l'université sous l'emploi du temps (téléphone : collés au bas de l'écran, voir fitH)
-  h += `<nav class="links" aria-label="Liens de l'université"><div class="lk"><a href="${LINKS.moodle}" target="_blank" rel="noopener">Moodle</a><a href="${LINKS.mail}" target="_blank" rel="noopener">Messagerie</a></div><a class="ent" href="${LINKS.ent}" target="_blank" rel="noopener">ENT</a></nav>`;
-  h += renderHwSection(all);
+  h += `<nav class="links" aria-label="Liens de l'université"><div class="lk"><a href="${LINKS.moodle}" target="_blank" rel="noopener">Moodle</a><a href="${LINKS.mail}" target="_blank" rel="noopener">Messagerie</a></div><a class="ent" href="${LINKS.ent}" target="_blank" rel="noopener">ENT</a><button class="shr" onclick="shareLink()" aria-label="Partager l'appli">${ICON_SHARE}</button></nav>`;
+  h += renderTiles(all);
   h += `<footer><span>${DATA.updated?"Emploi du temps vérifié le "+fmtD(new Date(DATA.updated),{day:"numeric",month:"short"})+" à "+fmtH(new Date(DATA.updated)):""}</span>
-        <span><a href="#" onclick="shareLink();return false" style="color:inherit">Partager l'appli</a></span></footer>`;
+</footer>`;
   app.innerHTML = h; bindSwipe(); seatSeg(document.querySelector(".seg")); fitLinks();
   // telephone : on mesure ou commence la bande puis on redessine une fois pour qu'elle finisse pile en bas de l'ecran
   const tr=$("dtrack");
@@ -583,7 +619,7 @@ function weekGrid(week, wk, nDays, h0, h1, H){
       h+=`<div class="ev ${e.type==="DS"?"exam":""}" style="top:${y+1}px;height:${hg}px;${colors(e.code)}" onclick="openSheet('${esc(e.key)}')">
         ${hg>48?`<div class="tm">${fmtH(e.s)}<span class="te"> – ${fmtH(e.e)}</span></div>`:""}<div class="t">${esc(e.code)}</div><div class="r">${esc((e.room||"").split(/[,/]/)[0].trim())}</div>
         ${hg>70?`<div class="x">${esc(typeLbl(e.type))}${e.prof?" · "+esc(e.prof):""}</div>`:""}
-        ${hwBadge(e.key)}</div>`;
+        ${noteBadge(e.key)}${hwBadge(e.key)}</div>`;
     });
     if(sameDay(d,now)&&now.getHours()>=Math.max(h0,8)&&now.getHours()<Math.min(h1,18)) h+=`<div class="now" style="top:${top(now)}px"></div>`;
     h+=`</div>`;
@@ -627,7 +663,7 @@ function dayList(d, de, Hc, B, L){
     full+=`<div class="dc ${sz}" style="top:${y}px;height:${hh}px;${colors(e.code)}" onclick="openSheet('${esc(e.key)}')">
         <div class="tm">${fmtH(e.s)}${sz==="s1"?"":` – ${fmtH(e.e)}`}</div><div class="rm">${esc((e.room||"").split(/[,/]/)[0].trim())}</div>
         <div class="cd">${esc(e.code)}${e.type?`<span class="badge">${esc(typeLbl(e.type))}</span>`:""}</div>
-        <div class="nm">${esc(e.name)}${e.prof?` · ${esc(e.prof)}`:""}</div>${hwBadge(e.key)}</div>`;
+        <div class="nm">${esc(e.name)}${e.prof?` · ${esc(e.prof)}`:""}</div>${noteBadge(e.key)}${hwBadge(e.key)}</div>`;
     // resume (jour voisin) : memes positions, heure de debut + module
     sum+=`<div class="sm ${hh<44?"s1":""}" style="top:${y}px;height:${hh}px;${colors(e.code)}"><b>${fmtH(e.s)}</b>${esc(e.code)}</div>`;
     prev = end;
@@ -638,6 +674,89 @@ function dayList(d, de, Hc, B, L){
   return `<div class="dbody" style="height:${H}px"><div class="full">${full}</div><div class="sum">${sum}</div></div>`;
 }
 
+/* ======== cartouches sous la barre du bas : Devoirs, Évaluations, Salles libres (8h-18h), Heures ; on touche pour le détail ======== */
+const dayDiff = d => { const a=new Date(); a.setHours(0,0,0,0); const b=new Date(d); b.setHours(0,0,0,0); return Math.round((b-a)/864e5); };
+const whenLbl = d => { const n=dayDiff(d); return n===0 ? "auj." : n===1 ? "demain" : n>1 && n<7 ? fmtD(new Date(d),{weekday:"short"}) : fmtD(new Date(d),{day:"numeric",month:"short"}); };
+const EVAL_RE = /(^|[^a-zà-ÿ])[ée]val|(^|[^a-z])ds([^a-z]|$)|contr[oô]le|interro|partiel|examen|qcm/i;
+// évaluations à venir : cours de type DS de son TP + devoirs qui parlent d'évaluation
+function evalsAVenir(all){
+  const t0=new Date(); t0.setHours(0,0,0,0); const l=[];
+  all.filter(e=>(e.type==="DS" || EVAL_RE.test(e.name||"")) && e.s>=t0).forEach(e=>l.push({d:e.s, t:(e.type==="DS"?"DS ":"")+(e.name||e.code), c:e.code, sub:`${fmtH(e.s)} · ${(e.room||"").split(/[,/]/)[0].trim()}`, key:e.key}));
+  hwLive().filter(h=>EVAL_RE.test(h.texte) && new Date(h.due)>=t0 && !l.some(x=>x.key===h.ckey)).forEach(h=>l.push({d:new Date(h.due), t:"Évaluation "+h.code, c:h.code, sub:h.texte.split("\n")[0].slice(0,70), key:h.ckey}));
+  return l.sort((a,b)=>a.d-b.d);
+}
+// salles libres maintenant : toutes les salles des emplois du temps (toutes les années, tous les TP), moins celles occupées
+const sallesOuvert = () => { const d=new Date(), m=d.getHours()*60+d.getMinutes(); return d.getDay()>=1 && d.getDay()<=5 && m>=480 && m<1080; };
+function sallesLibres(){
+  const all=[], d=new Date(), fin=new Date(d); fin.setHours(18,0,0,0);
+  const add = y => Object.values(y?.events||{}).forEach(l=>l.forEach(e=>all.push(e)));
+  add(RAW); Object.values(RAW?.years||{}).forEach(add);
+  const lun=monday(d), dim=new Date(lun); dim.setDate(dim.getDate()+7);
+  const occ={}, connues=new Set();
+  all.forEach(e=>{ const s=new Date(e.start), en=new Date(e.end); if(s<lun || s>=dim) return;
+    (e.room||"").split(/[,/]/).map(x=>x.trim()).filter(x=>x && !/distanc|ext[ée]rieur|^-$/i.test(x)).forEach(r=>{ connues.add(r); (occ[r] ||= []).push([s,en]); }); });
+  const out=[];
+  connues.forEach(r=>{ const l=occ[r]||[]; if(l.some(([s,en])=>s<=d && en>d)) return;
+    const next=l.filter(([s])=>s>d && sameDay(s,d)).sort((a,b)=>a[0]-b[0])[0]; out.push({r, jusqua: next ? next[0] : fin}); });
+  return out.sort((a,b)=>b.jusqua-a.jusqua || a.r.localeCompare(b.r));
+}
+function heuresSemaine(all){
+  const lun=monday(new Date()), dim=new Date(lun); dim.setDate(dim.getDate()+7); const par={};
+  all.filter(e=>e.s>=lun && e.s<dim).forEach(e=>{ par[e.code]=(par[e.code]||0)+(e.e-e.s)/36e5; });
+  return Object.entries(par).sort((a,b)=>b[1]-a[1]);
+}
+const hFmt = h => (Math.round(h*2)/2).toString().replace(".",",")+" h";
+function renderTiles(all){
+  const live=hwLive(), todo=live.filter(h=>!done[h.id]), soir=new Date().getHours()>=18;
+  const demain=todo.filter(h=>dayDiff(h.due)===1).length;
+  const ev=evalsAVenir(all)[0], tot=heuresSemaine(all).reduce((a,x)=>a+x[1],0);
+  const tile=(c,ico,t,sub,num,fn,wide)=>`<button class="tl${wide?" wide":""}" onclick="${fn}" style="--tc:${c}"><span class="ico">${svg(ico)}</span><b>${t}</b><span class="st">${esc(sub)}</span><span class="num">${esc(num)}</span></button>`;
+  const salles = sallesOuvert(), sl = salles ? sallesLibres() : [];
+  const evTxt = !ev ? "aucune prévue" : dayDiff(ev.d)===0 ? ev.c+" aujourd'hui" : dayDiff(ev.d)===1 ? ev.c+" demain" : `${ev.c} dans ${dayDiff(ev.d)} jours`;
+  let h = `<div class="tiles${salles?"":" soir"}">`;
+  if(HW_ON) h += tile("#e0392f", TI.hw, "Devoirs", soir && demain ? `${demain} pour demain` : todo.length ? `${todo.length} à faire` : "rien à faire", String(todo.length), "openHwList()");
+  h += tile("#e8833a", TI.ds, "Évaluations", evTxt, ev ? "J-"+dayDiff(ev.d) : "–", "openEvals()");
+  if(salles) h += tile("#2fbf6a", TI.room, "Salles libres", "en ce moment", String(sl.length), "openSalles()");
+  h += tile("#2e86d4", TI.hours, "Heures", "cette semaine", hFmt(tot), "openHeures()", !salles);   // le soir : Heures prend toute la largeur (téléphone)
+  return h + `</div>`;
+}
+let hwTabL = "todo";
+function sheetOpen(h){ sheetKey=null; annOpen=true; $("sheet").innerHTML=`<div class="grab"></div>${h}<div class="row"><button class="btn" onclick="closeSheet()">Fermer</button></div>`; $("sheet").classList.add("open"); $("veil").style.display="block"; }
+function hwCoche(id, v){ if(v) done[id]=true; else delete done[id]; store.set("done", done); render(); openHwList(); }
+function openHwList(t){
+  if(t) hwTabL=t;
+  const live=hwLive().slice().sort((a,b)=>new Date(a.due)-new Date(b.due)), todo=live.filter(h=>!done[h.id]), fin=live.filter(h=>done[h.id]);
+  const l = hwTabL==="todo" ? todo : fin;
+  let h=`<h3>Devoirs</h3><div class="sseg"><button class="${hwTabL==="todo"?"on":""}" onclick="openHwList('todo')">À faire (${todo.length})</button><button class="${hwTabL==="done"?"on":""}" onclick="openHwList('done')">Faits (${fin.length})</button></div>`;
+  if(!l.length) h+=`<div class="empty">${hwTabL==="todo"?"Rien à faire. Touche un cours pour ajouter un devoir.":"Aucun devoir coché pour l'instant."}</div>`;
+  l.forEach(x=>{ h+=`<div class="hwl${done[x.id]?" fait":""}" style="${colors(x.code)}"><input type="checkbox" class="ck" ${done[x.id]?"checked":""} onclick="hwCoche(${x.id}, this.checked)" aria-label="Fait">
+    <div class="tx" onclick="closeSheet(); jumpTo('${esc(x.ckey)}')"><b>${esc(x.code)}</b><p>${esc(x.texte)}</p></div><span class="when">${esc(whenLbl(x.due))}</span></div>`; });
+  sheetOpen(h);
+}
+function openEvals(){
+  const l=evalsAVenir(events());
+  let h=`<h3>Évaluations à venir</h3>`;
+  if(!l.length) h+=`<div class="empty">Aucune évaluation prévue pour l'instant.</div>`;
+  l.forEach(x=>{ const n=dayDiff(x.d); h+=`<div class="dsr" onclick="closeSheet(); jumpTo('${esc(x.key)}')"><span class="j ${n<=3?"r":n<=9?"o":""}">J-${n}<small>${esc(fmtD(x.d,{weekday:"short"}))}</small></span><div><b>${esc(x.t)}</b><small>${esc(x.sub)}</small></div></div>`; });
+  sheetOpen(h);
+}
+function openSalles(){
+  const l=sallesLibres();
+  let h=`<h3>Salles libres maintenant</h3><p class="note" style="margin:0 0 10px">D'après les emplois du temps de toutes les promos · ${fmtH(new Date())}</p>`;
+  h += l.length ? l.map(x=>`<span class="room">${esc(x.r)} · ${x.jusqua.getHours()>=18?"jusqu'à 18h":"jusqu'à "+esc(fmtH(x.jusqua))}</span>`).join("") : `<div class="empty">Aucune salle libre en ce moment.</div>`;
+  sheetOpen(h);
+}
+function openHeures(){
+  const hs=heuresSemaine(events()), tot=hs.reduce((a,x)=>a+x[1],0), max=Math.max(1,...hs.map(x=>x[1]));
+  let h=`<h3>Heures cette semaine · ${hFmt(tot)}</h3>`;
+  h += hs.length ? hs.map(([c,n])=>`<div class="hbar" style="${colors(c)}"><span>${esc(c)}</span><i style="width:${Math.round(n/max*60)}%"></i><em>${hFmt(n)}</em></div>`).join("") : `<div class="empty">Pas de cours cette semaine.</div>`;
+  sheetOpen(h);
+}
+// Paramètres (remplace le carré soleil / lune) : thème ; les notifications viendront ici
+function openParams(){
+  sheetOpen(`<h3>Paramètres</h3><div class="pgrp">Thème</div><div class="themes"><button class="${theme==="dark"?"on":""}" onclick="setTheme('dark')">Sombre</button><button class="${theme!=="dark"?"on":""}" onclick="setTheme('light')">Clair</button></div>`);
+}
+function setTheme(t){ theme=t; store.set("theme", theme); applyTheme(); render(); openParams(); }
 function renderHwSection(all){
   if(!HW_ON) return "";
   const byKey={}; all.forEach(e=>byKey[e.key]=e);
@@ -1065,7 +1184,9 @@ function setView(v){ view=v; store.set("view",v); render(); }
 // interrupteur : la pastille glisse d'abord (animation), puis on change de vue
 // la pastille prend la largeur et la place du mot actif (Jour est plus court que Semaine)
 // PC : ENT va du carré Discussion au carré du groupe, Moodle/Messagerie fait 2 fois sa largeur, calé à gauche (téléphone : tailles au plus juste)
+// carré Partager = même largeur que le carré du groupe (dernier carré de l'en-tête), donc aligné dessous
 function fitLinks(){ const nav=document.querySelector(".links"), ban=document.querySelector("header .ban"), sq=document.querySelectorAll("header .sq"); if(!nav||!ban||!sq.length) return;
+  nav.style.setProperty("--shw", sq[sq.length-1].getBoundingClientRect().width+"px");
   if(phone()){ nav.style.removeProperty("--lkw"); nav.style.removeProperty("--entw"); return; }
   const a=sq[0].getBoundingClientRect(), z=sq[sq.length-1].getBoundingClientRect(), w=z.right-a.left; nav.style.setProperty("--entw", w+"px"); nav.style.setProperty("--lkw", 2*w+"px"); }
 addEventListener("resize", fitLinks);
@@ -1183,6 +1304,7 @@ function openSheet(key, keep){
         <div class="act"><button onclick="editing=null;openSheet(sheetKey,true)">Annuler</button><button class="on" onclick="saveNew()">Enregistrer</button></div></div>`;
     else h+=`<button class="addhw" onclick="editing='new';openSheet(sheetKey,true);$('newhw').focus()">+ ${l.length?"Ajouter un autre devoir":"Ajouter un devoir"}</button>`;
   }
+  h+=`<h4>Ma note perso <small>visible par toi seul</small></h4><textarea class="mynote" maxlength="1000" placeholder="Ex : ramener le compas…" oninput="saveNote(this.value)" onblur="render()">${esc(notes[key]||"")}</textarea>`;
   if(!HW_ON) h+=`<div class="row"><button class="btn" onclick="closeSheet()">Fermer</button></div>`;
   $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
 }
@@ -1198,7 +1320,7 @@ $("veil").onclick=closeSheet;
 
 /* ======== compte (facultatif) : pseudo + code PIN, Face ID / empreinte ; suit coches, annonces vues, année, TP, thème, pseudo ======== */
 // session ouverte = sessionStorage : survit au rechargement (F5, tirer vers le bas), disparaît quand on ferme l'appli -> le code est redemandé
-const CPT_SYNC = ["done","annSeen","theme","view","pseudo","charteCpt"];
+const CPT_SYNC = ["done","annSeen","theme","view","pseudo","charteCpt","notes"];
 let cpt = store.get("cpt", null);                 // {ps, jeton, n (longueur du code), h (empreinte locale, hors ligne), face (id Face ID)}
 let cptVue = sessionStorage.getItem("edt.cptVue"); sessionStorage.removeItem("edt.cptVue");
 let cptPin = "", cptErr = "", cptTimer = null, cptBusy = false, cptPush = 0;
@@ -1344,6 +1466,7 @@ async function cptBloc(){
 
 /* ======== tirer vers le bas (tout en haut de la page) = actualiser, sans redemander le code ; doigt ou souris ======== */
 async function actualiser(){
+  if(!sheetKey && !annOpen) goToday();
   const p = $("ptr"); p.classList.add("spin"); p.style.transform = "translate(-50%,14px)"; p.style.opacity = 1;
   await Promise.allSettled([loadData(), loadHw(), loadAnn(), loadFb(), loadChat(), loadSupport(), loadEtat(), cptTirer()]);
   setTimeout(()=>{ p.classList.remove("spin","go"); p.style.transform = ""; p.style.opacity = 0; toast("À jour"); }, 400);
