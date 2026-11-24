@@ -271,6 +271,26 @@ textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:1
 .wel li b{color:var(--c,inherit)}
 .wel .wcard>.info,.wel .info{margin:14px 0 0;padding:10px 12px;border-radius:10px;background:var(--soft);font-size:13.5px;line-height:1.45;color:var(--ink)}
 .wel .info b{display:block;margin-bottom:2px}
+.acc{max-width:380px;margin:7vh auto 30px;padding:0 6px;text-align:center}
+.acc h1{font-size:26px;margin:12px 0 4px}.acc .sub{color:var(--muted);margin:0 0 18px}.acc .small{color:var(--muted);font-size:13px;margin:6px 0 0}
+.acc label{display:block;text-align:left;font-size:13px;color:var(--muted);margin:12px 0 5px}
+.acc input{width:100%;height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;font-size:16px}
+.abtn{display:flex;align-items:center;justify-content:center;width:100%;height:52px;margin-top:10px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:16px;font-weight:650}
+.abtn.dark{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.alink{display:block;margin:10px auto 0;border:0;background:none;color:#2e86d4;font-size:14.5px;padding:4px}
+.cerr{color:#e0533d;font-size:13.5px;min-height:19px;margin:8px 0 0}
+.acc .av{width:72px;height:72px;margin:0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;color:#fff;background:linear-gradient(135deg,#0d2a47,#12808a)}
+.acc .ring{width:80px;height:80px;margin:16px auto 0;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#12808a;background:color-mix(in srgb,#12808a 18%,transparent)}
+.acc .ring.warn{color:#e8833a;background:color-mix(in srgb,#e8833a 18%,transparent)}.acc .ring svg{width:40px;height:40px}
+.acc .acd{font-size:40px;font-weight:700;font-variant-numeric:tabular-nums;margin:4px 0 0}
+.cdots{display:flex;justify-content:center;gap:14px;margin:8px 0 0}.cdots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--muted)}.cdots i.f{background:var(--ink);border-color:var(--ink)}
+.cdots.shake{animation:csh .35s}@keyframes csh{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.acc .pad{display:grid;grid-template-columns:repeat(3,72px);gap:14px 26px;justify-content:center;margin:6px 0 14px}
+.acc .pad button{width:72px;height:72px;border-radius:50%;border:0;background:var(--soft);color:var(--ink);font-size:27px;font-weight:500}
+.acc .pad button:active{background:var(--line)}.acc .pad button.t{background:none;color:var(--muted)}.acc .pad svg{width:30px;height:30px}
+.lockscr{margin-top:6vh}
+.ptr{position:fixed;left:50%;top:0;z-index:60;width:38px;height:38px;border-radius:50%;background:var(--panel);border:1px solid var(--line);box-shadow:0 2px 10px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;color:var(--muted);opacity:0;transform:translate(-50%,-46px);pointer-events:none}
+.ptr svg{width:20px;height:20px}.ptr.go{color:#12808a}.ptr.spin svg{animation:pspin .8s linear infinite}@keyframes pspin{to{transform:rotate(360deg)}}
 .wel .info.essai{border-left:4px solid #e8833a}
 .wel .guide{background:linear-gradient(135deg,rgba(13,42,71,.10),rgba(18,128,138,.14));border-color:rgba(18,128,138,.45)}
 .wel .guide h2{color:#12808a}
@@ -336,7 +356,7 @@ function isoWeek(d){ const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.ge
 function toast(msg){ const t=$("toast"); t.textContent=msg; t.style.display="block"; clearTimeout(toast.h); toast.h=setTimeout(()=>t.style.display="none",2200); }
 const store = {
   get(k,d){ try{ const v=localStorage.getItem("edt."+k); return v==null?d:JSON.parse(v);}catch{ return d; } },
-  set(k,v){ localStorage.setItem("edt."+k, JSON.stringify(v)); }
+  set(k,v){ localStorage.setItem("edt."+k, JSON.stringify(v)); window.cptHook?.(k); }   // compte : envoie les changements
 };
 // déménagement (23/11) : l'ancienne adresse renvoie ici avec les réglages de l'appareil dans #migr=… (JSON en base64url des clés edt.*) ; on ne remplace rien d'existant
 try{ const m = location.hash.match(/^#migr=([A-Za-z0-9_-]+)$/);
@@ -394,7 +414,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-24m";
+const APP_V = "2026-11-25a";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -467,7 +487,15 @@ function tdOf(t){ for(const [td,l] of Object.entries(DATA?.groups||{})) if(l.inc
 function render(){
   now = new Date();
   const app = $("app");
-  if(!charteOk()) return renderWelcome();
+  // compte : appareil connecté mais appli rouverte = code ; jamais choisi = accueil (créer / se connecter / sans compte)
+  if(cpt && !cptOuvert() && !["connexion","inscription","bloque","accueil"].includes(cptVue)) cptVue = "verrou";
+  if(!cpt && !store.get("sansCompte") && !cptVue) cptVue = "accueil";
+  const vueCpt = () => { if(app.dataset.cv===cptVue) return; app.dataset.cv = cptVue; renderCpt(); };   // pas de redessin pendant la saisie
+  if(cptVue && cptVue!=="faceid") return vueCpt();
+  // charte : avec compte = signée une fois par compte (suit le compte sur tous les appareils) ; sans compte = une fois par appareil
+  if(cpt ? !store.get("charteCpt") : !charteOk()){ app.dataset.cv = ""; return renderWelcome(); }
+  if(cptVue) return vueCpt();
+  app.dataset.cv = "";
   if(!RAW){ app.innerHTML = `<div class="pick"><img src="icon.png" width="72" style="border-radius:16px"><h1>Chargement…</h1></div>`; return; }
   if(!annee || pickYear) return renderYear();
   if(!DATA) return renderYear("L'emploi du temps de cette année n'est pas encore disponible.");
@@ -783,10 +811,12 @@ function openFeedback(){
     <div class="support"><b>Envie de soutenir l'appli ?</b><p>Rien d'obligatoire, mais ça fait toujours plaisir.</p>
       <a class="btn" href="${KOFI}" target="_blank" rel="noopener"><b>1 €</b><span>Un repas au resto U</span>${supLbl(supCount(1))}</a>
       <a class="btn" href="${KOFI}" target="_blank" rel="noopener"><b>3 €</b><span>T'es vraiment le GOAT</span>${supLbl(supCount(3))}</a>${(()=>{const o=soutiens.length-supCount(1)-supCount(3); return o?`<p style="grid-column:1/-1;margin:0;font-size:12.5px;color:var(--muted)">+ ${o} autre${o>1?"s":""} don${o>1?"s":""}, merci !</p>`:"";})()}</div>
+    <div id="cptbloc"></div>
     <div class="support charte"><b>La charte</b><p>Les règles de l'appli et ce que tu peux faire avec.</p>
       <button class="btn" onclick="openCharte()">Relire la charte</button></div>
     <div class="row"><button class="btn" onclick="closeSheet()">Fermer</button></div>`;
   $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
+  cptBloc().then(x=>{ const b=$("cptbloc"); if(b) b.outerHTML=x; });
 }
 function fbBox(m){
   const d = new Date(m.created_at);
@@ -945,7 +975,7 @@ const CHARTE = `<ul>
     <li style="--c:#2e86d4"><b>Confiance</b>On écrit seulement ce qu'on sait vraiment : la bonne date, la bonne consigne. Les autres comptent sur toi.</li>
     <li style="--c:#8e6bd8"><b>Esprit critique</b>N'écoute pas tout le monde : en cas de doute, vérifie auprès du prof ou sur l'ENT.</li>
     <li style="--c:#12808a"><b>Entraide</b>Quelqu'un est perdu ? On l'aide. Pas de dérapage, on reste entre gens bien.</li></ul>
-    <p class="info"><b>Bon à savoir</b>Ta connexion à l'appli est anonyme. Tu peux donner ton prénom si tu le souhaites (dans la discussion ou dans un message au créateur). Tout ce qui est publié et l'activité de l'appli remontent au créateur, qui veille au respect de la charte.</p>
+    <p class="info"><b>Bon à savoir</b>Ta connexion à l'appli est anonyme. Tu peux donner ton prénom si tu le souhaites (dans la discussion ou dans un message au créateur). Tout ce qui est publié et l'activité de l'appli remontent au créateur, qui veille au respect de la charte. Le compte est facultatif : un pseudo et un code, pas d'e-mail ; ton code est chiffré, personne ne peut le lire.</p>
     <p class="info essai"><b>Version d'essai</b>Cette application est expérimentale : c'est un essai, encore en cours de développement. Elle peut contenir des erreurs (horaires, salles, devoirs). Garde ta vigilance et ne t'y fie pas à 100 % : en cas de doute, la référence reste l'emploi du temps officiel de l'IUT.</p>`;
 const ASTUCES = `<ul>
     <li><b>Changer de jour ou de semaine</b>Glisse à gauche ou à droite, ou utilise les flèches. Touche le cartouche « Semaine » pour aller à une date précise.</li>
@@ -966,7 +996,7 @@ function renderWelcome(){
 // clé "charte4" (23/11 soir, avec les astuces) : tout le monde re-signe une fois ; une fois signée sur cet appareil, plus jamais redemandée
 // une charte signée une fois (n'importe quelle version) sur cet appareil ne revient JAMAIS : ne plus changer de clé
 const charteOk = () => ["charte","charte2","charte3","charte4"].some(k => store.get(k));
-function acceptCharte(){ if(!$("welok").checked) return; store.set("charte4", 1); track(true); render(); scrollTo(0,0); }
+function acceptCharte(){ if(!$("welok").checked) return; store.set("charte4", 1); if(cpt) store.set("charteCpt", 1); track(true); render(); scrollTo(0,0); }
 function openCharte(){
   $("sheet").innerHTML = `<div class="grab"></div><h3>La charte</h3>
     <div class="wel" style="margin:0"><p class="note" style="font-size:14px">Cette application a été créée par un étudiant pour les étudiants. C'est un objet de solidarité : elle marche seulement si chacun joue le jeu.</p>${CHARTE}
@@ -1158,6 +1188,195 @@ async function saveNew(){
 async function saveEdit(id){ const t=$("edtx").value.trim(); if(!t) return; editing=null; await patchHw(id,{texte:t},"Devoir modifié"); }
 async function delHw(id){ if(!confirm("Supprimer ce devoir pour tout le TP ?")) return; await patchHw(id,{deleted:true},"Devoir supprimé"); }
 $("veil").onclick=closeSheet;
+
+/* ======== compte (facultatif) : pseudo + code PIN, Face ID / empreinte ; suit coches, annonces vues, année, TP, thème, pseudo ======== */
+// session ouverte = sessionStorage : survit au rechargement (F5, tirer vers le bas), disparaît quand on ferme l'appli -> le code est redemandé
+const CPT_SYNC = ["done","annSeen","theme","view","pseudo","charteCpt"];
+let cpt = store.get("cpt", null);                 // {ps, jeton, n (longueur du code), h (empreinte locale, hors ligne), face (id Face ID)}
+let cptVue = sessionStorage.getItem("edt.cptVue"); sessionStorage.removeItem("edt.cptVue");
+let cptPin = "", cptErr = "", cptTimer = null, cptBusy = false, cptAuto = false, cptPush = 0;
+const cptOuvert = () => !!cpt?.jeton && sessionStorage.getItem("edt.ouvert")===cpt.jeton;
+async function rpc(f, body){ const r = await fetch(`${SUPA_URL}/rest/v1/rpc/${f}`, {method:"POST", headers:hdr(), body:JSON.stringify(body)}); if(!r.ok) throw new Error(r.status); return r.json(); }
+async function pinHash(ps, pin){ try{ const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ps.toLowerCase()+":"+pin)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }catch{ return null; } }
+const b64 = a => btoa(String.fromCharCode(...new Uint8Array(a))), unb64 = s => Uint8Array.from(atob(s), c=>c.charCodeAt(0));
+// cet appareil -> compte (1,5 s après le dernier changement)
+function cptSave(){ if(!cptOuvert()) return; clearTimeout(cptPush);
+  cptPush = setTimeout(()=>{ const etat = {}; CPT_SYNC.forEach(k=>{ const v = store.get(k); if(v!==undefined) etat[k] = v; });
+    rpc("compte_ecrire", {p_jeton:cpt.jeton, p_annee:annee, p_tp:tp, p_etat:etat}).catch(()=>{}); }, 1500); }
+window.cptHook = k => { if(CPT_SYNC.includes(k) || k==="annee" || k==="tp") cptSave(); };
+// compte -> cet appareil. union = 1re connexion sur l'appareil (on garde aussi ses coches) ; sinon le compte fait foi
+function cptAppliquer(s, union){
+  const e = s.etat || {};
+  for(const k of CPT_SYNC) if(e[k]!==undefined){ const loc = store.get(k);
+    localStorage.setItem("edt."+k, JSON.stringify(union && (k==="done"||k==="annSeen") && loc && typeof loc==="object" ? {...loc, ...e[k]} : e[k])); }
+  if(s.annee) localStorage.setItem("edt.annee", JSON.stringify(s.annee));
+  if(s.tp) localStorage.setItem("edt.tp", JSON.stringify(s.tp));
+}
+function cptOuvrir(s, union){ cpt = {...cpt, ps:s.pseudo, jeton:s.jeton || cpt.jeton}; store.set("cpt", cpt); sessionStorage.setItem("edt.ouvert", cpt.jeton); cptAppliquer(s, union); location.reload(); }
+// retour sur l'appli (ou tirer vers le bas) : coches et annonces vues des autres appareils
+async function cptTirer(){ if(!cptOuvert()) return; try{ const s = await rpc("compte_lire", {p_jeton:cpt.jeton}); if(!s.ok) return;
+  if(s.etat?.done){ done = s.etat.done; localStorage.setItem("edt.done", JSON.stringify(done)); }
+  if(s.etat?.annSeen){ annSeen = s.etat.annSeen; localStorage.setItem("edt.annSeen", JSON.stringify(annSeen)); }
+  if(!sheetKey && !annOpen) render(); }catch{} }
+function cptGo(v){ $("app").dataset.cv = ""; cptVue = v; cptPin = ""; cptErr = ""; cptAuto = false; clearInterval(cptTimer); render(); scrollTo(0,0); }
+function sansCompte(){ store.set("sansCompte", true); cptGo(null); }
+// changer de compte / se déconnecter : on vide ce qui appartient au compte sur cet appareil
+function cptOubli(vers){ if(cpt?.jeton) rpc("compte_sortir", {p_jeton:cpt.jeton}).catch(()=>{});
+  ["cpt","tp","annee","done","annSeen","pseudo","hw","ann","chat","sansCompte","charteCpt"].forEach(k=>localStorage.removeItem("edt."+k));
+  sessionStorage.removeItem("edt.ouvert"); if(vers) sessionStorage.setItem("edt.cptVue", vers); location.reload(); }
+const faceDispo = async () => { try{ return !!window.PublicKeyCredential && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(); }catch{ return false; } };
+async function faceActiver(){
+  try{ const c = await navigator.credentials.create({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)), rp:{name:"EDT IUT"},
+      user:{id:crypto.getRandomValues(new Uint8Array(16)), name:cpt.ps, displayName:cpt.ps}, pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],
+      authenticatorSelection:{authenticatorAttachment:"platform", userVerification:"required", residentKey:"discouraged"}, timeout:60000}});
+    cpt.face = b64(c.rawId); store.set("cpt", cpt); toast("Face ID / empreinte activé"); }
+  catch{ toast("Face ID / empreinte pas activé : ton code reste valable"); }
+  if(cptVue==="faceid") cptFin();
+}
+// Face ID ne sert qu'à déverrouiller cet appareil (le jeton est déjà dessus) ; le code reste toujours possible
+async function faceOuvrir(auto){
+  if(!cpt?.face || cptBusy) return; cptBusy = true;
+  try{ await navigator.credentials.get({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)), allowCredentials:[{type:"public-key", id:unb64(cpt.face)}], userVerification:"required", timeout:60000}});
+    let s = null; try{ s = await rpc("compte_lire", {p_jeton:cpt.jeton}); }catch{}
+    if(s && !s.ok){ cptBusy = false; toast("Session expirée : reconnecte-toi"); return cptOubli("connexion"); }
+    if(s) return cptOuvrir(s, false);
+    sessionStorage.setItem("edt.ouvert", cpt.jeton); cptGo(null);   // hors ligne : on ouvre quand même
+  }catch{ if(!auto) toast("Face ID / empreinte n'a pas marché : tape ton code"); }
+  cptBusy = false;
+}
+// après inscription : compte neuf = rattaché à aucun groupe -> l'appli demande l'année puis le TP
+function cptFin(){ cptVue = null; cptSave(); render(); }
+async function cptInscrire(){
+  const ps = $("cps").value.trim(), a = $("cp1").value, b = $("cp2").value;
+  if(!/^[A-Za-z0-9À-ÖØ-öø-ÿ_.-]{3,20}$/.test(ps)){ cptErr = "Pseudo : 3 à 20 caractères (lettres, chiffres, . _ -), sans espace."; return cptMaj(); }
+  if(!/^\d{4,6}$/.test(a)){ cptErr = "Le code doit faire 4 à 6 chiffres."; return cptMaj(); }
+  if(a!==b){ cptErr = "Les deux codes ne sont pas pareils."; return cptMaj(); }
+  let s; try{ s = await rpc("compte_creer", {p_pseudo:ps, p_pin:a}); }catch{ cptErr = "Pas de connexion internet."; return cptMaj(); }
+  if(!s.ok){ cptErr = {pris:"Ce pseudo est déjà pris, choisis-en un autre.", pseudo:"Ce pseudo n'est pas accepté, choisis-en un autre.", pin:"Le code doit faire 4 à 6 chiffres.", trop:"Trop d'inscriptions en ce moment : réessaie dans une minute."}[s.err] || "Erreur, réessaie."; return cptMaj(); }
+  cpt = {ps:s.pseudo, jeton:s.jeton, n:a.length, h:await pinHash(s.pseudo, a)}; store.set("cpt", cpt); sessionStorage.setItem("edt.ouvert", cpt.jeton);
+  store.set("sansCompte", false); annee = null; tp = null; ["annee","tp","charteCpt"].forEach(k=>localStorage.removeItem("edt."+k));   // compte neuf : charte à signer, aucun groupe
+  if(await faceDispo()) cptGo("faceid"); else { toast("Compte créé !"); cptFin(); }
+}
+async function cptConnecter(){
+  const ps = $("cps").value.trim(), p = $("cp1").value;
+  if(!ps || !/^\d{4,6}$/.test(p)){ cptErr = "Entre ton pseudo et ton code (4 à 6 chiffres)."; return cptMaj(); }
+  let s; try{ s = await rpc("compte_connexion", {p_pseudo:ps, p_pin:p}); }catch{ cptErr = "Pas de connexion internet."; return cptMaj(); }
+  if(!s.ok) return cptRefus(s, ps);
+  cpt = {ps:s.pseudo, jeton:s.jeton, n:p.length, h:await pinHash(s.pseudo, p)};
+  store.set("sansCompte", false); if(await faceDispo()) sessionStorage.setItem("edt.cptVue", "faceid");
+  cptOuvrir(s, true);
+}
+function cptRefus(s, ps){
+  if(s.err==="bloque"){ cptBloque = {ps, fin:Date.now()+s.secondes*1000}; return cptGo("bloque"); }
+  cptErr = s.err==="trop" ? "Trop d'essais en ce moment : réessaie dans une minute." : s.reste ? `Code incorrect (${s.reste} essai${s.reste>1?"s":""} restant${s.reste>1?"s":""})` : cpt && cptVue==="verrou" ? "Code incorrect" : "Pseudo ou code incorrect.";
+  cptPin = ""; cptMaj(true);
+}
+let cptBloque = null;
+// déverrouillage par code (appareil déjà connecté) : vérifié par le serveur (5 erreurs = bloqué 5 min) ; hors ligne, par l'empreinte locale
+async function cptTape(ch){
+  if(cptBusy) return;
+  if(ch==="<") cptPin = cptPin.slice(0,-1); else if(cptPin.length < (cpt.n||4)) cptPin += ch;
+  cptErr = ""; cptMaj();
+  if(cptPin.length < (cpt.n||4)) return;
+  cptBusy = true; let s = null;
+  try{ s = await rpc("compte_connexion", {p_pseudo:cpt.ps, p_pin:cptPin, p_ancien:cpt.jeton}); }catch{}
+  cptBusy = false;
+  if(s?.ok) return cptOuvrir(s, false);
+  if(s) return cptRefus(s, cpt.ps);
+  if(cpt.h && await pinHash(cpt.ps, cptPin)===cpt.h){ sessionStorage.setItem("edt.ouvert", cpt.jeton); return cptGo(null); }
+  cptErr = "Pas de connexion internet, ou code incorrect."; cptPin = ""; cptMaj(true);
+}
+const ICO_FACE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M9 9.5v1M15 9.5v1M12 9.5v3.5h-1M9.5 16c1.5 1 3.5 1 5 0"/></svg>`;
+const ICO_DEL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5-6z"/><path d="M12 10l4 4M16 10l-4 4"/></svg>`;
+const ICO_LOCK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`;
+// met à jour seulement les points et le message (pas de redessin : le clavier ne saute pas)
+function cptMaj(secoue){
+  const e = $("cerr"); if(e) e.textContent = cptErr;
+  const d = $("cdots"); if(d){ d.innerHTML = Array.from({length:cpt?.n||4}, (_,i)=>`<i class="${i<cptPin.length?"f":""}"></i>`).join("");
+    if(secoue){ d.classList.remove("shake"); void d.offsetWidth; d.classList.add("shake"); } }
+}
+function renderCpt(){
+  const top = `<div class="acc"><img src="icon.png" width="64" style="border-radius:15px" alt="">`;
+  let h = "";
+  if(cptVue==="accueil") h = `${top}<h1>Bienvenue !</h1><p class="sub">Ton emploi du temps, tes devoirs et ceux de ton TP, sur tous tes appareils.</p>
+    <button class="abtn dark" onclick="cptGo('inscription')">Créer mon compte</button>
+    <button class="abtn" onclick="cptGo('connexion')">J'ai déjà un compte</button>
+    <button class="alink" onclick="sansCompte()">Continuer sans compte</button>
+    <p class="small">Pas d'e-mail : juste un pseudo et un code.</p></div>`;
+  else if(cptVue==="inscription") h = `${top}<h1>Créer mon compte</h1><p class="sub">Choisis un pseudo et un code.</p>
+    <label>Pseudo</label><input id="cps" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Ex : Tom17">
+    <label>Code (4 à 6 chiffres)</label><input id="cp1" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="new-password">
+    <label>Retape le code</label><input id="cp2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="new-password" onkeydown="if(event.key==='Enter') cptInscrire()">
+    <p class="cerr" id="cerr">${esc(cptErr)}</p>
+    <button class="abtn dark" onclick="cptInscrire()">Créer mon compte</button>
+    <button class="alink" onclick="cptGo('connexion')">J'ai déjà un compte</button>
+    <button class="alink" onclick="cptGo('accueil')">Retour</button></div>`;
+  else if(cptVue==="connexion") h = `${top}<h1>Connexion</h1><p class="sub">À faire une seule fois sur cet appareil.</p>
+    <label>Pseudo</label><input id="cps" maxlength="20" autocomplete="username" autocapitalize="off" spellcheck="false">
+    <label>Code</label><input id="cp1" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="current-password" onkeydown="if(event.key==='Enter') cptConnecter()">
+    <p class="cerr" id="cerr">${esc(cptErr)}</p>
+    <button class="abtn dark" onclick="cptConnecter()">Me connecter</button>
+    <button class="alink" onclick="cptGo('inscription')">Pas de compte ? Inscris-toi</button>
+    <button class="alink" onclick="cptGo('accueil')">Retour</button></div>`;
+  else if(cptVue==="faceid") h = `${top}<div class="ring">${ICO_FACE}</div><h1>C'est fait !</h1>
+    <p class="sub">Pour ouvrir l'appli plus vite, active Face ID ou ton empreinte. Ton code restera toujours valable.</p>
+    <button class="abtn dark" onclick="faceActiver()">Activer Face ID / empreinte</button>
+    <button class="abtn" onclick="cptFin()">Plus tard</button></div>`;
+  else if(cptVue==="bloque"){
+    h = `${top}<div class="ring warn">${ICO_LOCK}</div><h1>Trop d'essais</h1><p class="sub">5 mauvais codes pour ${esc(cptBloque?.ps||"ce compte")}. Par sécurité, le compte est bloqué.</p>
+    <div class="acd" id="ccd"></div><p class="sub">avant de pouvoir réessayer</p>
+    <p class="small">Code oublié ? Continue sans compte et écris un message au créateur avec ton pseudo.</p>
+    <button class="abtn" onclick="cptOubli('accueil')">Continuer sans compte</button></div>`;
+    const tick = () => { const s = Math.max(0, Math.ceil(((cptBloque?.fin||0)-Date.now())/1000)); const c = $("ccd"); if(c) c.textContent = `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`; if(!s){ clearInterval(cptTimer); cptGo(cpt ? "verrou" : "connexion"); } };
+    clearInterval(cptTimer); cptTimer = setInterval(tick, 1000); setTimeout(tick);
+  }
+  else {   // verrou : appareil déjà connecté
+    cptVue = "verrou";
+    h = `<div class="acc lockscr"><div class="av">${esc((cpt.ps[0]||"?").toUpperCase())}</div><h1>Bonjour ${esc(cpt.ps)} !</h1><p class="sub">Entre ton code</p>
+    <div class="cdots" id="cdots"></div><p class="cerr" id="cerr">${esc(cptErr)}</p>
+    <div class="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button onclick="cptTape('${n}')">${n}</button>`).join("")}
+      ${cpt.face ? `<button class="t" onclick="faceOuvrir(false)" aria-label="Face ID ou empreinte">${ICO_FACE}</button>` : `<span></span>`}<button onclick="cptTape('0')">0</button><button class="t" onclick="cptTape('<')" aria-label="Effacer">${ICO_DEL}</button></div>
+    <button class="alink" onclick="cptOubli('connexion')">Ce n'est pas toi ? Changer de compte</button>
+    <button class="alink" onclick="cptOubli('inscription')">Pas de compte ? Inscris-toi</button></div>`;
+  }
+  $("app").innerHTML = h; cptMaj();
+  if(cptVue==="verrou" && cpt.face && !cptAuto){ cptAuto = true; setTimeout(()=>faceOuvrir(true), 300); }   // Face ID se propose tout seul
+}
+// clavier du PC sur l'écran du code
+addEventListener("keydown", e=>{ if(cptVue!=="verrou" || !cpt) return; if(/^[0-9]$/.test(e.key)) cptTape(e.key); else if(e.key==="Backspace") cptTape("<"); });
+// bloc « Mon compte » de la fiche Messages
+async function cptBloc(){
+  if(!cpt) return `<div class="support charte"><b>Ton compte</b><p>Facultatif : retrouve tes devoirs cochés et ton TP sur tous tes appareils, avec un pseudo et un code.</p>
+    <button class="btn" onclick="closeSheet(); store.set('sansCompte', false); cptGo('accueil')">Créer un compte ou me connecter</button></div>`;
+  return `<div class="support charte"><b>Ton compte : ${esc(cpt.ps)}</b><p>Tes devoirs cochés, tes annonces vues et ton TP te suivent sur tous tes appareils.</p>
+    ${!cpt.face && await faceDispo() ? `<button class="btn" onclick="faceActiver()">Activer Face ID / empreinte</button>` : ""}
+    <button class="btn" onclick="if(confirm('Te déconnecter de cet appareil ?')) cptOubli('accueil')">Me déconnecter de cet appareil</button></div>`;
+}
+
+/* ======== tirer vers le bas (tout en haut de la page) = actualiser, sans redemander le code ; doigt ou souris ======== */
+async function actualiser(){
+  const p = $("ptr"); p.classList.add("spin"); p.style.transform = "translate(-50%,14px)"; p.style.opacity = 1;
+  await Promise.allSettled([loadData(), loadHw(), loadAnn(), loadFb(), loadChat(), loadSupport(), loadEtat(), cptTirer()]);
+  setTimeout(()=>{ p.classList.remove("spin","go"); p.style.transform = ""; p.style.opacity = 0; toast("À jour"); }, 400);
+}
+(function(){
+  const p = document.createElement("div"); p.id = "ptr"; p.className = "ptr";
+  p.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v4.5h-4.5"/></svg>`;
+  document.body.appendChild(p);
+  let y0 = null, x0 = 0, d = 0;
+  const peut = t => scrollY<=0 && !cptVue && !$("sheet").classList.contains("open") && !t.closest("input,textarea,select,button,a,.sheet,.links");
+  const start = (x,y,t) => { y0 = peut(t) ? y : null; x0 = x; d = 0; };
+  const move = (x,y) => { if(y0===null) return; d = y-y0;
+    if(Math.abs(x-x0) > Math.max(12, d)){ y0 = null; p.style.opacity = 0; return; }   // geste horizontal = changer de jour, pas actualiser
+    const q = Math.max(0, Math.min(d/2, 80)); p.style.transform = `translate(-50%,${q-46}px) rotate(${q*4}deg)`; p.style.opacity = Math.min(1, q/50); p.classList.toggle("go", q>=60); };
+  const end = () => { if(y0===null) return; y0 = null; if(d/2>=60) actualiser(); else { p.style.transform = ""; p.style.opacity = 0; } };
+  addEventListener("touchstart", e=>{ if(e.touches.length===1) start(e.touches[0].clientX, e.touches[0].clientY, e.target); else y0 = null; }, {passive:true});
+  addEventListener("touchmove", e=>move(e.touches[0].clientX, e.touches[0].clientY), {passive:true});
+  addEventListener("touchend", end); addEventListener("touchcancel", end);
+  addEventListener("pointerdown", e=>{ if(e.pointerType==="mouse" && !e.button) start(e.clientX, e.clientY, e.target); });
+  addEventListener("pointermove", e=>{ if(e.pointerType==="mouse" && y0!==null){ move(e.clientX, e.clientY); if(d>8) e.preventDefault(); } });
+  addEventListener("pointerup", e=>{ if(e.pointerType==="mouse") end(); });
+})();
 
 /* ======== demarrage ======== */
 addEventListener("keydown",e=>{ if(["TEXTAREA","INPUT","SELECT"].includes(e.target.tagName)) return; if(e.key==="ArrowLeft") step(-1); if(e.key==="ArrowRight") step(1); if(e.key==="Escape") closeSheet(); });
