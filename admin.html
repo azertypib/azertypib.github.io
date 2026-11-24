@@ -98,7 +98,10 @@ async function toggleMaint(){
 // fermer le site : écran « Application fermée » pour tout le monde, plus rien ne marche (le serveur refuse aussi)
 async function toggleFerme(){
   const on = !S.ferme;
-  if(!confirm(on ? "FERMER le site ? Plus personne ne pourra l'utiliser jusqu'à ce que tu le rouvres." : "Rouvrir le site pour tout le monde ?")) return;
+  // double sécurité pour fermer : il faut taper FERMER (un toucher par erreur ne suffit pas) ; rouvrir = simple confirmation
+  if(on){ const t = prompt("Fermer le site pour TOUT LE MONDE ? Plus personne ne pourra l'utiliser jusqu'à ce que tu le rouvres. Pour confirmer, tape FERMER :");
+    if((t||"").trim().toUpperCase() !== "FERMER"){ if(t!==null) alert("Pas fermé : il fallait taper FERMER."); return; } }
+  else if(!confirm("Rouvrir le site pour tout le monde ?")) return;
   const r = await fetch(`${SUPA_URL}/rest/v1/rpc/set_ferme`, {method:"POST", headers:{apikey:SUPA_KEY, "Content-Type":"application/json"}, body:JSON.stringify({cle:localStorage.getItem("adm.cle"), actif:on})});
   if(!r.ok){ alert("Échec : clé refusée ?"); return; }
   load();
