@@ -80,6 +80,7 @@ async function load(){
   if(!r.ok){ localStorage.removeItem("adm.cle"); return askKey("Clé refusée."); }
   const s = await r.json();
   try{ const e = await fetch(`${SUPA_URL}/rest/v1/etat?select=maintenance,jusqua&id=eq.1`, {headers:{apikey:SUPA_KEY}}); const [x] = await e.json(); s.maint = !!x?.maintenance && (!x.jusqua || new Date(x.jusqua) > new Date()); s.maintFin = x?.jusqua; }catch{}
+  try{ const c = await fetch(`${SUPA_URL}/rest/v1/rpc/admin_comptes`, {method:"POST", headers:{apikey:SUPA_KEY, "Content-Type":"application/json"}, body:JSON.stringify({cle})}); s.cpt = c.ok ? await c.json() : null; }catch{}
   show(s);
 }
 
@@ -108,6 +109,7 @@ function draw(){
       <button class="tile" onclick="go('alertes')"><b>${s.alertes.length}</b><span>Messages censurés${s.alertes.length ? " · "+parAn(s.alertes) : ""}</span><i>›</i></button>
       <button class="tile" onclick="go('dons')"><b>${dons.length}</b><span>Dons · ${total}</span><i>›</i></button>
       <button class="tile" onclick="go('appareils')"><b>${s.appareils.length}</b><span>Appareils${s.appareils.length ? " ("+parAn(s.appareils)+")" : ""} · ${auj.personnes} aujourd'hui${auj.nouvelles ? `, ${auj.nouvelles} nouveau${auj.nouvelles>1?"x":""}` : ""}</span><i>›</i></button>
+${s.cpt ? (()=>{ const c=s.cpt, j=c.jours.find(x=>x.jour===today)||{connexions:0}; return `<button class="tile" onclick="go('comptes')"><b>${c.comptes.length}</b><span>Comptes${c.comptes.length ? " ("+parAn(c.comptes.map(x=>({tp:x.tp||x.annee})))+")" : ""} · ${j.connexions} connecté${j.connexions>1?"s":""} aujourd'hui${c.blocages.length ? ` · <b style="font-size:inherit;color:#e8833a">${c.blocages.length} blocage${c.blocages.length>1?"s":""}</b>` : ""}</span><i>›</i></button>`; })() : ""}
 <button class="tile" onclick="toggleMaint()"><b style="color:${s.maint?"#e8833a":"var(--ok)"}">${s.maint?"ON":"OFF"}</b><span>${s.maint?`Maintenance en cours : rien ne peut être publié (s'arrête seule à ${fmt(s.maintFin,{hour:"2-digit",minute:"2-digit"})})`:"Maintenance : appli normale. Touche pour la mettre en maintenance"}</span><i>›</i></button>
     </div>
     <p style="margin-top:28px"><button onclick="forget()">Oublier la clé sur cet appareil</button></p>`;
@@ -121,6 +123,15 @@ function draw(){
       ? `<table><tr><th>Date</th><th>Montant</th></tr>${dons.map(d => `<tr><td>${esc(fmt(d.created_at))}</td><td class="n">${esc(Number(d.montant).toLocaleString("fr-FR"))} ${esc(d.devise)}</td></tr>`).join("")}</table>`
       : `<p class="note">Aucun don pour l'instant.</p>`)
       + `<p class="note">Noms, messages et e-mails des donateurs : sur Ko-fi, <a href="https://ko-fi.com/manage/supportreceived" target="_blank" rel="noopener">Payments &amp; orders</a> et <a href="https://ko-fi.com/manage/supporters" target="_blank" rel="noopener">My supporters</a>. Virements vers ta banque : Stripe, rubrique Virements.</p>`;
+  }else if(view==="comptes"){
+    const c = s.cpt || {comptes:[], jours:[], blocages:[]};
+    h = head(`Comptes (${c.comptes.length})`, 1)
+      + (c.blocages.length ? `<h2>Blocages (5 mauvais codes)</h2>${c.blocages.map(b => `<div class="al"><div class="m">${esc(fmt(b.created_at))}</div><div class="t">Compte « ${esc(b.pseudo)} » bloqué 5 minutes</div></div>`).join("")}` : "")
+      + `<h2>Par jour</h2><div class="scroll"><table><tr><th>Jour</th><th>Connectés</th><th>Comptes créés</th></tr>
+      ${c.jours.map(j => `<tr><td>${esc(day(j.jour))}</td><td class="n">${j.connexions}</td><td class="n">${j.creations}</td></tr>`).join("")}</table></div>
+      <h2>Liste</h2><div class="scroll"><table><tr><th>Pseudo</th><th>TP</th><th>Créé le</th><th>Vu le</th></tr>
+      ${c.comptes.map(x => `<tr><td>${esc(x.pseudo)}</td><td>${esc(x.tp ? tpLbl(x.tp) : x.annee || "?")}</td><td>${esc(fmt(x.created_at,{day:"numeric",month:"short"}))}</td><td>${esc(fmt(x.vu_le))}</td></tr>`).join("")}</table></div>
+      <p class="note">« Connectés » = comptes ouverts ce jour-là (code ou Face ID). Les codes sont chiffrés : personne ne peut les lire, même toi.</p>`;
   }else{
     const max = Math.max(1, ...s.jours.map(j => j.personnes));
     h = head(`Appareils (${s.appareils.length})`, 1) + (s.appareils.length ? `<p class="note">Par année : ${parAn(s.appareils)}</p>` : "")
