@@ -289,6 +289,10 @@ textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:1
 .acc .pad button{width:72px;height:72px;border-radius:50%;border:0;background:var(--soft);color:var(--ink);font-size:27px;font-weight:500}
 .acc .pad button:active{background:var(--line)}.acc .pad button.t{background:none;color:var(--muted)}.acc .pad svg{width:30px;height:30px}
 .lockscr{margin-top:6vh}
+.arow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}.arow .abtn{margin-top:0}
+.abtn.big{height:62px;margin-top:12px;font-size:17px;background:color-mix(in srgb,#12808a 24%,var(--panel));border-color:#12808a}
+.acc .small em{font-style:italic;line-height:1.45;display:block;margin-top:8px}
+.support .cptuse{grid-column:1/-1;margin:0 0 4px;padding-left:18px;color:var(--muted);font-size:13.5px;line-height:1.5}
 .ptr{position:fixed;left:50%;top:0;z-index:60;width:38px;height:38px;border-radius:50%;background:var(--panel);border:1px solid var(--line);box-shadow:0 2px 10px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;color:var(--muted);opacity:0;transform:translate(-50%,-46px);pointer-events:none}
 .ptr svg{width:20px;height:20px}.ptr.go{color:#12808a}.ptr.spin svg{animation:pspin .8s linear infinite}@keyframes pspin{to{transform:rotate(360deg)}}
 .wel .info.essai{border-left:4px solid #e8833a}
@@ -414,7 +418,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-25a";
+const APP_V = "2026-11-25b";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -1194,11 +1198,10 @@ $("veil").onclick=closeSheet;
 const CPT_SYNC = ["done","annSeen","theme","view","pseudo","charteCpt"];
 let cpt = store.get("cpt", null);                 // {ps, jeton, n (longueur du code), h (empreinte locale, hors ligne), face (id Face ID)}
 let cptVue = sessionStorage.getItem("edt.cptVue"); sessionStorage.removeItem("edt.cptVue");
-let cptPin = "", cptErr = "", cptTimer = null, cptBusy = false, cptAuto = false, cptPush = 0;
+let cptPin = "", cptErr = "", cptTimer = null, cptBusy = false, cptPush = 0;
 const cptOuvert = () => !!cpt?.jeton && sessionStorage.getItem("edt.ouvert")===cpt.jeton;
 async function rpc(f, body){ const r = await fetch(`${SUPA_URL}/rest/v1/rpc/${f}`, {method:"POST", headers:hdr(), body:JSON.stringify(body)}); if(!r.ok) throw new Error(r.status); return r.json(); }
 async function pinHash(ps, pin){ try{ const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ps.toLowerCase()+":"+pin)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }catch{ return null; } }
-const b64 = a => btoa(String.fromCharCode(...new Uint8Array(a))), unb64 = s => Uint8Array.from(atob(s), c=>c.charCodeAt(0));
 // cet appareil -> compte (1,5 s après le dernier changement)
 function cptSave(){ if(!cptOuvert()) return; clearTimeout(cptPush);
   cptPush = setTimeout(()=>{ const etat = {}; CPT_SYNC.forEach(k=>{ const v = store.get(k); if(v!==undefined) etat[k] = v; });
@@ -1214,36 +1217,24 @@ function cptAppliquer(s, union){
 }
 function cptOuvrir(s, union){ cpt = {...cpt, ps:s.pseudo, jeton:s.jeton || cpt.jeton}; store.set("cpt", cpt); sessionStorage.setItem("edt.ouvert", cpt.jeton); cptAppliquer(s, union); location.reload(); }
 // retour sur l'appli (ou tirer vers le bas) : coches et annonces vues des autres appareils
-async function cptTirer(){ if(!cptOuvert()) return; try{ const s = await rpc("compte_lire", {p_jeton:cpt.jeton}); if(!s.ok) return;
+async function cptTirer(tout){ if(!cptOuvert()) return; try{ const s = await rpc("compte_lire", {p_jeton:cpt.jeton});
+  if(!s.ok){ if(s.err==="jeton") cptOubli("connexion"); return; }   // compte supprimé ou déconnecté ailleurs
+  if(tout){ if(s.annee && s.annee!==annee){ annee = PROMO = s.annee; localStorage.setItem("edt.annee", JSON.stringify(annee)); DATA = yearData(); }
+    if(s.tp && s.tp!==tp){ tp = s.tp; localStorage.setItem("edt.tp", JSON.stringify(tp)); }
+    if(s.etat?.charteCpt) localStorage.setItem("edt.charteCpt", "1"); }
   if(s.etat?.done){ done = s.etat.done; localStorage.setItem("edt.done", JSON.stringify(done)); }
   if(s.etat?.annSeen){ annSeen = s.etat.annSeen; localStorage.setItem("edt.annSeen", JSON.stringify(annSeen)); }
   if(!sheetKey && !annOpen) render(); }catch{} }
-function cptGo(v){ $("app").dataset.cv = ""; cptVue = v; cptPin = ""; cptErr = ""; cptAuto = false; clearInterval(cptTimer); render(); scrollTo(0,0); }
+function cptGo(v){ $("app").dataset.cv = ""; cptVue = v; cptPin = ""; cptErr = ""; clearInterval(cptTimer); render(); scrollTo(0,0); }
 function sansCompte(){ store.set("sansCompte", true); cptGo(null); }
 // changer de compte / se déconnecter : on vide ce qui appartient au compte sur cet appareil
 function cptOubli(vers){ if(cpt?.jeton) rpc("compte_sortir", {p_jeton:cpt.jeton}).catch(()=>{});
   ["cpt","tp","annee","done","annSeen","pseudo","hw","ann","chat","sansCompte","charteCpt"].forEach(k=>localStorage.removeItem("edt."+k));
   sessionStorage.removeItem("edt.ouvert"); if(vers) sessionStorage.setItem("edt.cptVue", vers); location.reload(); }
-const faceDispo = async () => { try{ return !!window.PublicKeyCredential && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(); }catch{ return false; } };
-async function faceActiver(){
-  try{ const c = await navigator.credentials.create({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)), rp:{name:"EDT IUT"},
-      user:{id:crypto.getRandomValues(new Uint8Array(16)), name:cpt.ps, displayName:cpt.ps}, pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],
-      authenticatorSelection:{authenticatorAttachment:"platform", userVerification:"required", residentKey:"discouraged"}, timeout:60000}});
-    cpt.face = b64(c.rawId); store.set("cpt", cpt); toast("Face ID / empreinte activé"); }
-  catch{ toast("Face ID / empreinte pas activé : ton code reste valable"); }
-  if(cptVue==="faceid") cptFin();
-}
-// Face ID ne sert qu'à déverrouiller cet appareil (le jeton est déjà dessus) ; le code reste toujours possible
-async function faceOuvrir(auto){
-  if(!cpt?.face || cptBusy) return; cptBusy = true;
-  try{ await navigator.credentials.get({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)), allowCredentials:[{type:"public-key", id:unb64(cpt.face)}], userVerification:"required", timeout:60000}});
-    let s = null; try{ s = await rpc("compte_lire", {p_jeton:cpt.jeton}); }catch{}
-    if(s && !s.ok){ cptBusy = false; toast("Session expirée : reconnecte-toi"); return cptOubli("connexion"); }
-    if(s) return cptOuvrir(s, false);
-    sessionStorage.setItem("edt.ouvert", cpt.jeton); cptGo(null);   // hors ligne : on ouvre quand même
-  }catch{ if(!auto) toast("Face ID / empreinte n'a pas marché : tape ton code"); }
-  cptBusy = false;
-}
+// ouverture directe : l'appareil est déjà verrouillé par Face ID / empreinte / code du téléphone ; on ne redemande rien
+function cptAutoSet(on){ cpt.auto = !!on; delete cpt.face; store.set("cpt", cpt); }
+const cptDirect = () => !!(cpt?.auto || cpt?.face);   // face = ancien réglage (Face ID activé le 24/11)
+if(cpt?.jeton && cptDirect() && !cptOuvert()){ sessionStorage.setItem("edt.ouvert", cpt.jeton); setTimeout(()=>cptTirer(true)); }
 // après inscription : compte neuf = rattaché à aucun groupe -> l'appli demande l'année puis le TP
 function cptFin(){ cptVue = null; cptSave(); render(); }
 async function cptInscrire(){
@@ -1255,7 +1246,7 @@ async function cptInscrire(){
   if(!s.ok){ cptErr = {pris:"Ce pseudo est déjà pris, choisis-en un autre.", pseudo:"Ce pseudo n'est pas accepté, choisis-en un autre.", pin:"Le code doit faire 4 à 6 chiffres.", trop:"Trop d'inscriptions en ce moment : réessaie dans une minute."}[s.err] || "Erreur, réessaie."; return cptMaj(); }
   cpt = {ps:s.pseudo, jeton:s.jeton, n:a.length, h:await pinHash(s.pseudo, a)}; store.set("cpt", cpt); sessionStorage.setItem("edt.ouvert", cpt.jeton);
   store.set("sansCompte", false); annee = null; tp = null; ["annee","tp","charteCpt"].forEach(k=>localStorage.removeItem("edt."+k));   // compte neuf : charte à signer, aucun groupe
-  if(await faceDispo()) cptGo("faceid"); else { toast("Compte créé !"); cptFin(); }
+  cptGo("faceid");
 }
 async function cptConnecter(){
   const ps = $("cps").value.trim(), p = $("cp1").value;
@@ -1263,7 +1254,7 @@ async function cptConnecter(){
   let s; try{ s = await rpc("compte_connexion", {p_pseudo:ps, p_pin:p}); }catch{ cptErr = "Pas de connexion internet."; return cptMaj(); }
   if(!s.ok) return cptRefus(s, ps);
   cpt = {ps:s.pseudo, jeton:s.jeton, n:p.length, h:await pinHash(s.pseudo, p)};
-  store.set("sansCompte", false); if(await faceDispo()) sessionStorage.setItem("edt.cptVue", "faceid");
+  store.set("sansCompte", false); sessionStorage.setItem("edt.cptVue", "faceid");
   cptOuvrir(s, true);
 }
 function cptRefus(s, ps){
@@ -1298,11 +1289,10 @@ function cptMaj(secoue){
 function renderCpt(){
   const top = `<div class="acc"><img src="icon.png" width="64" style="border-radius:15px" alt="">`;
   let h = "";
-  if(cptVue==="accueil") h = `${top}<h1>Bienvenue !</h1><p class="sub">Ton emploi du temps, tes devoirs et ceux de ton TP, sur tous tes appareils.</p>
-    <button class="abtn dark" onclick="cptGo('inscription')">Créer mon compte</button>
-    <button class="abtn" onclick="cptGo('connexion')">J'ai déjà un compte</button>
-    <button class="alink" onclick="sansCompte()">Continuer sans compte</button>
-    <p class="small">Pas d'e-mail : juste un pseudo et un code.</p></div>`;
+  if(cptVue==="accueil") h = `${top}<h1>Bienvenue !</h1><p class="sub">Ton emploi du temps, tes devoirs et ceux de ton TP.</p>
+    <div class="arow"><button class="abtn dark" onclick="cptGo('inscription')">Créer un compte</button><button class="abtn" onclick="cptGo('connexion')">Se connecter</button></div>
+    <button class="abtn big" onclick="sansCompte()">Utiliser l'appli sans compte</button>
+    <p class="small"><em>Le compte est facultatif. Il relie tes appareils : tes devoirs cochés, tes annonces vues, ton année et ton TP sont les mêmes sur ton téléphone et ton ordinateur. Pas d'e-mail : juste un pseudo et un code.</em></p></div>`;
   else if(cptVue==="inscription") h = `${top}<h1>Créer mon compte</h1><p class="sub">Choisis un pseudo et un code.</p>
     <label>Pseudo</label><input id="cps" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Ex : Tom17">
     <label>Code (4 à 6 chiffres)</label><input id="cp1" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="new-password">
@@ -1319,9 +1309,10 @@ function renderCpt(){
     <button class="alink" onclick="cptGo('inscription')">Pas de compte ? Inscris-toi</button>
     <button class="alink" onclick="cptGo('accueil')">Retour</button></div>`;
   else if(cptVue==="faceid") h = `${top}<div class="ring">${ICO_FACE}</div><h1>C'est fait !</h1>
-    <p class="sub">Pour ouvrir l'appli plus vite, active Face ID ou ton empreinte. Ton code restera toujours valable.</p>
-    <button class="abtn dark" onclick="faceActiver()">Activer Face ID / empreinte</button>
-    <button class="abtn" onclick="cptFin()">Plus tard</button></div>`;
+    <p class="sub">Ouvrir l'appli directement sur cet appareil, sans taper ton code ? Ton téléphone est déjà protégé par Face ID ou ton empreinte.</p>
+    <button class="abtn dark" onclick="cptAutoSet(true); cptFin()">Oui, ouvrir directement</button>
+    <button class="abtn" onclick="cptAutoSet(false); cptFin()">Me demander mon code</button>
+    <p class="small"><em>Sur un ordinateur partagé, choisis « Me demander mon code ». Tu pourras changer d'avis dans Messages, rubrique « Ton compte ».</em></p></div>`;
   else if(cptVue==="bloque"){
     h = `${top}<div class="ring warn">${ICO_LOCK}</div><h1>Trop d'essais</h1><p class="sub">5 mauvais codes pour ${esc(cptBloque?.ps||"ce compte")}. Par sécurité, le compte est bloqué.</p>
     <div class="acd" id="ccd"></div><p class="sub">avant de pouvoir réessayer</p>
@@ -1335,21 +1326,21 @@ function renderCpt(){
     h = `<div class="acc lockscr"><div class="av">${esc((cpt.ps[0]||"?").toUpperCase())}</div><h1>Bonjour ${esc(cpt.ps)} !</h1><p class="sub">Entre ton code</p>
     <div class="cdots" id="cdots"></div><p class="cerr" id="cerr">${esc(cptErr)}</p>
     <div class="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button onclick="cptTape('${n}')">${n}</button>`).join("")}
-      ${cpt.face ? `<button class="t" onclick="faceOuvrir(false)" aria-label="Face ID ou empreinte">${ICO_FACE}</button>` : `<span></span>`}<button onclick="cptTape('0')">0</button><button class="t" onclick="cptTape('<')" aria-label="Effacer">${ICO_DEL}</button></div>
+      <span></span><button onclick="cptTape('0')">0</button><button class="t" onclick="cptTape('<')" aria-label="Effacer">${ICO_DEL}</button></div>
     <button class="alink" onclick="cptOubli('connexion')">Ce n'est pas toi ? Changer de compte</button>
     <button class="alink" onclick="cptOubli('inscription')">Pas de compte ? Inscris-toi</button></div>`;
   }
   $("app").innerHTML = h; cptMaj();
-  if(cptVue==="verrou" && cpt.face && !cptAuto){ cptAuto = true; setTimeout(()=>faceOuvrir(true), 300); }   // Face ID se propose tout seul
 }
 // clavier du PC sur l'écran du code
 addEventListener("keydown", e=>{ if(cptVue!=="verrou" || !cpt) return; if(/^[0-9]$/.test(e.key)) cptTape(e.key); else if(e.key==="Backspace") cptTape("<"); });
 // bloc « Mon compte » de la fiche Messages
 async function cptBloc(){
-  if(!cpt) return `<div class="support charte"><b>Ton compte</b><p>Facultatif : retrouve tes devoirs cochés et ton TP sur tous tes appareils, avec un pseudo et un code.</p>
+  if(!cpt) return `<div class="support charte"><b>Ton compte</b><p>Facultatif : il relie tes appareils (devoirs cochés, annonces vues, année et TP). Juste un pseudo et un code.</p>
     <button class="btn" onclick="closeSheet(); store.set('sansCompte', false); cptGo('accueil')">Créer un compte ou me connecter</button></div>`;
-  return `<div class="support charte"><b>Ton compte : ${esc(cpt.ps)}</b><p>Tes devoirs cochés, tes annonces vues et ton TP te suivent sur tous tes appareils.</p>
-    ${!cpt.face && await faceDispo() ? `<button class="btn" onclick="faceActiver()">Activer Face ID / empreinte</button>` : ""}
+  return `<div class="support charte"><b>Ton compte : ${esc(cpt.ps)}</b><p>À quoi il sert :</p>
+    <ul class="cptuse"><li>tes devoirs cochés, les mêmes sur tous tes appareils</li><li>les annonces que tu as déjà vues</li><li>ton année et ton TP, retrouvés en te connectant ailleurs</li><li>ton thème et ton pseudo de discussion</li></ul>
+    <button class="btn" onclick="cptAutoSet(!cptDirect()); openFeedback()">${cptDirect() ? "Ouverture directe sur cet appareil : oui" : "Ouverture directe sur cet appareil : non (code demandé)"}</button>
     <button class="btn" onclick="if(confirm('Te déconnecter de cet appareil ?')) cptOubli('accueil')">Me déconnecter de cet appareil</button></div>`;
 }
 
