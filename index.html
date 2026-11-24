@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="EDT">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#141312">
+<link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.png?l">
 <link rel="icon" type="image/png" href="icon.png?l">
 <style>
@@ -304,12 +305,13 @@ textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:1
 .wel .ok input{width:22px;height:22px;flex:none;margin:0;accent-color:var(--ok)}
 .wel .go{width:100%;height:52px;padding:0 14px;font-size:16px;display:flex;align-items:center;justify-content:center}
 .wel .go:disabled{opacity:.35}
-#warn,#maint{position:fixed;inset:0;z-index:100;display:none;place-items:center;background:rgba(0,0,0,.55);padding:20px}
-#warn.on,#maint.on{display:grid}
-#warn>div,#maint>div{max-width:380px;background:var(--panel);color:var(--ink);border-radius:16px;padding:20px;border-top:5px solid var(--accent);box-shadow:0 10px 40px rgba(0,0,0,.3)}
-#warn h3,#maint h3{margin:0 0 8px;font-size:19px;color:var(--accent)}
-#warn p,#maint p{margin:0 0 16px;line-height:1.45}
-#maint>div{border-top-color:#12808a;text-align:center}#maint h3{color:var(--ink)}#maint img{width:56px;height:56px;border-radius:13px;display:block;margin:0 auto 10px}
+#inst ol{text-align:left;margin:0 0 12px;padding-left:20px;line-height:1.5}#inst p{margin:0 0 8px}
+#warn,#inst,#maint{position:fixed;inset:0;z-index:100;display:none;place-items:center;background:rgba(0,0,0,.55);padding:20px}
+#warn.on,#inst.on,#maint.on{display:grid}
+#warn>div,#inst>div,#maint>div{max-width:380px;background:var(--panel);color:var(--ink);border-radius:16px;padding:20px;border-top:5px solid var(--accent);box-shadow:0 10px 40px rgba(0,0,0,.3)}
+#warn h3,#inst h3,#maint h3{margin:0 0 8px;font-size:19px;color:var(--accent)}
+#warn p,#inst p,#maint p{margin:0 0 16px;line-height:1.45}
+#maint>div,#inst>div{border-top-color:#12808a;text-align:center}#maint h3,#inst h3{color:var(--ink)}#inst img,#maint img{width:56px;height:56px;border-radius:13px;display:block;margin:0 auto 10px}
 
 footer{margin-top:22px;color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .toast{position:fixed;left:50%;bottom:calc(20px + var(--bot));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:10px;font-size:14px;z-index:30;display:none}
@@ -328,6 +330,7 @@ footer{margin-top:22px;color:var(--muted);font-size:12px;display:flex;justify-co
 <body>
 <div class="wrap" id="app"></div>
 <div class="veil" id="veil"></div>
+<div id="inst" role="alertdialog" aria-modal="true" aria-labelledby="insth"><div><img src="icon.png" alt="EDT"><h3 id="insth">Ouvre l'appli depuis ton écran d'accueil</h3><p id="instp"></p><button class="btn dark" style="width:100%;height:44px" onclick="$('inst').classList.remove('on')">J'ai compris</button></div></div>
 <div id="maint" role="alertdialog" aria-modal="true" aria-labelledby="mainth"><div><img src="icon.png" alt="EDT"><h3 id="mainth"></h3><p id="maintp"></p><button class="btn dark" style="width:100%;height:44px" onclick="$('maint').classList.remove('on')">J'ai compris</button></div></div>
 <div id="warn" role="alertdialog" aria-modal="true" aria-labelledby="warnh"><div><h3 id="warnh">Attention</h3>
 <p id="warnp"></p>
@@ -418,7 +421,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-25c";
+const APP_V = "2026-11-25f";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -491,14 +494,14 @@ function tdOf(t){ for(const [td,l] of Object.entries(DATA?.groups||{})) if(l.inc
 function render(){
   now = new Date();
   const app = $("app");
+  if(ferme){ app.dataset.cv = ""; app.innerHTML = `<div class="pick"><img src="icon.png" width="72" style="border-radius:16px" alt=""><h1>Application fermée</h1><p>L'emploi du temps n'est pas disponible pour le moment. Reviens un peu plus tard.</p></div>`; return; }
   // compte : appareil connecté mais appli rouverte = code ; jamais choisi = accueil (créer / se connecter / sans compte)
   if(cpt && !cptOuvert() && !["connexion","inscription","bloque","accueil"].includes(cptVue)) cptVue = "verrou";
   if(!cpt && !store.get("sansCompte") && !cptVue) cptVue = "accueil";
   const vueCpt = () => { if(app.dataset.cv===cptVue) return; app.dataset.cv = cptVue; renderCpt(); };   // pas de redessin pendant la saisie
-  if(cptVue && cptVue!=="faceid") return vueCpt();
+  if(cptVue) return vueCpt();
   // charte : avec compte = signée une fois par compte (suit le compte sur tous les appareils) ; sans compte = une fois par appareil
   if(cpt ? !store.get("charteCpt") : !charteOk()){ app.dataset.cv = ""; return renderWelcome(); }
-  if(cptVue) return vueCpt();
   app.dataset.cv = "";
   if(!RAW){ app.innerHTML = `<div class="pick"><img src="icon.png" width="72" style="border-radius:16px"><h1>Chargement…</h1></div>`; return; }
   if(!annee || pickYear) return renderYear();
@@ -986,7 +989,7 @@ const ASTUCES = `<ul>
     <li><b>Voir un cours et ajouter un devoir</b>Touche un cours pour voir la salle, le prof et les horaires. Tu peux y ajouter un devoir : il sera visible par tous les étudiants qui suivent ce cours (ton TP, ton groupe ou toute l'année, selon le cours).</li>
     <li><b>Cocher tes devoirs</b>Coche un devoir quand tu l'as fait : ça ne compte que pour toi, les autres ne le voient pas. Un devoir disparaît 7 jours après sa date de rendu.</li>
     <li><b>Annonces et discussion</b>Les infos importantes et un fil de discussion pour tout le monde, ton groupe et ton TP.</li>
-    <li><b>L'installer comme une appli</b>Ouvre d'abord le site dans ton navigateur (Safari sur iPhone, Chrome sur Android). iPhone : bouton Partager, puis « Sur l'écran d'accueil ». Android : menu (les trois points), puis « Installer l'application » ou « Ajouter à l'écran d'accueil ».</li>
+    <li><b>L'installer comme une appli</b>Ouvre d'abord le site dans ton navigateur (Safari sur iPhone, Chrome sur Android). iPhone : bouton Partager, puis « Sur l'écran d'accueil » (laisse « Ouvrir en tant qu'app web » activé), puis ouvre toujours l'appli avec l'icône EDT. Android : menu (les trois points), puis « Installer l'application » ou « Ajouter à l'écran d'accueil ».</li>
     <li><b>Une idée, un bug ?</b>Écris un message au créateur, il lit tout.</li></ul>`;
 const GUIDE = `<div class="wcard guide"><h2>Mode d'emploi</h2><p>À lire aussi : ce n'est pas la charte, c'est ce que l'appli te permet de faire.</p>${ASTUCES}</div>`;
 function renderWelcome(){
@@ -1232,8 +1235,7 @@ function cptOubli(vers){ if(cpt?.jeton) rpc("compte_sortir", {p_jeton:cpt.jeton}
   ["cpt","tp","annee","done","annSeen","pseudo","hw","ann","chat","sansCompte","charteCpt"].forEach(k=>localStorage.removeItem("edt."+k));
   sessionStorage.removeItem("edt.ouvert"); if(vers) sessionStorage.setItem("edt.cptVue", vers); location.reload(); }
 // ouverture directe : l'appareil est déjà verrouillé par Face ID / empreinte / code du téléphone ; on ne redemande rien
-function cptAutoSet(on){ cpt.auto = !!on; delete cpt.face; store.set("cpt", cpt); }
-const cptDirect = () => !!(cpt?.auto || cpt?.face);   // face = ancien réglage (Face ID activé le 24/11)
+const cptDirect = () => !!cpt?.jeton;   // connecté une fois sur cet appareil = l'appli s'ouvre directement (le code ne sert qu'à se connecter sur un nouvel appareil)
 // compte supprimé (remise à zéro du 24/11) : retour à l'accueil (créer / se connecter / sans compte) en gardant année et TP
 function cptPerdu(){ ["cpt","charteCpt","sansCompte"].forEach(k=>localStorage.removeItem("edt."+k)); sessionStorage.removeItem("edt.ouvert"); sessionStorage.setItem("edt.cptVue","accueil"); location.reload(); }
 if(cpt?.jeton && cptDirect() && !cptOuvert()){ sessionStorage.setItem("edt.ouvert", cpt.jeton); setTimeout(()=>cptTirer(true)); }
@@ -1249,7 +1251,7 @@ async function cptInscrire(){
   if(!s.ok){ cptErr = {pris:"Ce pseudo est déjà pris, choisis-en un autre.", pseudo:"Ce pseudo n'est pas accepté, choisis-en un autre.", pin:"Le code doit faire 4 à 6 chiffres.", trop:"Trop d'inscriptions en ce moment : réessaie dans une minute."}[s.err] || "Erreur, réessaie."; return cptMaj(); }
   cpt = {ps:s.pseudo, jeton:s.jeton, n:a.length, h:await pinHash(s.pseudo, a)}; store.set("cpt", cpt); sessionStorage.setItem("edt.ouvert", cpt.jeton);
   store.set("sansCompte", false); annee = null; tp = null; ["annee","tp","charteCpt"].forEach(k=>localStorage.removeItem("edt."+k));   // compte neuf : charte à signer, aucun groupe
-  cptGo("faceid");
+  toast("Compte créé !"); cptFin();   // puis charte, puis année et TP
 }
 async function cptConnecter(){
   const ps = $("cps").value.trim(), p = $("cp1").value;
@@ -1257,7 +1259,7 @@ async function cptConnecter(){
   let s; try{ s = await rpc("compte_connexion", {p_pseudo:ps, p_pin:p}); }catch{ cptErr = "Pas de connexion internet."; return cptMaj(); }
   if(!s.ok) return cptRefus(s, ps);
   cpt = {ps:s.pseudo, jeton:s.jeton, n:p.length, h:await pinHash(s.pseudo, p)};
-  store.set("sansCompte", false); sessionStorage.setItem("edt.cptVue", "faceid");
+  store.set("sansCompte", false);
   cptOuvrir(s, true);
 }
 function cptRefus(s, ps){
@@ -1280,7 +1282,6 @@ async function cptTape(ch){
   if(cpt.h && await pinHash(cpt.ps, cptPin)===cpt.h){ sessionStorage.setItem("edt.ouvert", cpt.jeton); return cptGo(null); }
   cptErr = "Pas de connexion internet, ou code incorrect."; cptPin = ""; cptMaj(true);
 }
-const ICO_FACE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M9 9.5v1M15 9.5v1M12 9.5v3.5h-1M9.5 16c1.5 1 3.5 1 5 0"/></svg>`;
 const ICO_DEL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5-6z"/><path d="M12 10l4 4M16 10l-4 4"/></svg>`;
 const ICO_LOCK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`;
 // met à jour seulement les points et le message (pas de redessin : le clavier ne saute pas)
@@ -1311,11 +1312,6 @@ function renderCpt(){
     <button class="abtn dark" onclick="cptConnecter()">Me connecter</button>
     <button class="alink" onclick="cptGo('inscription')">Pas de compte ? Inscris-toi</button>
     <button class="alink" onclick="cptGo('accueil')">Retour</button></div>`;
-  else if(cptVue==="faceid") h = `${top}<div class="ring">${ICO_FACE}</div><h1>C'est fait !</h1>
-    <p class="sub">Ouvrir l'appli directement sur cet appareil, sans taper ton code ? Ton téléphone est déjà protégé par Face ID ou ton empreinte.</p>
-    <button class="abtn dark" onclick="cptAutoSet(true); cptFin()">Oui, ouvrir directement</button>
-    <button class="abtn" onclick="cptAutoSet(false); cptFin()">Me demander mon code</button>
-    <p class="small"><em>Sur un ordinateur partagé, choisis « Me demander mon code ». Tu pourras changer d'avis dans Messages, rubrique « Ton compte ».</em></p></div>`;
   else if(cptVue==="bloque"){
     h = `${top}<div class="ring warn">${ICO_LOCK}</div><h1>Trop d'essais</h1><p class="sub">5 mauvais codes pour ${esc(cptBloque?.ps||"ce compte")}. Par sécurité, le compte est bloqué.</p>
     <div class="acd" id="ccd"></div><p class="sub">avant de pouvoir réessayer</p>
@@ -1343,7 +1339,6 @@ async function cptBloc(){
     <button class="btn" onclick="closeSheet(); store.set('sansCompte', false); cptGo('accueil')">Créer un compte ou me connecter</button></div>`;
   return `<div class="support charte"><b>Ton compte : ${esc(cpt.ps)}</b><p>À quoi il sert :</p>
     <ul class="cptuse"><li>tes devoirs cochés, les mêmes sur tous tes appareils</li><li>les annonces que tu as déjà vues</li><li>ton année et ton TP, retrouvés en te connectant ailleurs</li><li>ton thème et ton pseudo de discussion</li></ul>
-    <button class="btn" onclick="cptAutoSet(!cptDirect()); openFeedback()">${cptDirect() ? "Ouverture directe sur cet appareil : oui" : "Ouverture directe sur cet appareil : non (code demandé)"}</button>
     <button class="btn" onclick="if(confirm('Te déconnecter de cet appareil ?')) cptOubli('accueil')">Me déconnecter de cet appareil</button></div>`;
 }
 
@@ -1380,21 +1375,36 @@ setInterval(()=>{ if(!sheetKey && !annOpen) render(); }, 60000);
 let openDay = ymd(startDay());   // change aussi à 18h
 document.addEventListener("visibilitychange", ()=>{ if(document.hidden || ymd(startDay())===openDay) return; openDay = ymd(startDay()); if(!sheetKey && !annOpen) goToday(); });
 setInterval(()=>{ if(!document.hidden){ loadHw(); loadAnn(); loadFb(); loadChat(); loadSupport(); } }, 90000);
-/* ======== maintenance : interrupteur Supabase « etat » (allumé par le créateur pendant qu'il modifie l'appli) ======== */
-// pendant la maintenance : emploi du temps consultable, mais rien ne peut être publié (le serveur refuse aussi) ; message affiché une fois au début et une fois à la fin
-let maint = false;
-function canWrite(){ if(!maint) return true; toast("Maintenance en cours : rien ne peut être publié pour l'instant"); return false; }
-function showMaint(on){ $("mainth").textContent = on ? "Maintenance en cours" : "L'application est de retour"; $("maintp").textContent = on ? "Le créateur fait des modifications. Tu peux consulter ton emploi du temps, mais rien ne peut être publié pour l'instant (devoirs, annonces, discussion, messages)." : "L'application est de retour à la normale : tout fonctionne en ligne."; $("maint").classList.add("on"); }
+/* ======== avis « modifications en cours » et fermeture du site : interrupteurs de la page perso (table etat), jamais automatiques ======== */
+// avis : ne bloque rien, montré une fois quand il s'allume et une fois quand il s'éteint ; fermé : écran « Application fermée », plus rien ne marche (le serveur refuse aussi)
+let maint = false, ferme = store.get("ferme", false);
+function canWrite(){ if(!ferme) return true; toast("L'application est fermée pour le moment"); return false; }
+function showMaint(on){ $("mainth").textContent = on ? "Modifications en cours" : "Modifications terminées";
+  $("maintp").textContent = on ? "Le créateur est en train d'améliorer l'appli. Si quelque chose bug ou s'affiche bizarrement, pas d'inquiétude : c'est temporaire. Tu peux continuer à tout utiliser normalement." : "L'appli est à jour. Merci de ta patience !";
+  $("maint").classList.add("on"); }
 async function loadEtat(){
-  try{ const r = await fetch(`${SUPA_URL}/rest/v1/etat?select=maintenance,depuis,jusqua&id=eq.1`, {headers:hdr()}); if(!r.ok) return;
+  try{ const r = await fetch(`${SUPA_URL}/rest/v1/etat?select=maintenance,depuis,ferme&id=eq.1`, {headers:hdr()}); if(!r.ok) return;
     const [e] = await r.json(); if(!e) return;
-    maint = !!e.maintenance && (!e.jusqua || new Date(e.jusqua) > new Date());
+    if(!!e.ferme !== ferme){ ferme = !!e.ferme; store.set("ferme", ferme); $("app").dataset.cv = ""; render(); }
+    maint = !!e.maintenance;
     if(maint && store.get("maintVu")!==e.depuis){ store.set("maintVu", e.depuis); showMaint(true); }
     else if(!maint && store.get("maintVu") && store.get("maintFin")!==store.get("maintVu")){ store.set("maintFin", store.get("maintVu")); showMaint(false); }
   }catch{}
 }
 setInterval(()=>{ if(!document.hidden) loadEtat(); }, 60000);
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) loadEtat(); });
+/* ======== rappel : appli ouverte dans Safari / Chrome (barres du navigateur visibles) au lieu de l'icône de l'écran d'accueil ======== */
+// une fois par jour au plus, seulement sur téléphone ; installée en plein écran = jamais
+(function(){
+  const installee = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  if(installee || !matchMedia("(pointer:coarse)").matches || innerWidth >= 760 || window.top !== window) return;
+  const jour = ymd(new Date()); if(store.get("instVu") === jour) return;
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  $("instp").innerHTML = `Tu utilises l'emploi du temps dans ${ios ? "Safari" : "ton navigateur"}, avec la barre d'adresse et les onglets. Pour l'avoir en vraie appli, en plein écran :</p><ol>${ios
+    ? "<li>touche <b>Partager</b> (le carré avec la flèche) ;</li><li>choisis <b>Sur l'écran d'accueil</b> et laisse <b>Ouvrir en tant qu'app web</b> activé ;</li><li>ouvre ensuite l'appli avec l'icône <b>EDT</b>, plus depuis Safari.</li>"
+    : "<li>touche le menu (les trois points) ;</li><li>choisis <b>Installer l'application</b> ou <b>Ajouter à l'écran d'accueil</b> ;</li><li>ouvre ensuite l'appli avec l'icône <b>EDT</b>.</li>"}</ol><p>Tu as déjà l'icône mais tu vois encore les barres ? Supprime-la et refais ces étapes.`;
+  setTimeout(()=>{ if(!$("maint").classList.contains("on")){ store.set("instVu", jour); $("inst").classList.add("on"); } }, 1800);
+})();
 render(); loadData(); loadHw(); loadAnn(); loadFb(); loadChat(); loadSupport(); loadEtat();
 </script>
 </body>
