@@ -224,8 +224,8 @@ input[type=date]{width:100%;border:1px solid var(--line);border-radius:10px;padd
 .tl .ico{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;margin-bottom:5px;background:var(--tc);color:#fff}.tl .ico svg{width:16px;height:16px}
 .tl b{font-size:15px}.tl .st{font-size:12px;color:var(--muted)}
 .tl .num{position:absolute;right:11px;top:9px;font-weight:800;font-size:20px;color:var(--tc);font-variant-numeric:tabular-nums}
-.tl.evl .num{color:#1fb0bb}:root:not([data-theme=dark]) .tl.evl .num{color:#0e6f78}
-.tl.hrs .ico{background:linear-gradient(135deg,#0d2a47,#12808a)}
+.tl.hrs .num{color:#1fb0bb}:root:not([data-theme=dark]) .tl.hrs .num{color:#0e6f78}
+.tl.sal .num{color:#8ec3ef}:root:not([data-theme=dark]) .tl.sal .num{color:#0d2a47}
 .tl.wide{grid-column:1/-1;min-height:0;flex-direction:row;align-items:center;gap:10px}.tl.wide .ico{margin:0}.tl.wide .num{position:static;margin-left:auto}
 .sseg{display:flex;border:2px solid var(--line);border-radius:12px;padding:3px;gap:3px;background:var(--bg);margin-bottom:10px}
 .sseg button{flex:1;border:0;background:none;padding:7px 0;border-radius:8px;font-weight:700;font-size:14px;color:var(--muted)}
@@ -466,7 +466,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-26f";
+const APP_V = "2026-11-26g";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -741,9 +741,9 @@ function renderTiles(all){
   const evTxt = !ev ? "aucune prévue" : dayDiff(ev.d)===0 ? ev.c+" aujourd'hui" : dayDiff(ev.d)===1 ? ev.c+" demain" : `${ev.c} dans ${dayDiff(ev.d)} jours`;
   let h = `<div class="tiles${salles?"":" soir"}">`;
   if(HW_ON) h += tile("#2e86d4", TI.hw, "Devoirs", soir && demain ? `${demain} pour demain` : todo.length ? `${todo.length} à faire` : "rien à faire", String(todo.length), "openHwList()");
-  h += tile("#12808a", TI.ds, "Évaluations", evTxt, ev ? "J-"+dayDiff(ev.d) : "–", "openEvals()").replace('class="tl', 'class="tl evl');
-  if(salles) h += tile("#2fbf6a", TI.room, "Salles libres", "en ce moment", String(sl.length), "openSalles()");
-  h += tile("#5aa9e6", TI.hours, "Heures", "cette semaine", hFmt(tot), "openHeures()", !salles).replace('class="tl', 'class="tl hrs');   // le soir : Heures prend toute la largeur (téléphone)
+  h += tile("#2fbf6a", TI.ds, "Évaluations", evTxt, ev ? "J-"+dayDiff(ev.d) : "–", "openEvals()");
+  if(salles) h += tile("#0d2a47", TI.room, "Salles libres", "en ce moment", String(sl.length), "openSalles()").replace('class="tl', 'class="tl sal');
+  h += tile("#12808a", TI.hours, "Heures", "cette semaine", hFmt(tot), "openHeures()", !salles).replace('class="tl', 'class="tl hrs');   // le soir : Heures prend toute la largeur (téléphone)
   return h + `</div>`;
 }
 let hwTabL = "todo";
