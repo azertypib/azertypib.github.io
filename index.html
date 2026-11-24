@@ -56,6 +56,7 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .links .lk a{flex:1;padding:0 18px;color:#fff}
 .links .lk a:hover,.links .lk a:focus-visible{background:rgba(255,255,255,.08)}
 .links .shr{flex:none;width:var(--shw,48px);display:grid;place-items:center;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:12px;box-shadow:var(--shadow);padding:0}
+@media (max-width:759px){ .links{height:var(--shw,42px);gap:var(--hgap,6px)} .links .lk{flex:1 1 auto} .links .ent{flex:1 1 auto !important;margin-left:0 !important} }
 .links .ent{margin-left:auto;flex:none;width:var(--entw,auto);padding:0 18px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:12px;box-shadow:var(--shadow)}
 .bar .nav{width:44px;height:var(--h2);padding:0;display:grid;place-items:center;border-radius:12px;box-shadow:var(--shadow)}
 .ttl{cursor:pointer}
@@ -364,7 +365,7 @@ footer{margin-top:22px;color:var(--muted);font-size:12px;display:flex;justify-co
 <div class="wrap" id="app"></div>
 <div class="veil" id="veil"></div>
 <div id="inst" role="alertdialog" aria-modal="true" aria-labelledby="insth"><div><img src="icon.png" alt="EDT"><h3 id="insth">Ouvre l'appli depuis ton écran d'accueil</h3><p id="instp"></p><button class="btn dark" style="width:100%;height:44px" onclick="$('inst').classList.remove('on')">J'ai compris</button></div></div>
-<div id="ntf" role="alertdialog" aria-modal="true" aria-labelledby="ntfh"><div><img src="icon.png" alt="EDT"><h3 id="ntfh">Recevoir des notifications ?</h3><button class="btn dark" style="width:100%;height:46px" onclick="notifOui()">Oui, activer</button><button class="btn" style="width:100%;height:46px;margin-top:8px" onclick="notifNon()">Non</button></div></div>
+<div id="ntf" role="alertdialog" aria-modal="true" aria-labelledby="ntfh"><div><img src="icon.png" alt="EDT"><h3 id="ntfh">Recevoir des notifications ?</h3><p style="font-size:13px;color:var(--muted);margin:-6px 0 14px">Sur iPhone : seulement dans l'appli installée sur l'écran d'accueil (iOS 16.4 ou plus), pas dans le site Safari.</p><button class="btn dark" style="width:100%;height:46px" onclick="notifOui()">Oui, activer</button><button class="btn" style="width:100%;height:46px;margin-top:8px" onclick="notifNon()">Non</button></div></div>
 <div id="maint" role="alertdialog" aria-modal="true" aria-labelledby="mainth"><div><img src="icon.png" alt="EDT"><h3 id="mainth"></h3><p id="maintp"></p><button class="btn dark" style="width:100%;height:44px" onclick="$('maint').classList.remove('on')">J'ai compris</button></div></div>
 <div id="warn" role="alertdialog" aria-modal="true" aria-labelledby="warnh"><div><h3 id="warnh">Attention</h3>
 <p id="warnp"></p>
@@ -460,7 +461,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-26b";
+const APP_V = "2026-11-26c";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -762,12 +763,16 @@ function openHeures(){
 // Paramètres (remplace le carré soleil / lune) : thème ; les notifications viendront ici
 function openParams(){
   const actif = notifOk() && store.get("notifOn") && Notification.permission==="granted";
-  const nt = iosHorsAppli() ? `<p class="note" style="margin:0">Installe l'appli sur l'écran d'accueil (Partager, puis « Sur l'écran d'accueil ») pour recevoir des notifications.</p>`
+  const nt = iosHorsAppli() ? `<p class="note" style="margin:0"><b>Tu es dans Safari.</b> Installe l'appli sur l'écran d'accueil (Partager, puis « Sur l'écran d'accueil »), ouvre-la par son icône, puis reviens ici.</p>`
     : !notifOk() ? `<p class="note" style="margin:0">Ce navigateur ne gère pas les notifications.</p>`
     : actif ? notifToggles() + `<div class="prow"><button class="btn" onclick="notifTest()">Envoyer un essai</button><button class="btn" onclick="notifCouper().then(openParams)">Couper les notifications</button></div>`
     : `<button class="btn dark" style="width:100%;height:44px" onclick="notifActiver().then(ok=>ok?openNotifChoix():openParams())">Activer les notifications</button>`;
   sheetOpen(`<h3>Paramètres</h3><div class="pgrp">Thème</div><div class="themes"><button class="${theme==="dark"?"on":""}" onclick="setTheme('dark')">Sombre</button><button class="${theme!=="dark"?"on":""}" onclick="setTheme('light')">Clair</button></div>
-    <div class="pgrp" style="margin-top:16px">Notifications</div>${nt}`);
+    <div class="pgrp" style="margin-top:16px">Notifications</div>${nt}<p class="note" style="margin:8px 0 0">Sur iPhone, les notifications marchent seulement dans l'appli installée sur l'écran d'accueil (iOS 16.4 ou plus récent), pas dans le site ouvert dans Safari.</p>
+    <div id="cptbloc"></div>
+    <div class="support charte"><b>La charte</b><p>Les règles de l'appli et ce que tu peux faire avec.</p>
+      <button class="btn" onclick="openCharte()">Relire la charte</button></div>`);
+  cptBloc().then(x=>{ const b=$("cptbloc"); if(b) b.outerHTML=x; });
 }
 /* ======== notifications : rappels à 18h (devoirs la veille, évaluations 2 jours avant) et nouvelles annonces ; envoyées par le service « notifs » de Supabase ======== */
 const NOTIF_URL = `${SUPA_URL}/functions/v1/notifs`;
@@ -803,9 +808,11 @@ const notifToggles = () => [["devoirs","Devoirs","la veille à 18h"],["evals","�
 async function notifPref(k, v){ notifPrefs[k] = v; store.set("notifPrefs", notifPrefs); try{ const sub = await notifAbonnement(false); if(sub) await notifEnvoyer(sub); }catch{} }
 function openNotifChoix(){ sheetOpen(`<h3>Quelles notifications ?</h3>${notifToggles()}`, "C'est bon"); }
 // demande au démarrage : une seule fois, et seulement là où ça peut marcher (iPhone : appli installée)
+// renvoie true quand c'est réglé (affichée, ou rien à demander) ; false = réessayer plus tard
 function notifDemande(){
-  if(store.get("notifDemande") || !notifOk() || iosHorsAppli() || Notification.permission!=="default" || !tp || cptVue || ferme || $("app").querySelector(".wel") || document.querySelector("#inst.on,#maint.on,.sheet.open")) return;
-  $("ntf").classList.add("on");
+  if($("ntf").classList.contains("on") || store.get("notifDemande") || !notifOk() || iosHorsAppli() || Notification.permission!=="default") return true;
+  if(!tp || cptVue || ferme || $("app").querySelector(".wel") || document.querySelector("#inst.on,#maint.on,#warn.on,.sheet.open")) return false;
+  $("ntf").classList.add("on"); return true;
 }
 async function notifOui(){ $("ntf").classList.remove("on"); store.set("notifDemande", 1); if(await notifActiver()) openNotifChoix(); }
 function notifNon(){ $("ntf").classList.remove("on"); store.set("notifDemande", 1); }
@@ -990,12 +997,8 @@ function openFeedback(){
     <div class="support"><b>Envie de soutenir l'appli ?</b><p>Rien d'obligatoire, mais ça fait toujours plaisir.</p>
       <a class="btn" href="${KOFI}" target="_blank" rel="noopener"><b>1 €</b><span>Un repas au resto U</span>${supLbl(supCount(1))}</a>
       <a class="btn" href="${KOFI}" target="_blank" rel="noopener"><b>3 €</b><span>T'es vraiment le GOAT</span>${supLbl(supCount(3))}</a>${(()=>{const o=soutiens.length-supCount(1)-supCount(3); return o?`<p style="grid-column:1/-1;margin:0;font-size:12.5px;color:var(--muted)">+ ${o} autre${o>1?"s":""} don${o>1?"s":""}, merci !</p>`:"";})()}</div>
-    <div id="cptbloc"></div>
-    <div class="support charte"><b>La charte</b><p>Les règles de l'appli et ce que tu peux faire avec.</p>
-      <button class="btn" onclick="openCharte()">Relire la charte</button></div>
     <div class="row"><button class="btn" onclick="closeSheet()">Fermer</button></div>`;
   $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
-  cptBloc().then(x=>{ const b=$("cptbloc"); if(b) b.outerHTML=x; });
 }
 function fbBox(m){
   const d = new Date(m.created_at);
@@ -1004,7 +1007,7 @@ function fbBox(m){
 }
 function openFbList(){
   $("sheet").innerHTML = `<div class="grab"></div><h3>Messages en attente (${retours.length})</h3>${retours.map(fbBox).join("")}
-    <div class="row"><button class="btn" onclick="openFeedback()">Retour</button></div>`;
+    <div class="row"><button class="btn" onclick="openParams()">Retour</button></div>`;
   $("sheet").scrollTop = 0;
 }
 function newFeedback(){
@@ -1240,6 +1243,7 @@ function setView(v){ view=v; store.set("view",v); render(); }
 // carré Partager = même largeur que le carré du groupe (dernier carré de l'en-tête), donc aligné dessous
 function fitLinks(){ const nav=document.querySelector(".links"), ban=document.querySelector("header .ban"), sq=document.querySelectorAll("header .sq"); if(!nav||!ban||!sq.length) return;
   nav.style.setProperty("--shw", sq[sq.length-1].getBoundingClientRect().width+"px");
+  if(sq.length>1) nav.style.setProperty("--hgap", (sq[1].getBoundingClientRect().left - sq[0].getBoundingClientRect().right)+"px");
   if(phone()){ nav.style.removeProperty("--lkw"); nav.style.removeProperty("--entw"); return; }
   const a=sq[0].getBoundingClientRect(), z=sq[sq.length-1].getBoundingClientRect(), w=z.right-a.left; nav.style.setProperty("--entw", w+"px"); nav.style.setProperty("--lkw", 2*w+"px"); }
 addEventListener("resize", fitLinks);
@@ -1582,7 +1586,7 @@ document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) loadEta
   setTimeout(()=>{ if(!$("maint").classList.contains("on")){ store.set("instVu", jour); $("inst").classList.add("on"); } }, 1800);
 })();
 render(); loadData(); loadHw(); loadAnn(); loadFb(); loadChat(); loadSupport(); loadEtat();
-setTimeout(notifDemande, 3000);
+{ let n = 0; const t = setInterval(()=>{ if(++n > 24 || notifDemande()) clearInterval(t); }, 5000); setTimeout(notifDemande, 3000); }
 </script>
 </body>
 </html>
