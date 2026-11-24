@@ -1,0 +1,13 @@
+{
+  "name": "EDT · Emploi du temps",
+  "short_name": "EDT",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#141312",
+  "theme_color": "#141312",
+  "icons": [
+    { "src": "icon.png?l", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
