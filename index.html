@@ -180,6 +180,10 @@ html{touch-action:manipulation}
 .ann .head b{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .ann .head button{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 12px;font-weight:650;font-size:13px}
 .sq.vide{visibility:hidden}
+.crea{display:inline-block;background:#12808a;color:#fff;border-radius:6px;padding:1px 7px;font-size:11.5px;font-weight:800;font-style:normal;line-height:1.5;vertical-align:1px}
+.annbox .d .crea{display:table;margin-top:4px}
+.msg.mcrea{box-shadow:inset 3px 0 0 #12808a}
+.moicrea{font-size:13.5px;color:var(--muted);padding:6px 2px}
 .skel{display:flex;flex-direction:column;gap:10px}.skel .r{display:flex;gap:6px}.skel i{display:block;height:44px;border-radius:12px;background:var(--panel);animation:skel 1.2s ease-in-out infinite alternate}
 .skel .q{width:44px;flex:none}.skel .b{height:60vh;border-radius:18px}
 @keyframes skel{from{opacity:.55}to{opacity:1}}
@@ -494,7 +498,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-26o";
+const APP_V = "2026-11-26p";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -993,7 +997,7 @@ function openAnnList(){
   l.forEach(a=>{
     const d = a.jour && new Date(a.jour+"T12:00:00"), seen = !!annSeen[a.id];
     h += `<div class="annbox ${seen?"seen":""}" onclick="openAnn(${a.id})">
-      <div class="d">${!d?"":a.jour===today?"Aujourd'hui":esc(fmtD(d,{weekday:"short"}))}<span>${d?esc(fmtD(d,{day:"numeric",month:"short"})):""}</span><em>${esc(audShort(a.grp))}</em></div>
+      <div class="d">${!d?"":a.jour===today?"Aujourd'hui":esc(fmtD(d,{weekday:"short"}))}<span>${d?esc(fmtD(d,{day:"numeric",month:"short"})):""}</span><em>${esc(audShort(a.grp))}</em>${a.createur?CREA:""}</div>
       <div class="tx">${a.ckey?`<span class="annmod" style="${colors(a.ckey.split("|")[0])}">${esc(courseLbl(...a.ckey.split("|")))}</span>`:""}${esc(a.texte)}</div>
       <button class="annck ${seen?"on":""}" onclick="toggleSeen(${a.id},event)" aria-label="${seen?"Garder l'annonce":"Masquer l'annonce pour moi"}">${seen?ICO_OK:""}</button></div>`;
   });
@@ -1034,6 +1038,7 @@ async function saveAnn(id){
   if(jour && jour < ymd(new Date())){ toast("Choisis aujourd'hui ou plus tard"); return; }
   try{
     if(id) await annReq("PATCH", `?id=eq.${id}`, {grp:annWho, jour, ckey:annCkey, texte:t, updated_at:new Date().toISOString()});
+    else if(estCreateur()){ const r = await rpc("createur_annonce", {p_jeton:cpt.jeton, p_grp:annWho, p_jour:jour, p_ckey:annCkey, p_texte:t}); if(!r.ok) throw 0; }
     else await annReq("POST", "", {grp:annWho, jour, ckey:annCkey, texte:t});
     toast(id ? "Annonce modifiée" : "Annonce publiée pour "+audLabel(annWho));
     await loadAnn(); render(); openAnnList();
@@ -1139,18 +1144,19 @@ async function loadChat(){
   }catch{}
 }
 function openChat(g){
+  createurMaj();
   sheetKey = null; annOpen = true; chatOpen = true;
   chatGrp = g || chatGrp || tdOf(tp) || tp;
   const al = annVisible(), last = al.slice().sort((a,b)=>a.created_at<b.created_at?1:-1)[0];
   $("sheet").innerHTML = `<div class="grab"></div>
     <div class="ann chatann"><div class="head"><b>Annonces</b><button onclick="openAnn()">+ Annonce</button></div>
-      ${last ? `<div class="annbox ${annSeen[last.id]?"seen":""}" onclick="openAnnList()"><div class="d">${esc(audShort(last.grp))}<span>${esc(fmtD(new Date(last.created_at),{day:"numeric",month:"short"}))}</span></div><div class="tx">${esc(last.texte)}</div></div><span class="tout" onclick="openAnnList()">Voir ${al.length>1?"les "+al.length+" annonces":"l'annonce"}</span>` : `<div class="note" style="margin:0 2px">Aucune annonce pour l'instant.</div>`}</div>
+      ${last ? `<div class="annbox ${annSeen[last.id]?"seen":""}" onclick="openAnnList()"><div class="d">${esc(audShort(last.grp))}<span>${esc(fmtD(new Date(last.created_at),{day:"numeric",month:"short"}))}</span>${last.createur?CREA:""}</div><div class="tx">${esc(last.texte)}</div></div><span class="tout" onclick="openAnnList()">Voir ${al.length>1?"les "+al.length+" annonces":"l'annonce"}</span>` : `<div class="note" style="margin:0 2px">Aucune annonce pour l'instant.</div>`}</div>
     <hr class="chatsep">
     <div class="chathead"><b>Discussion</b><small>Ouverte à tous · chaque message s'efface 1 semaine après</small></div>
     <div class="chattabs" id="chattabs"></div>
     <div class="chatlist" id="chatlist"></div>
     <div class="chatsend">
-      <input id="chatwho" class="field" maxlength="40" placeholder="Ton prénom (facultatif)" value="${esc(store.get("pseudo",""))}">
+      ${estCreateur() ? `<div class="moicrea">Tu écris en tant que ${CREA}</div>` : `<input id="chatwho" class="field" maxlength="40" placeholder="Ton prénom (facultatif)" value="${esc(store.get("pseudo",""))}">`}
       <div class="chatrow"><textarea id="chattx" maxlength="1000" rows="1" placeholder="Écrire un message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&matchMedia('(pointer:fine)').matches){event.preventDefault();sendChat();}" oninput="$('chatgo').disabled=!this.value.trim()"></textarea>
       <button class="btn dark" id="chatgo" disabled onclick="sendChat()">Envoyer</button></div>
     </div>`;
@@ -1165,23 +1171,25 @@ function renderChatList(toBottom){
   $("chattabs").innerHTML = audiences().map(g=>{ const n=chatNew(g);
     return `<button class="${g===chatGrp?"on":""}" style="box-shadow:inset 0 -3px 0 ${AUD_COL(g)}" onclick="openChat('${esc(g)}')">${esc(audShort(g))}${n?`<span class="cnt" style="background:${AUD_COL(g)}">${n}</span>`:""}</button>`; }).join("");
   box.innerHTML = l.length ? l.map(m=>{ const d=new Date(m.created_at), mine=!!myMsgs[m.id];
-    return `<div class="msg ${mine?"me":""}"><div class="who">${esc(m.pseudo||"Anonyme")} <span>${esc(fmtD(d,{weekday:"short"}))} ${hm(d)}</span></div><div class="tx">${esc(m.texte)}</div></div>`; }).join("")
+    return `<div class="msg ${mine?"me":""}${m.createur?" mcrea":""}"><div class="who">${m.createur ? CREA : esc(m.pseudo||"Anonyme")} <span>${esc(fmtD(d,{weekday:"short"}))} ${hm(d)}</span></div><div class="tx">${esc(m.texte)}</div></div>`; }).join("")
     : `<div class="note" style="text-align:center;margin:30px 0">Aucun message cette semaine.<br>Lance la discussion !</div>`;
   if(nearBottom) box.scrollTop = box.scrollHeight;
 }
 async function sendChat(){
   if(!canWrite()) return;
-  const pseudo = clean($("chatwho").value.trim(), "pseudo") || null;
-  store.set("pseudo", pseudo||"");   // avant le texte : l'alerte au créateur donne le pseudo actuel
+  const crea = estCreateur();
+  const pseudo = crea ? "Créateur" : clean($("chatwho").value.trim(), "pseudo") || null;
+  if(!crea) store.set("pseudo", pseudo||"");   // avant le texte : l'alerte au créateur donne le pseudo actuel
   const texte = clean($("chattx").value.trim(), "discussion");
   if(!texte) return;
   $("chatgo").disabled = true;
-  const tmp = {id:"tmp"+Date.now(), grp:chatGrp, pseudo, texte, created_at:new Date().toISOString()};
+  const tmp = {id:"tmp"+Date.now(), grp:chatGrp, pseudo, texte, createur:crea, created_at:new Date().toISOString()};
   chatMsgs.push(tmp); myMsgs[tmp.id] = 1; $("chattx").value = ""; renderChatList(true);
   try{
-    const r = await fetch(`${SUPA_URL}/rest/v1/messages`, {method:"POST", headers:hdr({Prefer:"return=representation"}), body:JSON.stringify({grp:chatGrp, pseudo, texte})});
-    if(!r.ok) throw 0;
-    const [m] = await r.json(); myMsgs[m.id] = 1; delete myMsgs[tmp.id]; store.set("myMsgs", myMsgs);
+    let m;
+    if(crea){ m = await rpc("createur_message", {p_jeton:cpt.jeton, p_grp:chatGrp, p_texte:texte}); if(!m.ok) throw 0; }
+    else { const r = await fetch(`${SUPA_URL}/rest/v1/messages`, {method:"POST", headers:hdr({Prefer:"return=representation"}), body:JSON.stringify({grp:chatGrp, pseudo, texte})});
+      if(!r.ok) throw 0; [m] = await r.json(); } myMsgs[m.id] = 1; delete myMsgs[tmp.id]; store.set("myMsgs", myMsgs);
     await loadChat(); renderChatList(true);
   }catch{ chatMsgs = chatMsgs.filter(x=>x!==tmp); delete myMsgs[tmp.id]; renderChatList(true); if($("chattx")){ $("chattx").value = texte; $("chatgo").disabled = false; } toast("Erreur : message non envoyé"); }
 }
@@ -1489,6 +1497,11 @@ let cpt = store.get("cpt", null);                 // {ps, jeton, n (longueur du 
 let cptVue = sessionStorage.getItem("edt.cptVue"); sessionStorage.removeItem("edt.cptVue");
 let cptPin = "", cptErr = "", cptTimer = null, cptBusy = false, cptPush = 0;
 const cptOuvert = () => !!cpt?.jeton && sessionStorage.getItem("edt.ouvert")===cpt.jeton;
+let createur = store.get("createur", false);
+const estCreateur = () => createur && !!cpt?.jeton;
+async function createurMaj(){ if(!cpt?.jeton){ if(createur){ createur = false; store.set("createur", false); } return; }
+  try{ const v = !!(await rpc("createur_moi", {p_jeton:cpt.jeton})); if(v!==createur){ createur = v; store.set("createur", v); if(chatOpen) openChat(); } }catch{} }
+const CREA = '<span class="crea">Créateur</span>';
 async function rpc(f, body){ const r = await fetch(`${SUPA_URL}/rest/v1/rpc/${f}`, {method:"POST", headers:hdr(), body:JSON.stringify(body)}); if(!r.ok) throw new Error(r.status); return r.json(); }
 async function pinHash(ps, pin){ try{ const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ps.toLowerCase()+":"+pin)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }catch{ return null; } }
 // cet appareil -> compte (1,5 s après le dernier changement)
@@ -1694,7 +1707,7 @@ document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) loadEta
 })();
 const uneFois = fn => { let p = null; return (...a) => p || (p = fn(...a).finally(()=>{ p = null; })); };
 loadData = uneFois(loadData); loadHw = uneFois(loadHw); loadAnn = uneFois(loadAnn); loadFb = uneFois(loadFb); loadChat = uneFois(loadChat); loadSupport = uneFois(loadSupport); loadEtat = uneFois(loadEtat);
-render(); loadData(); loadHw(); loadAnn(); loadFb(); loadChat(); loadSupport(); loadEtat();
+render(); loadData(); loadHw(); loadAnn(); loadFb(); loadChat(); loadSupport(); loadEtat(); createurMaj();
 { let n = 0; const t = setInterval(()=>{ if(++n > 24 || notifDemande()) clearInterval(t); }, 5000); setTimeout(notifDemande, 3000); }
 </script>
 </body>
