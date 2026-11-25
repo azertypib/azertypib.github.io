@@ -192,6 +192,13 @@ html{touch-action:manipulation}
 .chrono .noel{position:absolute;inset:-1px;pointer-events:none;z-index:1}
 .chrono .flocons{position:absolute;inset:1px;overflow:hidden;border-radius:11px;z-index:0}
 .chrono .flocons i{position:absolute;top:-16px;display:block;animation:flocon linear infinite}.chrono .flocons svg{display:block;width:100%;height:100%}
+@keyframes vent{to{transform:translate(-60px,72px)}}
+@keyframes tic{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+.chrono .flocons i.vent{top:-8px;animation-name:vent;animation-timing-function:linear}
+.chrono .flocons i.tic{top:7px;animation:tic 1.6s ease-in-out infinite}
+.repenc{margin-top:16px;border-radius:14px;border:1px solid #1d4a75;background:color-mix(in srgb,#0d2a47 70%,transparent);padding:10px 14px;display:flex;align-items:center;gap:12px;text-align:left;width:100%;max-width:340px;font-variant-numeric:tabular-nums}
+.repenc .rv{width:30px;height:30px;flex:none;color:#8ec3ef}.repenc .rv svg{width:100%;height:100%}.repenc b{font-size:14px;display:block;white-space:nowrap}.repenc small{color:var(--muted);font-size:12px;white-space:nowrap}
+.repenc .t2{margin-left:auto;font-weight:800;font-size:15px;white-space:nowrap}.repenc .t2 em{font-style:normal;font-size:11px;opacity:.7;margin:0 3px 0 1px}
 @keyframes flocon{0%{transform:translate(0,0) rotate(0)}50%{transform:translate(var(--dx),34px) rotate(calc(var(--rot) / 2))}100%{transform:translate(calc(var(--dx) * -.4),72px) rotate(var(--rot))}}
 @media (prefers-reduced-motion:reduce){ .chrono .flocons i{animation:none;top:var(--y0)} }
 .chrono{position:relative;margin-top:10px;height:46px;border-radius:12px;display:flex;align-items:center;gap:10px;padding:0 12px;background:#0d2a47;color:#fff;border:1px solid #1d4a75;box-shadow:var(--shadow);font-variant-numeric:tabular-nums}
@@ -498,7 +505,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-26p";
+const APP_V = "2026-11-26q";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -646,6 +653,7 @@ function renderWeek(all){
   const W=nearWeeks(all); let h0=8,h1=18;
   W.forEach(x=>x.wk.forEach(e=>{ h0=Math.min(h0,e.s.getHours()); h1=Math.max(h1,Math.ceil(e.e.getHours()+e.e.getMinutes()/60)); }));
   let H=parseInt(getComputedStyle(document.documentElement).getPropertyValue("--hour"));
+  if(!phone()) H = 520/(h1-h0);   // PC : même hauteur que le cartouche Jour (520 px de cours)
   if(phone()) H=Math.max(36, Math.floor((fitH()-52)/(h1-h0)));
   SLOTS=W.map(x=>({w:x.w, i:dayIdx}));
   const ci=W.findIndex(x=>+x.w===+week);
@@ -693,42 +701,70 @@ function renderDay(all){
 }
 // jour ou semaine sans cours : les 3 barres du logo + la reprise (prochain cours connu) ; « Bonnes vacances » pendant les vacances scolaires
 // vacances scolaires zone A (académie de Poitiers) : [premier jour sans cours, jour de la reprise]
-const VACANCES = [["2026-10-17","2026-11-02","de la Toussaint"],["2026-12-19","2027-01-04","de Noël"],["2027-02-13","2027-03-01","d'hiver"],["2027-04-10","2027-04-26","de printemps"]];
+const VACANCES = [["2026-10-17","2026-11-02","Toussaint","feuilles"],["2026-12-19","2027-01-04","de Noël","flocons"],["2027-02-13","2027-03-01","d'hiver","neige"],["2027-04-10","2027-04-26","de Pâques","oeufs"]];
 let ALLEV = [];
 const LOGO3 = '<svg viewBox="0 0 86 70" aria-hidden="true"><rect x="6" y="26" width="18" height="40" rx="5" fill="#2e86d4"/><rect x="34" y="6" width="18" height="60" rx="5" fill="#12808a"/><rect x="62" y="18" width="18" height="48" rx="5" fill="#2fbf6a"/></svg>';
+// la bande : chrono jusqu'au vendredi 18h avant les vacances ; pendant les vacances, rien, sauf les 7 derniers jours : « La reprise approche »
 function chrono(){
   const n = new Date();
-  for(const [a,b,nom] of VACANCES){
+  for(const [a,b,nom,deco] of VACANCES){
     const fin = new Date(a+"T00:00"); fin.setDate(fin.getDate()-1); fin.setHours(18,0,0,0);   // vendredi 18h
     const rep = new Date(b+"T00:00");
-    if(n < fin) return {nom, fin, rep};
-    if(n < rep) return null;   // du vendredi 18h à la reprise : pas de bande (les jours sans cours affichent « Bonnes vacances »)
+    if(n < fin) return {nom, deco, fin, rep};
+    if(n < rep){
+      // l'heure de la reprise = premier cours connu de la semaine de reprise, sinon lundi 8h
+      const pc = ALLEV.reduce((m,e) => e.s>=rep && (!m || e.s<m.s) ? e : m, null);
+      const r = pc && pc.s - rep < 5*864e5 ? pc.s : new Date(b+"T08:00");
+      return r - n <= 7*864e5 ? {reprise:true, nom, deco:"reveil", fin:r, rep} : null;
+    }
   }
   return null;   // shortcut: pas de dates après avril 2027 ; ajouter les vacances suivantes dans VACANCES
 }
 const p2 = x => String(x).padStart(2,"0");
+const reste = (ms, sec) => { ms = Math.max(0, ms); const j = Math.floor(ms/864e5), hh = Math.floor(ms/36e5)%24, mm = Math.floor(ms/6e4)%60, ss = Math.floor(ms/1e3)%60;
+  return (j ? j+"<em>j</em>" : "") + p2(hh)+"<em>h</em>"+p2(mm)+"<em>min</em>" + (sec ? p2(ss)+"<em>s</em>" : ""); };
+const quand = d => fmtD(d,{weekday:"long",day:"numeric",month:"short"});
 function chronoIn(){
   const c = chrono(); if(!c) return "";
   const BAR = '<div class="bars"><i></i><i></i><i></i></div>';
-  const ms = c.fin - new Date(), j = Math.floor(ms/864e5), hh = Math.floor(ms/36e5)%24, mm = Math.floor(ms/6e4)%60, ss = Math.floor(ms/1e3)%60;
+  if(c.reprise) return `${BAR}<div class="lbl"><b>La reprise approche</b><small>${quand(c.fin)} à ${fmtH(c.fin)}</small></div><div class="t">${reste(c.fin - new Date(), true)}</div>`;
   const dernier = sameDay(c.fin, new Date());
-  return `${BAR}<div class="lbl"><b>${dernier ? "Dernier jour avant les vacances" : "Vacances "+c.nom}</b><small>${dernier ? "fin des cours à 18h" : fmtD(c.fin,{weekday:"long",day:"numeric",month:"short"})+" à 18h"}</small></div>
-    <div class="t">${dernier ? "" : j+"<em>j</em>"}${p2(hh)}<em>h</em>${p2(mm)}<em>min</em>${p2(ss)}<em>s</em></div>`;
+  return `${BAR}<div class="lbl"><b>${dernier ? "Dernier jour avant les vacances" : "Vacances "+c.nom}</b><small>${dernier ? "fin des cours à 18h" : quand(c.fin)+" à 18h"}</small></div>
+    <div class="t">${reste(c.fin - new Date(), true)}</div>`;
 }
-const noel = () => chrono()?.nom === "de Noël";   // décor de Noël : seulement quand le chrono vise les vacances de Noël
-// flocons tirés au hasard une fois par ouverture (place, taille, transparence, vitesse, départ, dérive), pour qu'ils ne sautent pas à chaque redessin
-const FLOCON = '<svg viewBox="-10 -10 20 20"><g stroke="#fff" stroke-width="1.3" stroke-linecap="round" fill="none"><path transform="rotate(0)" d="M0 0V-9M0-5.5l-2.6-2.4M0-5.5l2.6-2.4M0-2.6l-1.6-1.5M0-2.6l1.6-1.5"/><path transform="rotate(60)" d="M0 0V-9M0-5.5l-2.6-2.4M0-5.5l2.6-2.4M0-2.6l-1.6-1.5M0-2.6l1.6-1.5"/><path transform="rotate(120)" d="M0 0V-9M0-5.5l-2.6-2.4M0-5.5l2.6-2.4M0-2.6l-1.6-1.5M0-2.6l1.6-1.5"/><path transform="rotate(180)" d="M0 0V-9M0-5.5l-2.6-2.4M0-5.5l2.6-2.4M0-2.6l-1.6-1.5M0-2.6l1.6-1.5"/><path transform="rotate(240)" d="M0 0V-9M0-5.5l-2.6-2.4M0-5.5l2.6-2.4M0-2.6l-1.6-1.5M0-2.6l1.6-1.5"/><path transform="rotate(300)" d="M0 0V-9M0-5.5l-2.6-2.4M0-5.5l2.6-2.4M0-2.6l-1.6-1.5M0-2.6l1.6-1.5"/></g></svg>';   // flocon à six branches
+// décor de la bande : formes blanches très transparentes, derrière le texte, tirées au hasard une fois par ouverture
+const FORME = {
+  flocons: '<svg viewBox="-10 -10 20 20"><g stroke="#fff" stroke-width="1.3" stroke-linecap="round" fill="none">' + [0,60,120,180,240,300].map(k=>`<path transform="rotate(${k})" d="M0 0V-9M0-5.5l-2.6-2.4M0-5.5l2.6-2.4M0-2.6l-1.6-1.5M0-2.6l1.6-1.5"/>`).join("") + '</g></svg>',
+  feuilles: '<svg viewBox="0 0 20 24"><path d="M10 1C3 6 2 14 10 22C18 14 17 6 10 1Z" fill="#fff"/><path d="M10 4V23M10 9L6.5 6.5M10 9L13.5 6.5M10 13.5L5.5 10.5M10 13.5L14.5 10.5M10 18L6.5 15.5M10 18L13.5 15.5" stroke="#0d2a47" stroke-width="1.1" stroke-linecap="round" opacity=".55"/></svg>',
+  oeufs: '<svg viewBox="0 0 20 26"><path d="M10 1C4 1 1 10 1 16C1 22 5 25 10 25C15 25 19 22 19 16C19 10 16 1 10 1Z" fill="none" stroke="#fff" stroke-width="1.6"/><path d="M2 14L5.5 11L9 14L12.5 11L16 14L18.5 12" fill="none" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/><circle cx="7" cy="19.5" r="1.3" fill="#fff"/><circle cx="13" cy="19.5" r="1.3" fill="#fff"/></svg>',
+  grain: '<svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="#fff"/></svg>',
+  reveil: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="13" r="7.5"/><path d="M12 9v4l2.5 2M4 5.5l3-2.5M20 5.5l-3-2.5M7.5 19.5L6 21.5M16.5 19.5l1.5 2"/></svg>',
+};
 const hasard = (a, b) => a + Math.random()*(b-a);
-const FLOCONS = Array.from({length:12}, () => { const t = hasard(7,15).toFixed(1);
-  return `<i style="left:${hasard(-2,98).toFixed(1)}%;width:${t}px;height:${t}px;opacity:${hasard(.14,.32).toFixed(2)};animation-duration:${hasard(7,14).toFixed(1)}s;animation-delay:-${hasard(0,14).toFixed(1)}s;--dx:${hasard(-14,14).toFixed(0)}px;--rot:${hasard(-200,200).toFixed(0)}deg;--y0:${hasard(4,40).toFixed(0)}px">${FLOCON}</i>`; }).join("");
-const DECOR_NOEL = `<div class="noel" aria-hidden="true"><div class="flocons">${FLOCONS}</div></div>`;
-const chronoBande = () => chrono() ? `<div class="chrono${noel()?" fete":""}" id="chrono" role="timer" aria-label="Compte à rebours jusqu'aux vacances">${noel()?DECOR_NOEL:""}<div class="ci" id="chronoci">${chronoIn()}</div></div>` : "";
-setInterval(()=>{ const b = $("chronoci"); if(!b || document.hidden) return; if(!chrono()){ render(); return; } b.innerHTML = chronoIn(); }, 1000);   // 18h passé : on redessine sans la bande
+const tombent = (forme, n, taille, op) => Array.from({length:n}, () => { const t = hasard(...taille).toFixed(1);
+  return `<i style="left:${hasard(-2,98).toFixed(1)}%;width:${t}px;height:${(forme==="oeufs"?t*1.3:t)}px;opacity:${hasard(...op).toFixed(2)};animation-duration:${hasard(7,14).toFixed(1)}s;animation-delay:-${hasard(0,14).toFixed(1)}s;--dx:${hasard(-14,14).toFixed(0)}px;--rot:${hasard(-200,200).toFixed(0)}deg;--y0:${hasard(4,40).toFixed(0)}px">${FORME[forme]}</i>`; }).join("");
+const DECOR = {};
+function decor(k){
+  if(!DECOR[k]) DECOR[k] = '<div class="noel" aria-hidden="true"><div class="flocons">' + (
+    k==="neige" ? Array.from({length:26}, () => { const t = hasard(2.5,5).toFixed(1); return `<i class="vent" style="left:${hasard(0,130).toFixed(0)}%;width:${t}px;height:${t}px;opacity:${hasard(.18,.4).toFixed(2)};animation-duration:${hasard(2.2,4).toFixed(1)}s;animation-delay:-${hasard(0,4).toFixed(1)}s;--y0:${hasard(4,40).toFixed(0)}px">${FORME.grain}</i>`; }).join("") + tombent("flocons", 4, [8,12], [.12,.22])
+    : k==="reveil" ? `<i class="tic" style="right:38%;width:30px;height:30px;opacity:.16">${FORME.reveil}</i>`
+    : tombent(k, k==="oeufs" ? 10 : 12, k==="oeufs" ? [8,12] : [7,15], [.14,.32])
+  ) + '</div></div>';
+  return DECOR[k];
+}
+const chronoBande = () => { const c = chrono(); return c ? `<div class="chrono" id="chrono" role="timer" aria-label="${c.reprise ? "Compte à rebours jusqu'à la reprise des cours" : "Compte à rebours jusqu'aux vacances"}">${decor(c.deco)}<div class="ci" id="chronoci">${chronoIn()}</div></div>` : ""; };
+// chaque seconde : le texte du chrono (et l'encart de reprise) ; si l'état change (18h passé, reprise qui approche), on redessine tout
+const cleChrono = () => { const c = chrono(); return c ? (c.reprise ? "r" : "v") + c.nom : "-"; };
+let chronoCle = cleChrono();
+setInterval(()=>{ if(document.hidden) return; const k = cleChrono(); if(k !== chronoCle){ chronoCle = k; render(); return; }
+  const b = $("chronoci"); if(b) b.innerHTML = chronoIn();
+  const c = chrono(); if(c?.reprise) document.querySelectorAll(".repct").forEach(e => e.innerHTML = reste(c.fin - new Date(), false)); }, 1000);   // 18h passé : on redessine sans la bande
 function vide(d, fin, titre){
   const vac = VACANCES.find(([a,b]) => d >= new Date(a+"T00:00") && d < new Date(b+"T00:00"));
   const nx = ALLEV.reduce((m,e) => e.s>=fin && (!m || e.s<m.s) ? e : m, null);
   const r = nx ? `Reprise ${fmtD(nx.s,{weekday:"long",day:"numeric",month:"short"})} à ${fmtH(nx.s)}` : vac ? "Reprise " + fmtD(new Date(vac[1]+"T00:00"),{weekday:"long",day:"numeric",month:"short"}) : "Pas encore publié par l'IUT";
-  return `<div class="vide">${LOGO3}<b>${vac?"Bonnes vacances":titre}</b><span>${r}</span></div>`;
+  const c = vac && chrono(), enc = c?.reprise ? `<div class="repenc"><span class="rv">${FORME.reveil.replace('stroke="#fff"','stroke="currentColor"')}</span><div><b>La reprise approche</b><small>${quand(c.fin)} à ${fmtH(c.fin)}</small></div><div class="t2 repct">${reste(c.fin - new Date(), false)}</div></div>` : "";
+  return `<div class="vide">${LOGO3}<b>${vac?"Bonnes vacances":titre}</b><span>${r}</span>${enc}</div>`;
 }
 // echelle universelle : 8h-12h15 = B px, 12h15-13h45 = L px (midi tasse), 13h45-18h = B px (symetrique du matin)
 const dayY = (t, B, L) => { const m=t.getHours()*60+t.getMinutes();
@@ -1013,7 +1049,7 @@ function openAnn(id){
   const a = id ? annonces.find(x=>x.id===id) : null, today = ymd(new Date());
   annWho = a ? a.grp : null; annCkey = a?.ckey || null;  // formulaire remis a zero a chaque nouvelle annonce
   // on peut viser n'importe quel public : toute la promo, un groupe de TD, ou un TP
-  const all = ["IUT", PROMO, ...Object.keys(DATA?.groups||{}), ...Object.values(DATA?.groups||{}).flat()];
+  const all = [...(estCreateur() ? ["IUT"] : []), PROMO, ...Object.keys(DATA?.groups||{}), ...Object.values(DATA?.groups||{}).flat()];
   const who = all.map(g=>`<button data-g="${esc(g)}" class="${g==="IUT"||g===PROMO?"all ":""}${g===annWho?"on":""}" onclick="setAnnWho('${esc(g)}')">${esc(audShort(g))}</button>`).join("");
   let h = `<div class="grab"></div><h3>${a?"Annonce":"Nouvelle annonce"}</h3>
     <label class="lbl">Pour qui ?</label><div class="who">${who}</div>
