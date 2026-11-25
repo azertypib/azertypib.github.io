@@ -180,6 +180,10 @@ html{touch-action:manipulation}
 .ann .head b{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .ann .head button{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 12px;font-weight:650;font-size:13px}
 .sq.vide{visibility:hidden}
+.skel{display:flex;flex-direction:column;gap:10px}.skel .r{display:flex;gap:6px}.skel i{display:block;height:44px;border-radius:12px;background:var(--panel);animation:skel 1.2s ease-in-out infinite alternate}
+.skel .q{width:44px;flex:none}.skel .b{height:60vh;border-radius:18px}
+@keyframes skel{from{opacity:.55}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){ .skel i{animation:none} }
 .chrono{margin-top:10px;height:46px;border-radius:12px;display:flex;align-items:center;gap:10px;padding:0 12px;background:#0d2a47;color:#fff;border:1px solid #1d4a75;box-shadow:var(--shadow);font-variant-numeric:tabular-nums}
 .chrono .bars{display:flex;align-items:flex-end;gap:3px;height:20px;flex:none}.chrono .bars i{width:6px;border-radius:2px;height:14px;background:#2e86d4}.chrono .bars i:nth-child(2){height:9px;background:#12808a}.chrono .bars i:nth-child(3){background:#2fbf6a}
 .chrono .lbl{display:flex;flex-direction:column;line-height:1.15;min-width:0}.chrono .lbl b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.chrono .lbl small{font-size:11.5px;opacity:.8;white-space:nowrap}
@@ -396,6 +400,7 @@ footer{margin-top:22px;color:var(--muted);font-size:12px;display:flex;justify-co
 <div class="toast" id="toast"></div>
 
 <script>
+if(window.AbortSignal && AbortSignal.timeout){ const f0 = window.fetch.bind(window); window.fetch = (u, o={}) => f0(u, o.signal ? o : {...o, signal: AbortSignal.timeout(12000)}); }
 /* ======== Configuration de la base des devoirs (Supabase) ======== */
 // 3e ligne : liens directs vers les pages de connexion de l'université (ENT, messagerie, Moodle)
 // adresses générales, sans rien de personnel : sans session ouverte, chacune mène à la page de connexion (vérifié le 23/11 avec un navigateur vierge)
@@ -483,7 +488,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-26k";
+const APP_V = "2026-11-26l";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -491,12 +496,14 @@ async function checkUpdate(){
     if(v && v!==APP_V) location.replace(location.pathname+"?v="+v);
   }catch{}
 }
+const pareil = (k, v) => localStorage.getItem("edt."+k) === JSON.stringify(v);
 async function loadData(){
   checkUpdate();
   try{
     const r = await fetch("data.json?t="+Date.now(), {cache:"no-store"});
     if(!r.ok) throw 0;
-    RAW = await r.json(); store.set("data", RAW); DATA = yearData();
+    const nv = await r.json(); if(RAW && pareil("data", nv)) return;   // même emploi du temps : rien à redessiner
+    RAW = nv; store.set("data", RAW); DATA = yearData();
   }catch{ if(!DATA) toast("Pas de connexion"); }
   render();
 }
@@ -509,7 +516,8 @@ async function loadHw(){
   try{
     const r = await fetch(`${SUPA_URL}/rest/v1/devoirs?tp=in.(${audiences().map(encodeURIComponent).join(",")})&deleted=is.false&due=gte.${encodeURIComponent(dayStart().toISOString())}&order=due.asc,created_at.asc`, {headers:hdr()});
     if(!r.ok) throw 0;
-    homework = await r.json(); store.set("hw", homework); render(); if(sheetKey) openSheet(sheetKey,true);
+    const nv = await r.json(); if(pareil("hw", nv)) return;
+    homework = nv; store.set("hw", homework); render(); if(sheetKey) openSheet(sheetKey,true);
   }catch{}
 }
 async function addHw(ev, texte){
@@ -569,7 +577,7 @@ function render(){
   // charte : avec compte = signée une fois par compte (suit le compte sur tous les appareils) ; sans compte = une fois par appareil
   if(cpt ? !store.get("charteCpt") : !charteOk()){ app.dataset.cv = ""; return renderWelcome(); }
   app.dataset.cv = "";
-  if(!RAW){ app.innerHTML = `<div class="pick"><img src="icon.png" width="72" style="border-radius:16px"><h1>Chargement…</h1></div>`; return; }
+  if(!RAW){ app.innerHTML = `<div class="skel" aria-busy="true" aria-label="Chargement"><div class="r"><i style="flex:1"></i><i class="q"></i><i class="q"></i><i class="q"></i></div><div class="r"><i style="flex:1"></i><i style="width:140px"></i></div><i class="b"></i><div class="r"><i style="flex:1"></i><i style="flex:1"></i><i style="flex:1"></i></div></div>`; return; }
   if(!annee || pickYear) return renderYear();
   if(!DATA) return renderYear("L'emploi du temps de cette année n'est pas encore disponible.");
   if(!tp || !DATA.events[tp] || pickStep){ renderPick(); return; }
@@ -922,7 +930,8 @@ async function loadAnn(){
   try{
     const r = await fetch(`${SUPA_URL}/rest/v1/annonces?deleted=is.false&or=(jour.gte.${ymd(new Date())},and(jour.is.null,created_at.gte.${encodeURIComponent(new Date(Date.now()-WEEK_MS).toISOString())}))&order=jour.asc.nullslast,created_at.asc`, {headers:hdr()});
     if(!r.ok) throw 0;
-    annonces = await r.json(); store.set("ann", annonces); if(!sheetKey && !annOpen) render();
+    const nv = await r.json(); if(pareil("ann", nv)) return;
+    annonces = nv; store.set("ann", annonces); if(!sheetKey && !annOpen) render();
   }catch{}
 }
 // cours proposes selon le public : TP = tout son emploi du temps, groupe = ses cours de groupe (TD), promo = ses cours communs (amphi, DS...)
@@ -1027,7 +1036,8 @@ async function loadFb(){
     // messages au créateur : communs à tous les semestres
     const r = await fetch(`${SUPA_URL}/rest/v1/retours?select=id,created_at,contact,tp,texte&order=created_at.desc`, {headers:hdr()});
     if(!r.ok) throw 0;
-    retours = await r.json(); store.set("ret", retours); if(!sheetKey && !annOpen) render();
+    const nv = await r.json(); if(pareil("ret", nv)) return;
+    retours = nv; store.set("ret", retours); if(!sheetKey && !annOpen) render();
   }catch{}
 }
 // dons Ko-fi : la fonction Supabase "kofi-webhook" enregistre seulement les montants (table "soutiens")
@@ -1102,7 +1112,8 @@ async function loadChat(){
     const since = encodeURIComponent(new Date(Date.now()-WEEK_MS).toISOString());
     const r = await fetch(`${SUPA_URL}/rest/v1/messages?grp=in.(${audiences().map(encodeURIComponent).join(",")})&created_at=gte.${since}&order=created_at.asc&limit=1000`, {headers:hdr()});
     if(!r.ok) throw 0;
-    chatMsgs = await r.json(); store.set("chat", chatMsgs);
+    const nv = await r.json(); if(pareil("chat", nv) && !chatMsgs.some(m=>String(m.id).startsWith("tmp"))) return;
+    chatMsgs = nv; store.set("chat", chatMsgs);
     if(chatOpen) renderChatList(); else if(!sheetKey && !annOpen) render();
   }catch{}
 }
@@ -1144,12 +1155,14 @@ async function sendChat(){
   const texte = clean($("chattx").value.trim(), "discussion");
   if(!texte) return;
   $("chatgo").disabled = true;
+  const tmp = {id:"tmp"+Date.now(), grp:chatGrp, pseudo, texte, created_at:new Date().toISOString()};
+  chatMsgs.push(tmp); myMsgs[tmp.id] = 1; $("chattx").value = ""; renderChatList(true);
   try{
     const r = await fetch(`${SUPA_URL}/rest/v1/messages`, {method:"POST", headers:hdr({Prefer:"return=representation"}), body:JSON.stringify({grp:chatGrp, pseudo, texte})});
     if(!r.ok) throw 0;
-    const [m] = await r.json(); myMsgs[m.id] = 1; store.set("myMsgs", myMsgs);
-    $("chattx").value = ""; await loadChat(); renderChatList(true);
-  }catch{ toast("Erreur : message non envoyé"); $("chatgo").disabled = false; }
+    const [m] = await r.json(); myMsgs[m.id] = 1; delete myMsgs[tmp.id]; store.set("myMsgs", myMsgs);
+    await loadChat(); renderChatList(true);
+  }catch{ chatMsgs = chatMsgs.filter(x=>x!==tmp); delete myMsgs[tmp.id]; renderChatList(true); if($("chattx")){ $("chattx").value = texte; $("chatgo").disabled = false; } toast("Erreur : message non envoyé"); }
 }
 setInterval(()=>{ if(chatOpen && !document.hidden) loadChat(); }, 8000);
 
@@ -1658,6 +1671,8 @@ document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) loadEta
     : "<li>touche le menu (les trois points) ;</li><li>choisis <b>Installer l'application</b> ou <b>Ajouter à l'écran d'accueil</b> ;</li><li>ouvre ensuite l'appli avec l'icône <b>EDT</b>.</li>"}</ol><p>Tu as déjà l'icône mais tu vois encore les barres ? Supprime-la et refais ces étapes.`;
   setTimeout(()=>{ if(!$("maint").classList.contains("on")){ store.set("instVu", jour); $("inst").classList.add("on"); } }, 1800);
 })();
+const uneFois = fn => { let p = null; return (...a) => p || (p = fn(...a).finally(()=>{ p = null; })); };
+loadData = uneFois(loadData); loadHw = uneFois(loadHw); loadAnn = uneFois(loadAnn); loadFb = uneFois(loadFb); loadChat = uneFois(loadChat); loadSupport = uneFois(loadSupport); loadEtat = uneFois(loadEtat);
 render(); loadData(); loadHw(); loadAnn(); loadFb(); loadChat(); loadSupport(); loadEtat();
 { let n = 0; const t = setInterval(()=>{ if(++n > 24 || notifDemande()) clearInterval(t); }, 5000); setTimeout(notifDemande, 3000); }
 </script>
