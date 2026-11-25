@@ -128,7 +128,7 @@ html{touch-action:manipulation}
 .dtrack>*{flex:none;width:var(--pw);opacity:calc(.35 + .65 * var(--o,0));transition:opacity .38s}
 .dtrack.drag>*,.dtrack.drag .full,.dtrack.drag .sum{transition:none}
 .wview .dtrack{--pw:100%}
-.dpanel{background:color-mix(in srgb,var(--panel) 55%,transparent);border:1px solid var(--line);border-radius:20px;padding:12px 12px 14px;min-height:var(--ph,0)}
+.dpanel{background:color-mix(in srgb,var(--panel) 55%,transparent);border:1px solid var(--line);border-radius:20px;padding:12px 12px 10px;min-height:var(--ph,0)}
 .dpanel h3{margin:0 0 10px 2px;font-size:16px}.dpanel h3 span{font-size:12.5px;color:var(--muted);font-weight:500;margin-left:6px}
 /* detail et resume l'un sur l'autre : fondu croise pendant le glisser */
 /* journee a echelle fixe : cours et pauses places a leur heure (position absolue) */
@@ -488,7 +488,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-26l";
+const APP_V = "2026-11-26m";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -630,7 +630,7 @@ function weekSpan(all, w){ const e=new Date(w); e.setDate(e.getDate()+7); const 
 function nearWeeks(all){ const out=[]; for(const k of [-1,0,1]){ const w=new Date(week); w.setDate(w.getDate()+7*k); if(w>=minWeek()) out.push(weekSpan(all,w)); } return out; }
 let SLOTS=[], fitTop=170, dayFit=0;
 const phone = () => innerWidth < 760;
-const fitH = () => Math.max(320, innerHeight - fitTop - 28 - 52 - (chrono() ? 56 : 0));   // petite marge en bas (+ barre de l'iPhone) + bandeau de liens (42 + 10)
+const fitH = () => Math.max(320, innerHeight - fitTop - 14 - 52 - (chrono() ? 56 : 0));   // petite marge en bas (+ barre de l'iPhone) + bandeau de liens (42 + 10)
 
 function renderWeek(all){
   const W=nearWeeks(all); let h0=8,h1=18;
@@ -692,7 +692,7 @@ function chrono(){
     const fin = new Date(a+"T00:00"); fin.setDate(fin.getDate()-1); fin.setHours(18,0,0,0);   // vendredi 18h
     const rep = new Date(b+"T00:00");
     if(n < fin) return {nom, fin, rep};
-    if(n < rep) return {nom, fin, rep, vac:true};
+    if(n < rep) return null;   // du vendredi 18h à la reprise : pas de bande (les jours sans cours affichent « Bonnes vacances »)
   }
   return null;   // shortcut: pas de dates après avril 2027 ; ajouter les vacances suivantes dans VACANCES
 }
@@ -700,15 +700,13 @@ const p2 = x => String(x).padStart(2,"0");
 function chronoIn(){
   const c = chrono(); if(!c) return "";
   const BAR = '<div class="bars"><i></i><i></i><i></i></div>';
-  if(c.vac){ const j = Math.ceil((c.rep - new Date())/864e5);
-    return `${BAR}<div class="lbl"><b>Bonnes vacances</b><small>reprise ${fmtD(c.rep,{weekday:"long",day:"numeric",month:"short"})}</small></div><div class="t" style="font-size:15px">J-${j} avant la reprise</div>`; }
   const ms = c.fin - new Date(), j = Math.floor(ms/864e5), hh = Math.floor(ms/36e5)%24, mm = Math.floor(ms/6e4)%60, ss = Math.floor(ms/1e3)%60;
   const dernier = sameDay(c.fin, new Date());
   return `${BAR}<div class="lbl"><b>${dernier ? "Dernier jour avant les vacances" : "Vacances "+c.nom}</b><small>${dernier ? "fin des cours à 18h" : fmtD(c.fin,{weekday:"long",day:"numeric",month:"short"})+" à 18h"}</small></div>
     <div class="t">${dernier ? "" : j+"<em>j</em>"}${p2(hh)}<em>h</em>${p2(mm)}<em>min</em>${p2(ss)}<em>s</em></div>`;
 }
 const chronoBande = () => chrono() ? `<div class="chrono" id="chrono" role="timer" aria-label="Compte à rebours jusqu'aux vacances">${chronoIn()}</div>` : "";
-setInterval(()=>{ const b = $("chrono"); if(b && !document.hidden) b.innerHTML = chronoIn(); }, 1000);
+setInterval(()=>{ const b = $("chrono"); if(!b || document.hidden) return; if(!chrono()){ render(); return; } b.innerHTML = chronoIn(); }, 1000);   // 18h passé : on redessine sans la bande
 function vide(d, fin, titre){
   const vac = VACANCES.find(([a,b]) => d >= new Date(a+"T00:00") && d < new Date(b+"T00:00"));
   const nx = ALLEV.reduce((m,e) => e.s>=fin && (!m || e.s<m.s) ? e : m, null);
@@ -718,9 +716,19 @@ function vide(d, fin, titre){
 // echelle universelle : 8h-12h15 = B px, 12h15-13h45 = L px (midi tasse), 13h45-18h = B px (symetrique du matin)
 const dayY = (t, B, L) => { const m=t.getHours()*60+t.getMinutes();
   return m<=735 ? Math.max(0,(m-480)/255*B) : m<=825 ? B+(m-735)/90*L : B+L+(m-825)/255*B; };
+// 8h-18h sur Hc px ; le trou entre deux cours, pris entre 12h et 14h, est serré à L px (s'il fait 30 min ou plus) ; sans trou à midi, rien n'est serré
+function echelle(de, Hc, L){
+  const m=t=>t.getHours()*60+t.getMinutes(); let a=0, b=0;
+  for(let i=1;i<de.length;i++){
+    const g0=Math.max(720, ...de.slice(0,i).map(e=>m(e.e))), g1=Math.min(840, m(de[i].s));
+    if(g1-g0>=30 && g1-g0>b-a){ a=g0; b=g1; } }
+  if(b-a<30){ a=b=735; L=0; }
+  const k=(Hc-L)/(600-(b-a));
+  return t=>{ const x=m(t); return x<=a ? Math.max(0,(x-480)*k) : x<=b ? (a-480)*k + (x-a)/(b-a)*L : (a-480)*k + L + (x-b)*k; };
+}
 function dayList(d, de, Hc, B, L){
   if(!de.length){ const fin=new Date(d); fin.setDate(fin.getDate()+1); return `<div class="dbody" style="height:${Hc}px">${vide(d, fin, sameDay(d,now)?"Pas de cours aujourd'hui":"Pas de cours ce jour-là")}</div>`; }
-  const Y=t=>dayY(t,B,L), mins=t=>t.getHours()*60+t.getMinutes();
+  const Y=echelle(de,Hc,L), mins=t=>t.getHours()*60+t.getMinutes();
   const H=Math.max(Hc, ...de.map(e=>Y(e.e)));
   let full="", sum="", prev=null;
   if(mins(de[0].s)>=520) full+=`<div class="brk lead" style="top:0;height:${Y(de[0].s)}px"><span>Début des cours à ${fmtH(de[0].s)}</span><i></i></div>`;
