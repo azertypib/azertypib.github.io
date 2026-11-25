@@ -180,6 +180,11 @@ html{touch-action:manipulation}
 .ann .head b{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .ann .head button{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 12px;font-weight:650;font-size:13px}
 .sq.vide{visibility:hidden}
+.chrono{margin-top:10px;height:46px;border-radius:12px;display:flex;align-items:center;gap:10px;padding:0 12px;background:#0d2a47;color:#fff;border:1px solid #1d4a75;box-shadow:var(--shadow);font-variant-numeric:tabular-nums}
+.chrono .bars{display:flex;align-items:flex-end;gap:3px;height:20px;flex:none}.chrono .bars i{width:6px;border-radius:2px;height:14px;background:#2e86d4}.chrono .bars i:nth-child(2){height:9px;background:#12808a}.chrono .bars i:nth-child(3){background:#2fbf6a}
+.chrono .lbl{display:flex;flex-direction:column;line-height:1.15;min-width:0}.chrono .lbl b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.chrono .lbl small{font-size:11.5px;opacity:.8;white-space:nowrap}
+.chrono .t{margin-left:auto;font-weight:800;font-size:19px;white-space:nowrap}.chrono .t em{font-style:normal;font-size:12px;font-weight:600;opacity:.7;margin:0 5px 0 1px}.chrono .t em:last-child{margin-right:0}
+@media (min-width:760px){ .chrono{height:52px;padding:0 16px} .chrono .lbl b{font-size:15px} .chrono .t{font-size:21px} }
 .chatann{margin:0 0 10px}.chatann .annbox{margin:0}.chatann .annbox .tx{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .chatann .tout{display:block;text-align:right;font-size:12.5px;color:var(--muted);margin:5px 2px 0}
 .chatsep{border:0;border-top:1px solid var(--line);margin:4px 0 12px}
@@ -478,7 +483,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-26j";
+const APP_V = "2026-11-26k";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -599,6 +604,7 @@ function render(){
     </div>`;
 
   h += view==="semaine" ? renderWeek(all) : renderDay(all);
+  h += chronoBande();   // chrono des vacances : entre l'emploi du temps et les liens
   // liens de l'université sous l'emploi du temps (téléphone : collés au bas de l'écran, voir fitH)
   h += `<nav class="links" aria-label="Liens de l'université"><div class="lk"><a href="${LINKS.moodle}" target="_blank" rel="noopener">Moodle</a><a href="${LINKS.mail}" target="_blank" rel="noopener">Messagerie</a></div><a class="ent" href="${LINKS.ent}" target="_blank" rel="noopener">ENT</a><button class="shr" onclick="shareLink()" aria-label="Partager l'appli">${ICON_SHARE}</button></nav>`;
   h += renderTiles(all);
@@ -616,7 +622,7 @@ function weekSpan(all, w){ const e=new Date(w); e.setDate(e.getDate()+7); const 
 function nearWeeks(all){ const out=[]; for(const k of [-1,0,1]){ const w=new Date(week); w.setDate(w.getDate()+7*k); if(w>=minWeek()) out.push(weekSpan(all,w)); } return out; }
 let SLOTS=[], fitTop=170, dayFit=0;
 const phone = () => innerWidth < 760;
-const fitH = () => Math.max(320, innerHeight - fitTop - 28 - 52);   // petite marge en bas (+ barre de l'iPhone) + bandeau de liens (42 + 10)
+const fitH = () => Math.max(320, innerHeight - fitTop - 28 - 52 - (chrono() ? 56 : 0));   // petite marge en bas (+ barre de l'iPhone) + bandeau de liens (42 + 10)
 
 function renderWeek(all){
   const W=nearWeeks(all); let h0=8,h1=18;
@@ -669,9 +675,32 @@ function renderDay(all){
 }
 // jour ou semaine sans cours : les 3 barres du logo + la reprise (prochain cours connu) ; « Bonnes vacances » pendant les vacances scolaires
 // vacances scolaires zone A (académie de Poitiers) : [premier jour sans cours, jour de la reprise]
-const VACANCES = [["2026-10-17","2026-11-02"],["2026-12-19","2027-01-04"],["2027-02-13","2027-03-01"],["2027-04-10","2027-04-26"]];
+const VACANCES = [["2026-10-17","2026-11-02","de la Toussaint"],["2026-12-19","2027-01-04","de Noël"],["2027-02-13","2027-03-01","d'hiver"],["2027-04-10","2027-04-26","de printemps"]];
 let ALLEV = [];
 const LOGO3 = '<svg viewBox="0 0 86 70" aria-hidden="true"><rect x="6" y="26" width="18" height="40" rx="5" fill="#2e86d4"/><rect x="34" y="6" width="18" height="60" rx="5" fill="#12808a"/><rect x="62" y="18" width="18" height="48" rx="5" fill="#2fbf6a"/></svg>';
+function chrono(){
+  const n = new Date();
+  for(const [a,b,nom] of VACANCES){
+    const fin = new Date(a+"T00:00"); fin.setDate(fin.getDate()-1); fin.setHours(18,0,0,0);   // vendredi 18h
+    const rep = new Date(b+"T00:00");
+    if(n < fin) return {nom, fin, rep};
+    if(n < rep) return {nom, fin, rep, vac:true};
+  }
+  return null;   // shortcut: pas de dates après avril 2027 ; ajouter les vacances suivantes dans VACANCES
+}
+const p2 = x => String(x).padStart(2,"0");
+function chronoIn(){
+  const c = chrono(); if(!c) return "";
+  const BAR = '<div class="bars"><i></i><i></i><i></i></div>';
+  if(c.vac){ const j = Math.ceil((c.rep - new Date())/864e5);
+    return `${BAR}<div class="lbl"><b>Bonnes vacances</b><small>reprise ${fmtD(c.rep,{weekday:"long",day:"numeric",month:"short"})}</small></div><div class="t" style="font-size:15px">J-${j} avant la reprise</div>`; }
+  const ms = c.fin - new Date(), j = Math.floor(ms/864e5), hh = Math.floor(ms/36e5)%24, mm = Math.floor(ms/6e4)%60, ss = Math.floor(ms/1e3)%60;
+  const dernier = sameDay(c.fin, new Date());
+  return `${BAR}<div class="lbl"><b>${dernier ? "Dernier jour avant les vacances" : "Vacances "+c.nom}</b><small>${dernier ? "fin des cours à 18h" : fmtD(c.fin,{weekday:"long",day:"numeric",month:"short"})+" à 18h"}</small></div>
+    <div class="t">${dernier ? "" : j+"<em>j</em>"}${p2(hh)}<em>h</em>${p2(mm)}<em>min</em>${p2(ss)}<em>s</em></div>`;
+}
+const chronoBande = () => chrono() ? `<div class="chrono" id="chrono" role="timer" aria-label="Compte à rebours jusqu'aux vacances">${chronoIn()}</div>` : "";
+setInterval(()=>{ const b = $("chrono"); if(b && !document.hidden) b.innerHTML = chronoIn(); }, 1000);
 function vide(d, fin, titre){
   const vac = VACANCES.find(([a,b]) => d >= new Date(a+"T00:00") && d < new Date(b+"T00:00"));
   const nx = ALLEV.reduce((m,e) => e.s>=fin && (!m || e.s<m.s) ? e : m, null);
