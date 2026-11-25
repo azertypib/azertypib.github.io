@@ -184,7 +184,20 @@ html{touch-action:manipulation}
 .skel .q{width:44px;flex:none}.skel .b{height:60vh;border-radius:18px}
 @keyframes skel{from{opacity:.55}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){ .skel i{animation:none} }
-.chrono{margin-top:10px;height:46px;border-radius:12px;display:flex;align-items:center;gap:10px;padding:0 12px;background:#0d2a47;color:#fff;border:1px solid #1d4a75;box-shadow:var(--shadow);font-variant-numeric:tabular-nums}
+.chrono.fete{margin-top:16px}
+.chrono .ci{display:contents}.chrono .bars,.chrono .lbl,.chrono .t{position:relative;z-index:2}
+.chrono .noel{position:absolute;inset:-1px;pointer-events:none;z-index:1}
+.chrono .flocons{position:absolute;inset:1px;overflow:hidden;border-radius:11px;z-index:0}
+.chrono .flocons i{position:absolute;top:-16px;display:block;animation:flocon linear infinite}.chrono .flocons svg{display:block;width:100%;height:100%}
+@keyframes flocon{0%{transform:translate(0,0) rotate(0)}50%{transform:translate(var(--dx),34px) rotate(calc(var(--rot) / 2))}100%{transform:translate(calc(var(--dx) * -.4),72px) rotate(var(--rot))}}
+@media (prefers-reduced-motion:reduce){ .chrono .flocons i{animation:none;top:var(--y0)} }
+.chrono .neige{position:absolute;left:0;top:-6px;width:100%;height:14px;z-index:3}
+.chrono .sapins,.chrono .cadeaux{position:absolute;bottom:calc(100% - 3px);display:flex;align-items:flex-end;gap:3px;z-index:4}
+.chrono .sapins{left:12px}.chrono .cadeaux{right:14px;bottom:calc(100% - 2px)}
+.chrono .sapins svg,.chrono .cadeaux svg{display:block;position:relative;z-index:1}
+.chrono .sapins::after,.chrono .cadeaux::after{content:"";position:absolute;left:-5px;right:-5px;bottom:-2px;height:6px;border-radius:6px 6px 3px 3px;background:#fff}
+@media (min-width:760px){ .chrono .sapins{left:18px} .chrono .cadeaux{right:18px} }
+.chrono{position:relative;margin-top:10px;height:46px;border-radius:12px;display:flex;align-items:center;gap:10px;padding:0 12px;background:#0d2a47;color:#fff;border:1px solid #1d4a75;box-shadow:var(--shadow);font-variant-numeric:tabular-nums}
 .chrono .bars{display:flex;align-items:flex-end;gap:3px;height:20px;flex:none}.chrono .bars i{width:6px;border-radius:2px;height:14px;background:#2e86d4}.chrono .bars i:nth-child(2){height:9px;background:#12808a}.chrono .bars i:nth-child(3){background:#2fbf6a}
 .chrono .lbl{display:flex;flex-direction:column;line-height:1.15;min-width:0}.chrono .lbl b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.chrono .lbl small{font-size:11.5px;opacity:.8;white-space:nowrap}
 .chrono .t{margin-left:auto;font-weight:800;font-size:19px;white-space:nowrap}.chrono .t em{font-style:normal;font-size:12px;font-weight:600;opacity:.7;margin:0 5px 0 1px}.chrono .t em:last-child{margin-right:0}
@@ -488,7 +501,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-26m";
+const APP_V = "2026-11-26n";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -630,7 +643,7 @@ function weekSpan(all, w){ const e=new Date(w); e.setDate(e.getDate()+7); const 
 function nearWeeks(all){ const out=[]; for(const k of [-1,0,1]){ const w=new Date(week); w.setDate(w.getDate()+7*k); if(w>=minWeek()) out.push(weekSpan(all,w)); } return out; }
 let SLOTS=[], fitTop=170, dayFit=0;
 const phone = () => innerWidth < 760;
-const fitH = () => Math.max(320, innerHeight - fitTop - 14 - 52 - (chrono() ? 56 : 0));   // petite marge en bas (+ barre de l'iPhone) + bandeau de liens (42 + 10)
+const fitH = () => Math.max(320, innerHeight - fitTop - 14 - 52 - (chrono() ? (noel() ? 62 : 56) : 0));   // petite marge en bas (+ barre de l'iPhone) + bandeau de liens (42 + 10)
 
 function renderWeek(all){
   const W=nearWeeks(all); let h0=8,h1=18;
@@ -705,8 +718,18 @@ function chronoIn(){
   return `${BAR}<div class="lbl"><b>${dernier ? "Dernier jour avant les vacances" : "Vacances "+c.nom}</b><small>${dernier ? "fin des cours à 18h" : fmtD(c.fin,{weekday:"long",day:"numeric",month:"short"})+" à 18h"}</small></div>
     <div class="t">${dernier ? "" : j+"<em>j</em>"}${p2(hh)}<em>h</em>${p2(mm)}<em>min</em>${p2(ss)}<em>s</em></div>`;
 }
-const chronoBande = () => chrono() ? `<div class="chrono" id="chrono" role="timer" aria-label="Compte à rebours jusqu'aux vacances">${chronoIn()}</div>` : "";
-setInterval(()=>{ const b = $("chrono"); if(!b || document.hidden) return; if(!chrono()){ render(); return; } b.innerHTML = chronoIn(); }, 1000);   // 18h passé : on redessine sans la bande
+const noel = () => chrono()?.nom === "de Noël";   // décor de Noël : seulement quand le chrono vise les vacances de Noël
+// flocons tirés au hasard une fois par ouverture (place, taille, transparence, vitesse, départ, dérive), pour qu'ils ne sautent pas à chaque redessin
+const FLOCON = '<svg viewBox="-10 -10 20 20"><g stroke="#fff" stroke-width="1.3" stroke-linecap="round" fill="none"><path transform="rotate(0)" d="M0 0V-9M0-5.5l-2.6-2.4M0-5.5l2.6-2.4M0-2.6l-1.6-1.5M0-2.6l1.6-1.5"/><path transform="rotate(60)" d="M0 0V-9M0-5.5l-2.6-2.4M0-5.5l2.6-2.4M0-2.6l-1.6-1.5M0-2.6l1.6-1.5"/><path transform="rotate(120)" d="M0 0V-9M0-5.5l-2.6-2.4M0-5.5l2.6-2.4M0-2.6l-1.6-1.5M0-2.6l1.6-1.5"/><path transform="rotate(180)" d="M0 0V-9M0-5.5l-2.6-2.4M0-5.5l2.6-2.4M0-2.6l-1.6-1.5M0-2.6l1.6-1.5"/><path transform="rotate(240)" d="M0 0V-9M0-5.5l-2.6-2.4M0-5.5l2.6-2.4M0-2.6l-1.6-1.5M0-2.6l1.6-1.5"/><path transform="rotate(300)" d="M0 0V-9M0-5.5l-2.6-2.4M0-5.5l2.6-2.4M0-2.6l-1.6-1.5M0-2.6l1.6-1.5"/></g></svg>';   // flocon à six branches
+const hasard = (a, b) => a + Math.random()*(b-a);
+const FLOCONS = Array.from({length:12}, () => { const t = hasard(7,15).toFixed(1);
+  return `<i style="left:${hasard(-2,98).toFixed(1)}%;width:${t}px;height:${t}px;opacity:${hasard(.14,.32).toFixed(2)};animation-duration:${hasard(7,14).toFixed(1)}s;animation-delay:-${hasard(0,14).toFixed(1)}s;--dx:${hasard(-14,14).toFixed(0)}px;--rot:${hasard(-200,200).toFixed(0)}deg;--y0:${hasard(4,40).toFixed(0)}px">${FLOCON}</i>`; }).join("");
+const NEIGE = '<svg class="neige" viewBox="0 0 350 14" preserveAspectRatio="none" aria-hidden="true"><path fill="#fff" d="M0 7Q17.5 1 35 6Q56 2 77 6.5Q105 1.5 133 6Q157.5 2.5 182 6.5Q210 1 238 6Q266 2 294 6.5Q322 1.5 350 7L350 9Q332.5 9 325.5 11Q318.5 13 311.5 10Q262.5 9 217 9.5Q210 13.5 199.5 9.5Q140 9 94.5 9.5Q87.5 12.5 80.5 9.5Q42 9 21 9.5Q14 12 10.5 9.5L0 9Z"/></svg>';
+const sapin = (h, c) => `<svg width="${(h*.78).toFixed(1)}" height="${h}" viewBox="0 0 20 26"><path fill="${c}" stroke="${c}" stroke-linejoin="round" d="M10 0L16 8H13L18 15H14L19 22H1L6 15H2L7 8H4Z"/><rect x="8.5" y="22" width="3" height="4" rx="1" fill="#1d4a75"/><path d="M6.5 7.8H13.5M4.5 14.8H15.5" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".85"/></svg>`;
+const cadeau = (w, h, c) => `<svg width="${w}" height="${h+5}" viewBox="0 0 ${w} ${h+5}"><rect x=".5" y="5" width="${w-1}" height="${h}" rx="2" fill="${c}"/><rect x="${w/2-1.2}" y="5" width="2.4" height="${h}" fill="#fff"/><rect x=".5" y="${5+h*.32}" width="${w-1}" height="2" fill="#fff" opacity=".9"/><path d="M${w/2} 5C${w/2-5} 0 ${w/2-6} 5 ${w/2} 5C${w/2+5} 0 ${w/2+6} 5 ${w/2} 5" fill="none" stroke="#fff" stroke-width="1.6"/></svg>`;
+const DECOR_NOEL = `<div class="noel" aria-hidden="true"><div class="flocons">${FLOCONS}</div>${NEIGE}<div class="sapins">${sapin(22,"#2e86d4")}${sapin(16,"#12808a")}${sapin(22,"#2fbf6a")}</div><div class="cadeaux">${cadeau(15,13,"#2e86d4")}${cadeau(12,9,"#12808a")}${cadeau(15,13,"#2fbf6a")}</div></div>`;
+const chronoBande = () => chrono() ? `<div class="chrono${noel()?" fete":""}" id="chrono" role="timer" aria-label="Compte à rebours jusqu'aux vacances">${noel()?DECOR_NOEL:""}<div class="ci" id="chronoci">${chronoIn()}</div></div>` : "";
+setInterval(()=>{ const b = $("chronoci"); if(!b || document.hidden) return; if(!chrono()){ render(); return; } b.innerHTML = chronoIn(); }, 1000);   // 18h passé : on redessine sans la bande
 function vide(d, fin, titre){
   const vac = VACANCES.find(([a,b]) => d >= new Date(a+"T00:00") && d < new Date(b+"T00:00"));
   const nx = ALLEV.reduce((m,e) => e.s>=fin && (!m || e.s<m.s) ? e : m, null);
