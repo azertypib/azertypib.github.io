@@ -179,6 +179,10 @@ html{touch-action:manipulation}
 .ann .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .ann .head b{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .ann .head button{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 12px;font-weight:650;font-size:13px}
+.sq.vide{visibility:hidden}
+.chatann{margin:0 0 10px}.chatann .annbox{margin:0}.chatann .annbox .tx{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.chatann .tout{display:block;text-align:right;font-size:12.5px;color:var(--muted);margin:5px 2px 0}
+.chatsep{border:0;border-top:1px solid var(--line);margin:4px 0 12px}
 .annbox{display:flex;gap:12px;background:var(--panel);border-radius:12px;padding:10px 12px;margin-bottom:6px;box-shadow:var(--shadow);cursor:pointer}
 .annbox .d{font-weight:800;min-width:62px;font-size:13px;line-height:1.25}
 .annbox .d span{display:block;color:var(--muted);font-weight:600}
@@ -470,7 +474,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-26h";
+const APP_V = "2026-11-26i";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -576,10 +580,10 @@ function render(){
       <div class="ban"><img class="lg" src="icon.png?l" alt="EDT"><div class="bars pc"><i></i><i></i><i></i></div>
         <div class="tel"><b>IUT</b><span>La Rochelle</span></div>
         <div class="pc bt"><b>EDT</b><span>· Emploi du temps · IUT La Rochelle</span></div><em class="pc">Génie civil · ${esc(PROMO)}</em></div>
-      ${HW_ON?`<button class="sq" onclick="openChat()" aria-label="Discussion">${ICON_CHAT}${chatBadges()}</button>`:""}
+      ${HW_ON?`<span class="sq vide" aria-hidden="true"></span>`:""}
       ${HW_ON?`<button class="sq" onclick="openFeedback()" aria-label="Messages au créateur">${ICON_MSG}${retNew()?`<span class="cnt">${retNew()}</span>`:""}</button>`:""}
       <button class="sq" onclick="openParams()" aria-label="Paramètres">${ICON_GEAR}</button>
-      ${HW_ON?`<button class="sq" onclick="openAnnList()" aria-label="Annonces">${ICON_ANN}${annCount()?`<span class="cnt">${annCount()}</span>`:""}</button>`:""}
+      ${HW_ON?`<button class="sq" onclick="openChat()" aria-label="Annonces et discussion">${ICON_CHAT}${chatBadges()}</button>`:""}
       <button class="sq" onclick="startPick()" aria-label="Changer de groupe">${esc(tdLabel(tdOf(tp)).replace("Groupe ",""))}<small>${esc(tpLabel(tp))}</small></button>
     </header>
     <div class="bar">
@@ -730,8 +734,9 @@ function sallesLibres(){
     const next=l.filter(([s])=>s>d && sameDay(s,d)).sort((a,b)=>a[0]-b[0])[0]; out.push({r, jusqua: next ? next[0] : fin}); });
   return out.sort((a,b)=>b.jusqua-a.jusqua || a.r.localeCompare(b.r));
 }
+const hLbl = () => +week===+monday(new Date()) ? "cette semaine" : "semaine "+isoWeek(week);
 function heuresSemaine(all){
-  const lun=monday(new Date()), dim=new Date(lun); dim.setDate(dim.getDate()+7); const par={};
+  const lun=new Date(week), dim=new Date(lun); dim.setDate(dim.getDate()+7); const par={};
   all.filter(e=>e.s>=lun && e.s<dim).forEach(e=>{ par[e.code]=(par[e.code]||0)+(e.e-e.s)/36e5; });
   return Object.entries(par).sort((a,b)=>b[1]-a[1]);
 }
@@ -745,7 +750,7 @@ function renderTiles(all){
   let h = `<div class="tiles" style="--n:${HW_ON?3:2}">`;
   if(HW_ON) h += tile("#2e86d4", TI.hw, "Devoirs", soir && demain ? `${demain} pour demain` : todo.length ? `${todo.length} à faire` : "rien à faire", String(todo.length), "openHwList()");
   h += tile("#0d2a47", TI.ds, "Évaluations", evTxt, ev ? "J-"+dayDiff(ev.d) : "–", "openEvals()").replace('class="tl', 'class="tl sal');
-  h += tile("#12808a", TI.hours, "Heures", "cette semaine", hFmt(tot), "openHeures()").replace('class="tl', 'class="tl hrs');
+  h += tile("#12808a", TI.hours, "Heures", hLbl(), hFmt(tot), "openHeures()").replace('class="tl', 'class="tl hrs');
   return h + `</div>`;
 }
 let hwTabL = "todo";
@@ -776,7 +781,7 @@ function openSalles(){
 }
 function openHeures(){
   const hs=heuresSemaine(events()), tot=hs.reduce((a,x)=>a+x[1],0), max=Math.max(1,...hs.map(x=>x[1]));
-  let h=`<h3>Heures cette semaine · ${hFmt(tot)}</h3>`;
+  let h=`<h3>Heures ${hLbl()} · ${hFmt(tot)}</h3>`;
   h += hs.length ? hs.map(([c,n])=>`<div class="hbar" style="${colors(c)}"><span>${esc(c)}</span><i style="width:${Math.round(n/max*60)}%"></i><em>${hFmt(n)}</em></div>`).join("") : `<div class="empty">Pas de cours cette semaine.</div>`;
   sheetOpen(h);
 }
@@ -867,7 +872,8 @@ const annAlive = a => a.jour ? a.jour>=ymd(new Date()) : Date.now()-new Date(a.c
 let annSeen = store.get("annSeen", {});
 const ANN_HIDE_MS = 60e3;
 const annHidden = a => annSeen[a.id] && Date.now()-annSeen[a.id] >= ANN_HIDE_MS;
-const annVisible = () => annonces.filter(a=>annAlive(a) && !annHidden(a))
+const annPourMoi = a => a.grp==="IUT" || audiences().includes(a.grp);
+const annVisible = () => annonces.filter(a=>annAlive(a) && !annHidden(a) && annPourMoi(a))
   .sort((a,b)=> (a.jour||"9") < (b.jour||"9") ? -1 : (a.jour||"9") > (b.jour||"9") ? 1 : (a.created_at<b.created_at?-1:1));
 const annCount = () => annVisible().filter(a=>!annSeen[a.id]).length;
 let annTimer = null;
@@ -917,7 +923,7 @@ function renderAnnMod(){
 // cours lie a l'annonce (facultatif)
 function pickAnnMod(k){ annCkey = k || null; }
 function openAnnList(){
-  sheetKey = null; annOpen = true;
+  sheetKey = null; annOpen = true; chatOpen = false;
   const l = annVisible(), today = ymd(new Date());
   let h = `<div class="grab"></div><div class="ann" id="annlist"><div class="head"><b>Annonces</b><button onclick="openAnn()">+ Annonce</button></div>`;
   if(!l.length) h += `<div class="note" style="margin:0 2px 4px">Aucune annonce pour l'instant.</div>`;
@@ -928,7 +934,7 @@ function openAnnList(){
       <div class="tx">${a.ckey?`<span class="annmod" style="${colors(a.ckey.split("|")[0])}">${esc(courseLbl(...a.ckey.split("|")))}</span>`:""}${esc(a.texte)}</div>
       <button class="annck ${seen?"on":""}" onclick="toggleSeen(${a.id},event)" aria-label="${seen?"Garder l'annonce":"Masquer l'annonce pour moi"}">${seen?ICO_OK:""}</button></div>`;
   });
-  h += `</div>${l.length?`<p class="note">Coche une annonce pour la masquer chez toi : elle disparaît au bout d'1 minute (décoche avant pour la garder).</p>`:""}`;
+  h += `</div>${l.length?`<p class="note">Coche une annonce pour la masquer chez toi : elle disparaît au bout d'1 minute (décoche avant pour la garder).</p>`:""}<div class="row"><button class="btn" onclick="openChat()">Retour</button></div>`;
   $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
 }
 let annOpen = false, annWho = null;
@@ -936,7 +942,7 @@ function setAnnWho(g){ if(g!==annWho) annCkey=null; annWho=g; document.querySele
 // Publier reste grise tant que le public et le texte ne sont pas remplis
 function annCheck(){ const b=$("annpub"); if(b) b.disabled = !annWho || !$("anntx").value.trim(); }
 function openAnn(id){
-  sheetKey = null; annOpen = true;
+  sheetKey = null; annOpen = true; chatOpen = false;
   const a = id ? annonces.find(x=>x.id===id) : null, today = ymd(new Date());
   annWho = a ? a.grp : null; annCkey = a?.ckey || null;  // formulaire remis a zero a chaque nouvelle annonce
   // on peut viser n'importe quel public : toute la promo, un groupe de TD, ou un TP
@@ -1055,7 +1061,8 @@ const chatOf = g => chatMsgs.filter(m=>m.grp===g && Date.now()-new Date(m.create
 const chatNew = g => chatOf(g).filter(m=>!myMsgs[m.id] && (!chatSeen[g] || m.created_at > chatSeen[g])).length;
 const chatUnread = () => audiences().reduce((n,g)=>n+chatNew(g), 0);
 // pastilles en quinconce en haut a droite : une par public qui a des messages non lus, a sa couleur
-const chatBadges = () => audiences().filter(g=>chatNew(g)).map((g,i)=>`<span class="cnt" style="background:${AUD_COL(g)};right:${-6+i*9}px;top:-6px;z-index:${3-i}">${chatNew(g)}</span>`).join("");
+const chatBadges = () => [...(annCount()?[[annCount(),"#2e86d4"]]:[]), ...audiences().filter(g=>chatNew(g)).map(g=>[chatNew(g),AUD_COL(g)])]
+  .map(([n,c],i)=>`<span class="cnt" style="background:${c};right:${-6+i*9}px;top:-6px;z-index:${4-i}">${n}</span>`).join("");
 async function loadChat(){
   if(!HW_ON || !tp) return;
   try{
@@ -1069,7 +1076,11 @@ async function loadChat(){
 function openChat(g){
   sheetKey = null; annOpen = true; chatOpen = true;
   chatGrp = g || chatGrp || tdOf(tp) || tp;
+  const al = annVisible(), last = al.slice().sort((a,b)=>a.created_at<b.created_at?1:-1)[0];
   $("sheet").innerHTML = `<div class="grab"></div>
+    <div class="ann chatann"><div class="head"><b>Annonces</b><button onclick="openAnn()">+ Annonce</button></div>
+      ${last ? `<div class="annbox ${annSeen[last.id]?"seen":""}" onclick="openAnnList()"><div class="d">${esc(audShort(last.grp))}<span>${esc(fmtD(new Date(last.created_at),{day:"numeric",month:"short"}))}</span></div><div class="tx">${esc(last.texte)}</div></div><span class="tout" onclick="openAnnList()">Voir ${al.length>1?"les "+al.length+" annonces":"l'annonce"}</span>` : `<div class="note" style="margin:0 2px">Aucune annonce pour l'instant.</div>`}</div>
+    <hr class="chatsep">
     <div class="chathead"><b>Discussion</b><small>Ouverte à tous · chaque message s'efface 1 semaine après</small></div>
     <div class="chattabs" id="chattabs"></div>
     <div class="chatlist" id="chatlist"></div>
@@ -1284,6 +1295,8 @@ function slideTo(k){
   t.classList.remove("drag"); t.style.setProperty("--dx","0px"); t.style.setProperty("--i", k);
   setO(P, k); P.forEach((p,j)=>p.classList.toggle("on", j===k));
   const s=SLOTS[k]; week=new Date(s.w); dayIdx=s.i; setTitle(s);
+  const hr=document.querySelector(".tl.hrs");   // cartouche Heures : suit tout de suite la semaine affichée
+  if(hr){ hr.querySelector(".st").textContent=hLbl(); hr.querySelector(".num").textContent=hFmt(heuresSemaine(events()).reduce((a,x)=>a+x[1],0)); }
   clearTimeout(recentre); if(String(k)!==t.dataset.i0) recentre=setTimeout(()=>{ if(!swipe) render(); }, 700);
 }
 function bindSwipe(){
