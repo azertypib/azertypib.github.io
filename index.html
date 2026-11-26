@@ -192,7 +192,6 @@ html{touch-action:manipulation}
 .chrono .noel{position:absolute;inset:-1px;pointer-events:none;z-index:1}
 .chrono .flocons{position:absolute;inset:1px;overflow:hidden;border-radius:11px;z-index:0}
 .chrono .flocons i{position:absolute;top:-16px;display:block;animation:flocon linear infinite}.chrono .flocons svg{display:block;width:100%;height:100%}
-html.obs .psec.notifs{display:none!important}
 @keyframes vent{to{transform:translate(-60px,72px)}}
 @keyframes tic{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
 .chrono .flocons i.vent{top:-8px;animation-name:vent;animation-timing-function:linear}
@@ -506,7 +505,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-27d";
+const APP_V = "2026-11-27c";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -585,7 +584,6 @@ function tdOf(t){ for(const [td,l] of Object.entries(DATA?.groups||{})) if(l.inc
 /* ======== rendu ======== */
 function render(){
   now = new Date();
-  try{ document.documentElement.classList.toggle("obs", !membre()); }catch{}   // observateur : pas de bloc Notifications
   const app = $("app");
   if(ferme){ app.dataset.cv = ""; app.innerHTML = `<div class="pick"><img src="icon.png" width="72" style="border-radius:16px" alt=""><h1>Application fermée</h1><p>L'emploi du temps n'est pas disponible pour le moment. Reviens un peu plus tard.</p></div>`; return; }
   // compte : appareil connecté mais appli rouverte = code ; jamais choisi = accueil (créer / se connecter / sans compte)
@@ -897,7 +895,7 @@ function openParams(){
     : actif ? notifToggles()
     : `<button class="btn dark" style="width:100%;height:44px" onclick="notifActiver().then(ok=>ok?openNotifChoix():openParams())">Activer les notifications</button>`;
   sheetOpen(`<h3>Paramètres</h3><div class="psec"><h4>Thème</h4><div class="themes"><button class="${theme==="dark"?"on":""}" onclick="setTheme('dark')">Sombre</button><button class="${theme!=="dark"?"on":""}" onclick="setTheme('light')">Clair</button></div></div>
-    <div class="psec notifs"><h4>Notifications</h4>${nt}<p class="note" style="margin:8px 0 0">Sur iPhone, les notifications marchent seulement dans l'appli installée sur l'écran d'accueil (iOS 16.4 ou plus récent), pas dans le site ouvert dans Safari.</p></div>
+    <div class="psec" ${membre() ? "" : "hidden"}><h4>Notifications</h4>${nt}<p class="note" style="margin:8px 0 0">Sur iPhone, les notifications marchent seulement dans l'appli installée sur l'écran d'accueil (iOS 16.4 ou plus récent), pas dans le site ouvert dans Safari.</p></div>
     <div id="cptbloc" class="psec"><h4>Ton compte</h4></div>
     <div class="psec"><h4>La charte</h4><p>Les règles de l'appli et ce que tu peux faire avec.</p>
       <button class="btn" onclick="openCharte()">Relire la charte</button></div>`);
@@ -1031,11 +1029,11 @@ function pickAnnMod(k){ annCkey = k || null; }
 function openAnnList(){
   sheetKey = null; annOpen = true; chatOpen = false;
   const l = annVisible(), today = ymd(new Date());
-  let h = `<div class="grab"></div><div class="ann" id="annlist"><div class="head"><b>Annonces</b>${membre()?`<button onclick="openAnn()">+ Annonce</button>`:""}</div>`;
+  let h = `<div class="grab"></div><div class="ann" id="annlist"><div class="head"><b>Annonces</b>${membre() ? '<button onclick="openAnn()">+ Annonce</button>' : ""}</div>`;
   if(!l.length) h += `<div class="note" style="margin:0 2px 4px">Aucune annonce pour l'instant.</div>`;
   l.forEach(a=>{
     const d = a.jour && new Date(a.jour+"T12:00:00"), seen = !!annSeen[a.id];
-    h += `<div class="annbox ${seen?"seen":""}" ${membre()?`onclick="openAnn(${a.id})"`:""}>
+    h += `<div class="annbox ${seen?"seen":""}" onclick="openAnn(${a.id})">
       <div class="d">${!d?"":a.jour===today?"Aujourd'hui":esc(fmtD(d,{weekday:"short"}))}<span>${d?esc(fmtD(d,{day:"numeric",month:"short"})):""}</span><em>${esc(audShort(a.grp))}</em>${a.createur?CREA:""}</div>
       <div class="tx">${a.ckey?`<span class="annmod" style="${colors(a.ckey.split("|")[0])}">${esc(courseLbl(...a.ckey.split("|")))}</span>`:""}${esc(a.texte)}</div>
       <button class="annck ${seen?"on":""}" onclick="toggleSeen(${a.id},event)" aria-label="${seen?"Garder l'annonce":"Masquer l'annonce pour moi"}">${seen?ICO_OK:""}</button></div>`;
@@ -1171,7 +1169,7 @@ function openChat(g){
   chatGrp = g || chatGrp || tdOf(tp) || tp;
   const al = annVisible(), last = al.slice().sort((a,b)=>a.created_at<b.created_at?1:-1)[0];
   $("sheet").innerHTML = `<div class="grab"></div>
-    <div class="ann chatann"><div class="head"><b>Annonces</b>${membre()?`<button onclick="openAnn()">+ Annonce</button>`:""}</div>
+    <div class="ann chatann"><div class="head"><b>Annonces</b>${membre() ? '<button onclick="openAnn()">+ Annonce</button>' : ""}</div>
       ${last ? `<div class="annbox ${annSeen[last.id]?"seen":""}" onclick="openAnnList()"><div class="d">${esc(audShort(last.grp))}<span>${esc(fmtD(new Date(last.created_at),{day:"numeric",month:"short"}))}</span>${last.createur?CREA:""}</div><div class="tx">${esc(last.texte)}</div></div><span class="tout" onclick="openAnnList()">Voir ${al.length>1?"les "+al.length+" annonces":"l'annonce"}</span>` : `<div class="note" style="margin:0 2px">Aucune annonce pour l'instant.</div>`}</div>
     <hr class="chatsep">
     <div class="chathead"><b>Discussion</b><small>Ouverte à tous · chaque message s'efface 1 semaine après</small></div>
@@ -1486,7 +1484,7 @@ function openSheet(key, keep){
           <button class="on" onclick="saveEdit(${x.id})">Enregistrer</button></div></div>`;
       }else{
         h+=`<div class="hwbig"><div class="tx">${esc(x.texte)}</div>
-          ${membre()?`<div class="act"><button onclick="editing=${x.id};openSheet(sheetKey,true)">Modifier</button><button onclick="delHw(${x.id})">Supprimer</button></div>`:""}</div>`;
+          ${membre() ? `<div class="act"><button onclick="editing=${x.id};openSheet(sheetKey,true)">Modifier</button><button onclick="delHw(${x.id})">Supprimer</button></div>` : ""}</div>`;
       }
     });
     if(editing==="new") h+=`<div class="hwbig"><textarea id="newhw" maxlength="1000" placeholder="Le devoir… (ex : exercices 3 à 5 p. 42)"></textarea>
@@ -1518,7 +1516,7 @@ $("veil").onclick=closeSheet;
   $("veil").addEventListener("touchmove", e=>{ if(e.cancelable) e.preventDefault(); }, {passive:false});
 })();
 
-/* ======== compte (facultatif) : pseudo + code + e-mail ; connecté une fois sur un appareil = ouvert directement ensuite, sans Face ID ni empreinte ; suit coches, annonces vues, année, TP, thème, pseudo ======== */
+/* ======== compte (facultatif) : pseudo + code PIN, Face ID / empreinte ; suit coches, annonces vues, année, TP, thème, pseudo ======== */
 // session ouverte = sessionStorage : survit au rechargement (F5, tirer vers le bas), disparaît quand on ferme l'appli -> le code est redemandé
 const CPT_SYNC = ["done","annSeen","theme","view","pseudo","charteCpt","notes"];
 let cpt = store.get("cpt", null);
