@@ -171,7 +171,7 @@ function draw(){
   const s = S, c = s.cpt || {comptes:[], jours:[], blocages:[]}, fl = fils();
   const dons = s.dons.filter(d => !String(d.kofi_id).startsWith("00000000-1111"));   // dons de test Ko-fi exclus
   const total = dons.reduce((a,d) => a + Number(d.montant||0), 0).toLocaleString("fr-FR",{style:"currency",currency:"EUR"});
-  const chartes = c.comptes.filter(x => x.charte_le), nl = fl.reduce((a,f) => a + nonLus(f), 0);
+  const propres = c.comptes.filter(x => x.email && x.email_ok), attente = c.comptes.filter(x => !(x.email && x.email_ok)), nl = fl.reduce((a,f) => a + nonLus(f), 0);
   const today = new Date().toISOString().slice(0,10), auj = (c.jours.find(j => j.jour===today)||{connexions:0}).connexions;
   const back = (t, sous, vers) => `<div class="back"><button class="sq" onclick="go(${vers?`'${vers}'`:"null"})" aria-label="Retour">‹</button><div><h1>${t}</h1>${sous?`<p>${sous}</p>`:""}</div></div>`;
   const tile = (col, ico, t, st, num, v, cls) => `<button class="tl ${cls||""}" style="--tc:${col}" onclick="go('${v}')"><span class="ico">${IC[ico]}</span><b>${t}</b><span class="st">${st}</span><span class="num">${num}</span></button>`;
@@ -181,7 +181,7 @@ function draw(){
       <button class="sq" onclick="load()" aria-label="Actualiser">↻</button></header>
       <div class="tiles">
         ${tile("#2e86d4","chat","Discussion", `${nl ? nl+" non lu"+(nl>1?"s":"") : "tout est lu"} · ${fl.length} conv.`, nl, "messages")}
-        ${tile("#12808a","charte","Chartes signées", `${c.comptes.length} compte${c.comptes.length>1?"s":""} · ${auj} aujourd'hui`, chartes.length, "comptes")}
+        ${tile("#12808a","charte","Comptes confirmés", `e-mail vérifié · ${attente.length} en attente`, propres.length, "comptes")}
         ${tile("#0d2a47","cens","Messages censurés", s.alertes.length ? "dernier le "+fmt(s.alertes[0].created_at,{day:"numeric",month:"short"}) : "aucun", s.alertes.length, "alertes", "nuit")}
         ${tile("#2fbf6a","don","Dons", total, dons.length, "dons")}
       </div>
@@ -202,12 +202,13 @@ function draw(){
           <div class="row"><button class="btn sec" onclick="$('rep').value='';$('rep').focus()">Effacer</button><button class="btn" id="repgo" onclick="repondre(${f.compte})">Envoyer</button></div></div>`
         : `<p class="note">Ancien message envoyé sans compte : pas de réponse possible.</p>`);
   }else if(view==="comptes"){
-    const l = [...c.comptes].sort((a,b) => (b.charte_le?1:0)-(a.charte_le?1:0) || (a.created_at<b.created_at?1:-1));
-    h = back("Chartes signées", `${chartes.length} sur ${c.comptes.length} compte${c.comptes.length>1?"s":""} · seulement les comptes, pas les visiteurs`)
-      + l.map(x => `<div class="card"><div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><b>${esc(x.pseudo)}</b><span class="m">${esc(tpLbl(x.tp) || x.annee || "")}</span></div>
+    const carte = x => `<div class="card"><div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><b>${esc(x.pseudo)}</b><span class="m">${esc(tpLbl(x.tp) || x.annee || "")}</span></div>
           <div>${mailDe(x.email, x.email_ok)}</div>
-          <div class="m">${x.charte_le ? "Charte signée le "+esc(fmt(x.charte_le,{day:"numeric",month:"short"})) : "Charte pas encore signée"} · vu le ${esc(fmt(x.vu_le))}</div></div>`).join("")
-      + `<p class="note">✓ = e-mail confirmé par le code reçu. Les codes des comptes sont chiffrés : personne ne peut les lire, même toi.</p>`;
+          <div class="m">${x.charte_le ? "Charte signée le "+esc(fmt(x.charte_le,{day:"numeric",month:"short"})) : "Charte pas encore signée"} · vu le ${esc(fmt(x.vu_le))}</div></div>`;
+    h = back("Comptes confirmés", `${propres.length} personne${propres.length>1?"s":""} avec un compte et un e-mail vérifié`)
+      + (propres.length ? propres.map(carte).join("") : `<p class="note">Personne pour l'instant.</p>`)
+      + (attente.length ? `<h2>En attente (${attente.length}) : compte créé, e-mail pas encore vérifié</h2>` + attente.map(carte).join("") : "")
+      + `<p class="note">Les comptes en attente ne sont pas supprimés : à leur prochaine ouverture de l'appli, on leur demande leur e-mail et le code reçu par mail. D'ici là, ils peuvent seulement regarder. ✓ = e-mail vérifié. Les codes des comptes sont chiffrés : personne ne peut les lire, même toi.</p>`;
   }else if(view==="alertes"){
     h = back("Messages censurés", `${s.alertes.length} · texte tel qu'il a été écrit, avant censure`)
       + (s.alertes.length ? s.alertes.map(a => `<div class="card"><div class="m">${esc(fmt(a.created_at))} · ${esc(a.lieu)}${a.tp ? " · "+esc(tpLbl(a.tp)) : ""}</div>
