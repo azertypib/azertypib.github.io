@@ -192,6 +192,7 @@ html{touch-action:manipulation}
 .chrono .noel{position:absolute;inset:-1px;pointer-events:none;z-index:1}
 .chrono .flocons{position:absolute;inset:1px;overflow:hidden;border-radius:11px;z-index:0}
 .chrono .flocons i{position:absolute;top:-16px;display:block;animation:flocon linear infinite}.chrono .flocons svg{display:block;width:100%;height:100%}
+html.obs .addhw,html.obs .hwbig .act,html.obs .mynote,html.obs .mynote-h,html.obs .chatsend,html.obs .ann .head button,html.obs .psec.notifs{display:none!important}
 @keyframes vent{to{transform:translate(-60px,72px)}}
 @keyframes tic{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
 .chrono .flocons i.vent{top:-8px;animation-name:vent;animation-timing-function:linear}
@@ -505,7 +506,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-27b";
+const APP_V = "2026-11-27c";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -584,6 +585,7 @@ function tdOf(t){ for(const [td,l] of Object.entries(DATA?.groups||{})) if(l.inc
 /* ======== rendu ======== */
 function render(){
   now = new Date();
+  document.documentElement.classList.toggle("obs", !membre());
   const app = $("app");
   if(ferme){ app.dataset.cv = ""; app.innerHTML = `<div class="pick"><img src="icon.png" width="72" style="border-radius:16px" alt=""><h1>Application fermée</h1><p>L'emploi du temps n'est pas disponible pour le moment. Reviens un peu plus tard.</p></div>`; return; }
   // compte : appareil connecté mais appli rouverte = code ; jamais choisi = accueil (créer / se connecter / sans compte)
@@ -895,7 +897,7 @@ function openParams(){
     : actif ? notifToggles()
     : `<button class="btn dark" style="width:100%;height:44px" onclick="notifActiver().then(ok=>ok?openNotifChoix():openParams())">Activer les notifications</button>`;
   sheetOpen(`<h3>Paramètres</h3><div class="psec"><h4>Thème</h4><div class="themes"><button class="${theme==="dark"?"on":""}" onclick="setTheme('dark')">Sombre</button><button class="${theme!=="dark"?"on":""}" onclick="setTheme('light')">Clair</button></div></div>
-    <div class="psec"><h4>Notifications</h4>${nt}<p class="note" style="margin:8px 0 0">Sur iPhone, les notifications marchent seulement dans l'appli installée sur l'écran d'accueil (iOS 16.4 ou plus récent), pas dans le site ouvert dans Safari.</p></div>
+    <div class="psec notifs"><h4>Notifications</h4>${nt}<p class="note" style="margin:8px 0 0">Sur iPhone, les notifications marchent seulement dans l'appli installée sur l'écran d'accueil (iOS 16.4 ou plus récent), pas dans le site ouvert dans Safari.</p></div>
     <div id="cptbloc" class="psec"><h4>Ton compte</h4></div>
     <div class="psec"><h4>La charte</h4><p>Les règles de l'appli et ce que tu peux faire avec.</p>
       <button class="btn" onclick="openCharte()">Relire la charte</button></div>`);
@@ -1175,7 +1177,7 @@ function openChat(g){
     <div class="chathead"><b>Discussion</b><small>Ouverte à tous · chaque message s'efface 1 semaine après</small></div>
     <div class="chattabs" id="chattabs"></div>
     <div class="chatlist" id="chatlist"></div>
-    ${!membre() ? `<p class="note" style="text-align:center;margin:10px 0 0">Mode observateur : crée un compte pour écrire dans la discussion.</p>` : ""}<div class="chatsend" ${membre()?"":"hidden"}>
+    <div class="chatsend">
       ${estCreateur() ? `<div class="moicrea">Tu écris en tant que ${CREA}</div>` : `<input id="chatwho" class="field" maxlength="40" placeholder="Ton prénom (facultatif)" value="${esc(store.get("pseudo",""))}">`}
       <div class="chatrow"><textarea id="chattx" maxlength="1000" rows="1" placeholder="Écrire un message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&matchMedia('(pointer:fine)').matches){event.preventDefault();sendChat();}" oninput="$('chatgo').disabled=!this.value.trim()"></textarea>
       <button class="btn dark" id="chatgo" disabled onclick="sendChat()">Envoyer</button></div>
@@ -1491,7 +1493,7 @@ function openSheet(key, keep){
         <div class="act"><button onclick="editing=null;openSheet(sheetKey,true)">Annuler</button><button class="on" onclick="saveNew()">Enregistrer</button></div></div>`;
     else h+=`<button class="addhw" onclick="if(!canWrite()) return; editing='new';openSheet(sheetKey,true);$('newhw').focus()">+ ${l.length?"Ajouter un autre devoir":"Ajouter un devoir"}</button>`;
   }
-  h+=`<h4>Ma note perso <small>visible par toi seul</small></h4><textarea class="mynote" maxlength="1000" ${membre() ? 'placeholder="Ex : ramener le compas…"' : 'readonly placeholder="Mode observateur : crée un compte pour prendre des notes" onclick="canWrite()"'} oninput="saveNote(this.value);grandir(this)" onblur="render()">${esc(notes[key]||"")}</textarea>`;
+  h+=`<h4 class="mynote-h">Ma note perso <small>visible par toi seul</small></h4><textarea class="mynote" maxlength="1000" ${membre() ? 'placeholder="Ex : ramener le compas…"' : 'readonly placeholder="Mode observateur : crée un compte pour prendre des notes" onclick="canWrite()"'} oninput="saveNote(this.value);grandir(this)" onblur="render()">${esc(notes[key]||"")}</textarea>`;
   $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
 }
 function closeSheet(){ const wasPanel=annOpen; sheetKey=null; editing=null; annOpen=false; chatOpen=false; fbOpen=false; $("sheet").classList.remove("open"); $("veil").style.display="none"; if(wasPanel) render(); }
@@ -1516,7 +1518,7 @@ $("veil").onclick=closeSheet;
   $("veil").addEventListener("touchmove", e=>{ if(e.cancelable) e.preventDefault(); }, {passive:false});
 })();
 
-/* ======== compte (facultatif) : pseudo + code PIN, Face ID / empreinte ; suit coches, annonces vues, année, TP, thème, pseudo ======== */
+/* ======== compte (facultatif) : pseudo + code + e-mail ; connecté une fois sur un appareil = ouvert directement ensuite ; suit coches, annonces vues, année, TP, thème, pseudo ======== */
 // session ouverte = sessionStorage : survit au rechargement (F5, tirer vers le bas), disparaît quand on ferme l'appli -> le code est redemandé
 const CPT_SYNC = ["done","annSeen","theme","view","pseudo","charteCpt","notes"];
 let cpt = store.get("cpt", null);
@@ -1564,7 +1566,7 @@ function sansCompte(){ store.set("sansCompte", true); cptGo(null); }
 function cptOubli(vers){ if(cpt?.jeton) rpc("compte_sortir", {p_jeton:cpt.jeton}).catch(()=>{});
   ["cpt","tp","annee","done","annSeen","pseudo","hw","ann","chat","sansCompte","charteCpt","cptMail","retMes"].forEach(k=>localStorage.removeItem("edt."+k));
   sessionStorage.removeItem("edt.ouvert"); if(vers) sessionStorage.setItem("edt.cptVue", vers); location.reload(); }
-// ouverture directe : l'appareil est déjà verrouillé par Face ID / empreinte / code du téléphone ; on ne redemande rien
+// ouverture directe : avoir l'appareil sur lequel on s'est connecté suffit (pas de Face ID, pas d'empreinte, pas de code)
 const cptDirect = () => !!cpt?.jeton;   // connecté une fois sur cet appareil = l'appli s'ouvre directement (le code ne sert qu'à se connecter sur un nouvel appareil)
 // compte supprimé (remise à zéro du 24/11) : retour à l'accueil (créer / se connecter / sans compte) en gardant année et TP
 function cptPerdu(){ ["cpt","charteCpt","sansCompte"].forEach(k=>localStorage.removeItem("edt."+k)); sessionStorage.removeItem("edt.ouvert"); sessionStorage.setItem("edt.cptVue","accueil"); location.reload(); }
