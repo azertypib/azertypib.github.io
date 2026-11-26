@@ -150,15 +150,9 @@ async function repondre(compte){
   try{ const r = await fetch(`${SUPA_URL}/functions/v1/mail`, {method:"POST", headers:H, body:JSON.stringify({action:"repondre", cle:cle(), compte, texte:t})});
     const j = await r.json(); if(!j.ok) throw 0;
     const k = view.slice(4); await load(); ouvrirFil(k);
-    if(!j.mail) alert("Réponse visible dans son appli, mais le mail n'est pas parti (pas d'e-mail confirmé ?).");
+    alert(j.mail ? "Réponse envoyée dans sa boîte mail." : "Le mail n'est pas parti (pas d'e-mail confirmé ?).");
   }catch{ alert("Échec de l'envoi."); $("repgo").disabled = false; } }
 
-// message sans compte : la réponse va dans la discussion de son TP (signée Créateur)
-async function repondreTP(grp, retour){
-  const t = $("rep").value.trim(); if(!t) return; $("repgo").disabled = true;
-  try{ const j = await rpc("admin_message", {cle:cle(), p_grp:grp, p_texte:t, p_retour:retour}); if(!j.ok) throw 0;
-    alert(`Publié dans la discussion ${tpLbl(grp)}.`); await load(); go("messages");
-  }catch{ alert("Échec de l'envoi."); $("repgo").disabled = false; } }
 // avis « modifications en cours » : ne bloque rien
 async function toggleMaint(){
   const on = !S.maint;
@@ -201,7 +195,7 @@ function draw(){
   }else if(view==="messages"){
     h = back("Discussion", `${fl.length} conversation${fl.length>1?"s":""} · toi seul les vois`) + (fl.length ? fl.map(f => { const der = f.l.at(-1), n = nonLus(f);
       return `<button class="fil" onclick="ouvrirFil('${f.k}')"><span class="av">${esc((f.pseudo||"?")[0].toUpperCase())}</span><span class="tx"><b>${esc(f.pseudo||"Anonyme")} <small style="color:var(--muted);font-weight:400">${esc(tpLbl(f.tp))}</small></b><span>${der.du_createur?"Toi : ":""}${esc(der.texte)}</span></span>${n?`<span class="pas">${n}</span>`:`<small style="color:var(--muted)">${esc(fmt(der.created_at,{day:"numeric",month:"short"}))}</small>`}</button>`; }).join("")
-      : `<p class="note">Aucun message pour l'instant.</p>`) + `<p class="note">Ta réponse arrive dans son appli (Message au créateur) et dans sa boîte mail.</p>`;
+      : `<p class="note">Aucun message pour l'instant.</p>`) + `<p class="note">Toi seul vois ces messages. Ta réponse part uniquement dans sa boîte mail : elle n'est affichée nulle part dans l'appli.</p>`;
   }else if(view.startsWith("fil:")){
     const f = fl.find(x => x.k===view.slice(4)); if(!f){ view = "messages"; return draw(); }
     h = back(esc(f.pseudo||"Anonyme"), `${mailDe(f.email, f.email_ok)}${f.tp ? " · "+esc(tpLbl(f.tp)) : ""}`, "messages")
@@ -209,10 +203,7 @@ function draw(){
       + (f.compte ? `<div class="compose"><div class="prop"><span>Réponse proposée : modifie-la ou envoie-la telle quelle</span><button onclick="autreProp()">Autre proposition</button></div>
           <textarea id="rep" maxlength="4000" placeholder="Répondre à ${esc(f.pseudo||"")}…">${esc(proposer(f))}</textarea>
           <div class="row"><button class="btn sec" onclick="$('rep').value='';$('rep').focus()">Effacer</button><button class="btn" id="repgo" onclick="repondre(${f.compte})">Envoyer</button></div></div>`
-        : f.tp ? `<div class="compose"><div class="prop"><span>Message envoyé sans compte : pas d'e-mail. Ta réponse sera publiée dans la discussion ${esc(tpLbl(f.tp))}, signée « Créateur », visible par tout son TP.</span><button onclick="autreProp()">Autre proposition</button></div>
-          <textarea id="rep" maxlength="1000" placeholder="Répondre à ${esc(f.pseudo||"")}…">${esc(proposer(f))}</textarea>
-          <div class="row"><button class="btn sec" onclick="$('rep').value='';$('rep').focus()">Effacer</button><button class="btn" id="repgo" onclick="repondreTP('${esc(f.tp)}', ${f.l[0].id})">Publier dans ${esc(tpLbl(f.tp))}</button></div></div>`
-        : `<p class="note">Message envoyé sans compte ni TP : pas de réponse possible.</p>`);
+        : `<p class="note">Message envoyé sans compte : pas d'e-mail, pas de réponse possible.</p>`);
   }else if(view==="comptes"){
     const carte = x => `<div class="card"><div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><b>${esc(x.pseudo)}</b><span class="m">${esc(tpLbl(x.tp) || x.annee || "")}</span></div>
           <div>${mailDe(x.email, x.email_ok)}</div>
