@@ -505,7 +505,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-27c";
+const APP_V = "2026-11-27d";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -585,7 +585,7 @@ function tdOf(t){ for(const [td,l] of Object.entries(DATA?.groups||{})) if(l.inc
 function render(){
   now = new Date();
   const app = $("app");
-  if(ferme){ app.dataset.cv = ""; app.innerHTML = `<div class="pick"><img src="icon.png" width="72" style="border-radius:16px" alt=""><h1>Application fermée</h1><p>L'emploi du temps n'est pas disponible pour le moment. Reviens un peu plus tard.</p></div>`; return; }
+  if(ferme && !estCreateur()){ app.dataset.cv = ""; app.innerHTML = `<div class="pick"><img src="icon.png" width="72" style="border-radius:16px" alt=""><h1>Application fermée</h1><p>L'emploi du temps n'est pas disponible pour le moment. Reviens un peu plus tard.</p></div>`; return; }
   // compte : appareil connecté mais appli rouverte = code ; jamais choisi = accueil (créer / se connecter / sans compte)
   if(cpt && !cptOuvert() && !["connexion","inscription","bloque","accueil"].includes(cptVue)) cptVue = "verrou";
   if(!cpt && !store.get("sansCompte") && !cptVue) cptVue = "accueil";
@@ -1754,7 +1754,7 @@ setInterval(()=>{ if(!document.hidden){ loadHw(); loadAnn(); loadFb(); loadChat(
 /* ======== avis « modifications en cours » et fermeture du site : interrupteurs de la page perso (table etat), jamais automatiques ======== */
 // avis : ne bloque rien, montré une fois quand il s'allume et une fois quand il s'éteint ; fermé : écran « Application fermée », plus rien ne marche (le serveur refuse aussi)
 let maint = false, ferme = store.get("ferme", false);
-function canWrite(){ if(ferme){ toast("L'application est fermée pour le moment"); return false; } if(!membre()){ toast(OBS_MSG); return false; } return true; }
+function canWrite(){ if(ferme && !estCreateur()){ toast("L'application est fermée pour le moment"); return false; } if(!membre()){ toast(OBS_MSG); return false; } return true; }
 function showMaint(on){ $("mainth").textContent = on ? "Modifications en cours" : "Modifications terminées";
   $("maintp").textContent = on ? "Le créateur est en train d'améliorer l'appli. Si quelque chose bug ou s'affiche bizarrement, pas d'inquiétude : c'est temporaire. Tu peux continuer à tout utiliser normalement." : "L'appli est à jour. Merci de ta patience !";
   $("maint").classList.add("on"); }
