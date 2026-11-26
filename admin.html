@@ -41,6 +41,16 @@ input{font:inherit;font-size:16px;width:100%;padding:12px;border-radius:10px;bor
 a{color:#6fb6f0}
 .err{color:var(--accent)}
 .scroll{overflow-x:auto}
+.conv{display:flex;flex-direction:column;gap:6px;background:var(--panel);border-radius:14px;padding:10px;margin:10px 0}
+.bul{max-width:82%;align-self:flex-start;background:#262422;border-radius:14px 14px 14px 4px;padding:7px 11px;white-space:pre-wrap;word-break:break-word}
+.bul.moi{align-self:flex-end;background:#2e86d4;color:#fff;border-radius:14px 14px 4px 14px}
+.bul small{display:block;font-size:11.5px;opacity:.7;margin-top:2px}
+.fil{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px}
+.fil .av{width:40px;height:40px;border-radius:50%;background:#12808a;color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+.fil .tx{flex:1;min-width:0}.fil .tx b{display:block}.fil .tx span{display:block;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pas{background:#2e86d4;color:#fff;border-radius:10px;padding:1px 8px;font-size:12.5px;font-weight:700}
+textarea{font:inherit;font-size:16px;width:100%;min-height:80px;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+.ok{color:var(--ok)}
 </style>
 </head>
 <body>
@@ -81,8 +91,23 @@ async function load(){
   const s = await r.json();
   try{ const e = await fetch(`${SUPA_URL}/rest/v1/etat?select=maintenance,ferme&id=eq.1`, {headers:{apikey:SUPA_KEY}}); const [x] = await e.json(); s.maint = !!x?.maintenance; s.ferme = !!x?.ferme; }catch{}
   try{ const c = await fetch(`${SUPA_URL}/rest/v1/rpc/admin_comptes`, {method:"POST", headers:{apikey:SUPA_KEY, "Content-Type":"application/json"}, body:JSON.stringify({cle})}); s.cpt = c.ok ? await c.json() : null; }catch{}
+  try{ const m = await fetch(`${SUPA_URL}/rest/v1/rpc/admin_retours`, {method:"POST", headers:{apikey:SUPA_KEY, "Content-Type":"application/json"}, body:JSON.stringify({cle})}); s.ret = m.ok ? await m.json() : []; }catch{ s.ret = []; }
   show(s);
 }
+// une conversation par compte (anciens messages sans compte : une chacun)
+const fils = () => { const g = {}; (S.ret||[]).forEach(m => { const k = m.compte_id ? "c"+m.compte_id : "r"+m.id; (g[k] ||= {k, compte:m.compte_id, pseudo:m.pseudo, email:m.email, email_ok:m.email_ok, tp:m.tp, l:[]}).l.push(m); });
+  return Object.values(g).sort((a,b) => a.l.at(-1).created_at < b.l.at(-1).created_at ? 1 : -1); };
+const nonLus = f => f.l.filter(m => !m.du_createur && !m.lu).length;
+async function ouvrirFil(k){ view = "fil:"+k; draw(); scrollTo(0, document.body.scrollHeight);
+  const f = fils().find(x => x.k===k); if(f?.compte && nonLus(f)){ f.l.forEach(m => m.lu = true);
+    fetch(`${SUPA_URL}/rest/v1/rpc/admin_lu`, {method:"POST", headers:{apikey:SUPA_KEY, "Content-Type":"application/json"}, body:JSON.stringify({cle:localStorage.getItem("adm.cle"), p_compte:f.compte})}).catch(()=>{}); } }
+async function repondre(compte){
+  const t = $("rep").value.trim(); if(!t) return; $("repgo").disabled = true;
+  try{ const r = await fetch(`${SUPA_URL}/functions/v1/mail`, {method:"POST", headers:{apikey:SUPA_KEY, "Content-Type":"application/json"}, body:JSON.stringify({action:"repondre", cle:localStorage.getItem("adm.cle"), compte, texte:t})});
+    const j = await r.json(); if(!j.ok) throw 0;
+    alert(j.mail ? "Réponse envoyée par mail et visible dans son appli." : "Réponse visible dans son appli. Le mail n'est pas parti (envoi de mails pas encore branché, ou adresse refusée).");
+    const k = view.slice(4); await load(); ouvrirFil(k);
+  }catch{ alert("Échec de l'envoi."); $("repgo").disabled = false; } }
 
 // accueil = 3 cartouches avec juste le nombre ; le détail s'ouvre en touchant un cartouche
 let S = null, view = null;
@@ -117,10 +142,11 @@ function draw(){
   let h;
   if(!view){
     h = head("Suivi de l'appli") + `<div class="tiles">
+      ${(()=>{ const fl = fils(), n = fl.reduce((a,f)=>a+nonLus(f),0); return `<button class="tile" onclick="go('messages')"><b>${n}</b><span>Message${n>1?"s":""} au créateur non lu${n>1?"s":""} · ${fl.length} conversation${fl.length>1?"s":""}</span><i>›</i></button>`; })()}
       <button class="tile" onclick="go('alertes')"><b>${s.alertes.length}</b><span>Messages censurés${s.alertes.length ? " · "+parAn(s.alertes) : ""}</span><i>›</i></button>
       <button class="tile" onclick="go('dons')"><b>${dons.length}</b><span>Dons · ${total}</span><i>›</i></button>
       <button class="tile" onclick="go('appareils')"><b>${s.appareils.length}</b><span>Appareils${s.appareils.length ? " ("+parAn(s.appareils)+")" : ""} · ${auj.personnes} aujourd'hui${auj.nouvelles ? `, ${auj.nouvelles} nouveau${auj.nouvelles>1?"x":""}` : ""}</span><i>›</i></button>
-${s.cpt ? (()=>{ const c=s.cpt, j=c.jours.find(x=>x.jour===today)||{connexions:0}; return `<button class="tile" onclick="go('comptes')"><b>${c.comptes.length}</b><span>Comptes${c.comptes.length ? " ("+parAn(c.comptes.map(x=>({tp:x.tp||x.annee})))+")" : ""} · ${j.connexions} connecté${j.connexions>1?"s":""} aujourd'hui${c.blocages.length ? ` · <b style="font-size:inherit;color:#e8833a">${c.blocages.length} blocage${c.blocages.length>1?"s":""}</b>` : ""}</span><i>›</i></button>`; })() : ""}
+${s.cpt ? (()=>{ const c=s.cpt, j=c.jours.find(x=>x.jour===today)||{connexions:0}; const ch = c.comptes.filter(x=>x.charte_le).length; return `<button class="tile" onclick="go('comptes')"><b>${c.comptes.length}</b><span>Comptes · ${ch} charte${ch>1?"s":""} signée${ch>1?"s":""}${c.comptes.length ? " ("+parAn(c.comptes.map(x=>({tp:x.tp||x.annee})))+")" : ""} · ${j.connexions} connecté${j.connexions>1?"s":""} aujourd'hui${c.blocages.length ? ` · <b style="font-size:inherit;color:#e8833a">${c.blocages.length} blocage${c.blocages.length>1?"s":""}</b>` : ""}</span><i>›</i></button>`; })() : ""}
 <button class="tile" onclick="toggleMaint()"><b style="color:${s.maint?"#e8833a":"var(--ok)"}">${s.maint?"ON":"OFF"}</b><span>${s.maint?"Avis « Modifications en cours » affiché. Touche quand tu as fini pour le retirer":"Avis « Modifications en cours » : éteint. Touche pour prévenir tout le monde que tu travailles sur l'appli"}</span><i>›</i></button>
 <button class="tile" onclick="toggleFerme()"><b style="color:${s.ferme?"var(--accent)":"var(--ok)"}">${s.ferme?"FERMÉ":"OUVERT"}</b><span>${s.ferme?"Site fermé : personne ne peut l'utiliser. Touche pour le rouvrir":"Site ouvert. Touche pour le fermer (plus rien ne marche)"}</span><i>›</i></button>
     </div>
@@ -129,7 +155,19 @@ ${s.cpt ? (()=>{ const c=s.cpt, j=c.jours.find(x=>x.jour===today)||{connexions:0
     h = head(`Messages censurés (${s.alertes.length})`, 1) + (s.alertes.length
       ? s.alertes.map(a => `<div class="al"><div class="m">${esc(fmt(a.created_at))} · ${esc(a.lieu)} · ${esc(tpLbl(a.tp))} · pseudo : ${esc(a.pseudo || "aucun")} · appareil ${esc(String(a.device||"?").slice(0,8))}</div><div class="t">${esc(a.texte)}</div></div>`).join("")
       : `<p class="note">Aucun pour l'instant.</p>`)
-      + `<p class="note">Texte tel qu'il a été écrit, avant censure. Pas de nom réel : l'appli n'a pas de comptes. Le numéro d'appareil permet de repérer quelqu'un qui recommence.</p>`;
+      + `<p class="note">Texte tel qu'il a été écrit, avant censure. Le pseudo et le numéro d'appareil permettent de repérer quelqu'un qui recommence ; son e-mail est dans la liste des comptes.</p>`;
+  }else if(view==="messages"){
+    const fl = fils();
+    h = head(`Messages au créateur (${fl.length})`, 1) + (fl.length ? fl.map(f => { const der = f.l.at(-1), n = nonLus(f);
+      return `<button class="fil" onclick="ouvrirFil('${f.k}')"><span class="av">${esc((f.pseudo||"?")[0].toUpperCase())}</span><span class="tx"><b>${esc(f.pseudo||"Anonyme")} <small style="color:var(--muted);font-weight:400">${esc(tpLbl(f.tp))}</small></b><span>${der.du_createur?"Toi : ":""}${esc(der.texte)}</span></span>${n?`<span class="pas">${n}</span>`:`<small style="color:var(--muted)">${esc(fmt(der.created_at,{day:"numeric",month:"short"}))}</small>`}</button>`; }).join("")
+      : `<p class="note">Aucun message pour l'instant.</p>`) + `<p class="note">Seul toi vois ces messages. Ta réponse arrive dans son appli et dans sa boîte mail.</p>`;
+  }else if(view && view.startsWith("fil:")){
+    const f = fils().find(x => x.k===view.slice(4));
+    if(!f){ view = "messages"; return draw(); }
+    h = `<header><button onclick="go('messages')">‹ Retour</button><div><h1>${esc(f.pseudo||"Anonyme")}</h1><p>${f.email ? esc(f.email) + (f.email_ok ? " ✓" : "") : "pas d'e-mail"} · ${esc(tpLbl(f.tp))}</p></div></header>
+      <div class="conv">${f.l.map(m => `<div class="bul ${m.du_createur?"moi":""}">${esc(m.texte)}<small>${esc(fmt(m.created_at))}</small></div>`).join("")}</div>`
+      + (f.compte ? `<textarea id="rep" maxlength="4000" placeholder="Répondre à ${esc(f.pseudo||"")}…"></textarea><p><button class="dark" id="repgo" onclick="repondre(${f.compte})">Envoyer la réponse</button></p>`
+        : `<p class="note">Ancien message envoyé sans compte : pas de réponse possible.</p>`);
   }else if(view==="dons"){
     h = head(`Dons (${dons.length} · ${total})`, 1) + (dons.length
       ? `<table><tr><th>Date</th><th>Montant</th></tr>${dons.map(d => `<tr><td>${esc(fmt(d.created_at))}</td><td class="n">${esc(Number(d.montant).toLocaleString("fr-FR"))} ${esc(d.devise)}</td></tr>`).join("")}</table>`
@@ -141,9 +179,9 @@ ${s.cpt ? (()=>{ const c=s.cpt, j=c.jours.find(x=>x.jour===today)||{connexions:0
       + (c.blocages.length ? `<h2>Blocages (5 mauvais codes)</h2>${c.blocages.map(b => `<div class="al"><div class="m">${esc(fmt(b.created_at))}</div><div class="t">Compte « ${esc(b.pseudo)} » bloqué 5 minutes</div></div>`).join("")}` : "")
       + `<h2>Par jour</h2><div class="scroll"><table><tr><th>Jour</th><th>Connectés</th><th>Comptes créés</th></tr>
       ${c.jours.map(j => `<tr><td>${esc(day(j.jour))}</td><td class="n">${j.connexions}</td><td class="n">${j.creations}</td></tr>`).join("")}</table></div>
-      <h2>Liste</h2><div class="scroll"><table><tr><th>Pseudo</th><th>TP</th><th>Créé le</th><th>Vu le</th></tr>
-      ${c.comptes.map(x => `<tr><td>${esc(x.pseudo)}</td><td>${esc(x.tp ? tpLbl(x.tp) : x.annee || "?")}</td><td>${esc(fmt(x.created_at,{day:"numeric",month:"short"}))}</td><td>${esc(fmt(x.vu_le))}</td></tr>`).join("")}</table></div>
-      <p class="note">« Connectés » = comptes ouverts ce jour-là (code ou Face ID). Les codes sont chiffrés : personne ne peut les lire, même toi.</p>`;
+      <h2>Liste</h2><div class="scroll"><table><tr><th>Pseudo</th><th>E-mail</th><th>TP</th><th>Charte</th><th>Créé le</th><th>Vu le</th></tr>
+      ${c.comptes.map(x => `<tr><td>${esc(x.pseudo)}</td><td>${x.email ? esc(x.email) + (x.email_ok ? ' <span class="ok">✓</span>' : c.mail_actif ? " (à confirmer)" : "") : '<span style="color:var(--muted)">pas encore donné</span>'}</td><td>${esc(x.tp ? tpLbl(x.tp) : x.annee || "?")}</td><td>${x.charte_le ? esc(fmt(x.charte_le,{day:"numeric",month:"short"})) : '<span style="color:var(--muted)">non</span>'}</td><td>${esc(fmt(x.created_at,{day:"numeric",month:"short"}))}</td><td>${esc(fmt(x.vu_le))}</td></tr>`).join("")}</table></div>
+      <p class="note">« Connectés » = comptes ouverts ce jour-là (code ou Face ID). Les codes sont chiffrés : personne ne peut les lire, même toi. Seuls les comptes apparaissent ici, pas les visiteurs sans compte. ✓ = e-mail confirmé par le code reçu.</p>`;
   }else{
     const max = Math.max(1, ...s.jours.map(j => j.personnes));
     h = head(`Appareils (${s.appareils.length})`, 1) + (s.appareils.length ? `<p class="note">Par année : ${parAn(s.appareils)}</p>` : "")
