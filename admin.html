@@ -160,7 +160,7 @@ ${s.cpt ? (()=>{ const c=s.cpt, j=c.jours.find(x=>x.jour===today)||{connexions:0
     const fl = fils();
     h = head(`Messages au créateur (${fl.length})`, 1) + (fl.length ? fl.map(f => { const der = f.l.at(-1), n = nonLus(f);
       return `<button class="fil" onclick="ouvrirFil('${f.k}')"><span class="av">${esc((f.pseudo||"?")[0].toUpperCase())}</span><span class="tx"><b>${esc(f.pseudo||"Anonyme")} <small style="color:var(--muted);font-weight:400">${esc(tpLbl(f.tp))}</small></b><span>${der.du_createur?"Toi : ":""}${esc(der.texte)}</span></span>${n?`<span class="pas">${n}</span>`:`<small style="color:var(--muted)">${esc(fmt(der.created_at,{day:"numeric",month:"short"}))}</small>`}</button>`; }).join("")
-      : `<p class="note">Aucun message pour l'instant.</p>`) + `<p class="note">Seul toi vois ces messages. Ta réponse arrive dans son appli et dans sa boîte mail.</p>`;
+      : `<p class="note">Aucun message pour l'instant.</p>`) + `<p class="note">Toi seul vois ces messages. Ta réponse arrive dans son appli et dans sa boîte mail.</p>`;
   }else if(view && view.startsWith("fil:")){
     const f = fils().find(x => x.k===view.slice(4));
     if(!f){ view = "messages"; return draw(); }
