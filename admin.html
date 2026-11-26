@@ -116,6 +116,9 @@ const nonLus = f => f.l.filter(m => !m.du_createur && !m.lu).length;
 // réponse proposée : choisie selon le contenu du dernier message (pas d'IA, juste des règles) ; « Autre proposition » passe à la suivante
 const PROPS = [
   [/\*{3,}|connard|pute|enculé|ta gueule|nique/i, p => [`Bonjour ${p}, ton message ne respecte pas la charte de l'appli. Merci de rester respectueux, sinon ton compte sera supprimé.`]],
+  [/github|repo|s[ée]curit|faille|donn[ée]es|piratage|hack/i, p => [
+    `Salut ${p}, merci de m'avoir prévenu, c'est sympa ! C'est réglé : le dépôt reste public (c'est obligatoire pour héberger le site gratuitement), mais il ne contient plus aucune info personnelle ni aucun mot de passe.`,
+    `Merci ${p} pour l'alerte ! J'ai tout vérifié et sécurisé : plus aucune donnée perso n'est visible.`]],
   [/bug|beug|marche pas|fonctionne pas|march(e|ait) plus|erreur|404|plant|crash|s'affiche pas|affiche pas|bloqu/i, p => [
     `Salut ${p}, merci de m'avoir prévenu ! Je regarde le problème et je le corrige au plus vite. Je te tiens au courant.`,
     `Salut ${p}, merci pour le signalement. Tu peux me dire sur quel appareil (iPhone, Android, PC) et à quel moment ça arrive ? Ça m'aidera à corriger.`]],
@@ -150,6 +153,12 @@ async function repondre(compte){
     if(!j.mail) alert("Réponse visible dans son appli, mais le mail n'est pas parti (pas d'e-mail confirmé ?).");
   }catch{ alert("Échec de l'envoi."); $("repgo").disabled = false; } }
 
+// message sans compte : la réponse va dans la discussion de son TP (signée Créateur)
+async function repondreTP(grp, retour){
+  const t = $("rep").value.trim(); if(!t) return; $("repgo").disabled = true;
+  try{ const j = await rpc("admin_message", {cle:cle(), p_grp:grp, p_texte:t, p_retour:retour}); if(!j.ok) throw 0;
+    alert(`Publié dans la discussion ${tpLbl(grp)}.`); await load(); go("messages");
+  }catch{ alert("Échec de l'envoi."); $("repgo").disabled = false; } }
 // avis « modifications en cours » : ne bloque rien
 async function toggleMaint(){
   const on = !S.maint;
@@ -200,7 +209,10 @@ function draw(){
       + (f.compte ? `<div class="compose"><div class="prop"><span>Réponse proposée : modifie-la ou envoie-la telle quelle</span><button onclick="autreProp()">Autre proposition</button></div>
           <textarea id="rep" maxlength="4000" placeholder="Répondre à ${esc(f.pseudo||"")}…">${esc(proposer(f))}</textarea>
           <div class="row"><button class="btn sec" onclick="$('rep').value='';$('rep').focus()">Effacer</button><button class="btn" id="repgo" onclick="repondre(${f.compte})">Envoyer</button></div></div>`
-        : `<p class="note">Ancien message envoyé sans compte : pas de réponse possible.</p>`);
+        : f.tp ? `<div class="compose"><div class="prop"><span>Message envoyé sans compte : pas d'e-mail. Ta réponse sera publiée dans la discussion ${esc(tpLbl(f.tp))}, signée « Créateur », visible par tout son TP.</span><button onclick="autreProp()">Autre proposition</button></div>
+          <textarea id="rep" maxlength="1000" placeholder="Répondre à ${esc(f.pseudo||"")}…">${esc(proposer(f))}</textarea>
+          <div class="row"><button class="btn sec" onclick="$('rep').value='';$('rep').focus()">Effacer</button><button class="btn" id="repgo" onclick="repondreTP('${esc(f.tp)}', ${f.l[0].id})">Publier dans ${esc(tpLbl(f.tp))}</button></div></div>`
+        : `<p class="note">Message envoyé sans compte ni TP : pas de réponse possible.</p>`);
   }else if(view==="comptes"){
     const carte = x => `<div class="card"><div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><b>${esc(x.pseudo)}</b><span class="m">${esc(tpLbl(x.tp) || x.annee || "")}</span></div>
           <div>${mailDe(x.email, x.email_ok)}</div>
