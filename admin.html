@@ -5,196 +5,223 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
-<title>EDT · suivi</title>
+<title>EDT · ma page perso</title>
 <link rel="icon" href="icon.png">
 <style>
-:root{--bg:#141312;--panel:#1d1c1a;--ink:#f1ede7;--muted:#9a948c;--line:#2d2b28;--accent:#e0533d;--ok:#2fbf6a}
-*{box-sizing:border-box}
+/* même DA que l'appli : fond, cartes, bandeau bleu nuit -> canard, cartouches aux couleurs du logo */
+:root{--bg:#f4f2ee;--panel:#fff;--ink:#1d1b18;--muted:#77716a;--line:#e6e1da;--soft:#efebe5;--shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.06);
+  --nuit:#0d2a47;--bleu:#2e86d4;--canard:#12808a;--vert:#2fbf6a}
+@media (prefers-color-scheme:dark){:root{--bg:#141312;--panel:#1d1c1a;--ink:#f1ede7;--muted:#9a948c;--line:#2d2b28;--soft:#262422;--shadow:none}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{touch-action:manipulation;-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Segoe UI",system-ui,-apple-system,sans-serif}
-.wrap{max-width:900px;margin:0 auto;padding:20px 14px 60px}
-header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
-header img{width:44px;height:44px;border-radius:11px}
-h1{font-size:20px;margin:0}
-header p{margin:0;color:var(--muted);font-size:13px}
-header button:last-child{margin-left:auto}
-header button{flex:none}
-h2{font-size:16px;margin:26px 0 8px}
-.tiles{display:grid;gap:12px}
-.tile{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 18px}
-.tile b{font-size:34px;font-variant-numeric:tabular-nums;min-width:56px}
-.tile span{flex:1;color:var(--muted);font-size:15px}
-.tile i{font-style:normal;font-size:26px;color:var(--muted)}
-.tile:active{transform:scale(.99)}
-table{width:100%;border-collapse:collapse;background:var(--panel);border-radius:12px;overflow:hidden;font-size:14px}
-th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-th{color:var(--muted);font-weight:600;font-size:12.5px}
-td.n{font-variant-numeric:tabular-nums}
-.bar{height:8px;border-radius:4px;background:#2e86d4;min-width:2px}
-.al{background:var(--panel);border-left:4px solid var(--accent);border-radius:10px;padding:10px 12px;margin-bottom:8px}
-.al .m{color:var(--muted);font-size:12.5px;margin-bottom:4px}
-.al .t{white-space:pre-wrap;word-break:break-word}
-.note{color:var(--muted);font-size:13px;margin:6px 0 0}
-button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:8px 14px;cursor:pointer}
-button.dark{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-input{font:inherit;font-size:16px;width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);margin:8px 0}
-a{color:#6fb6f0}
-.err{color:var(--accent)}
-.scroll{overflow-x:auto}
-.conv{display:flex;flex-direction:column;gap:6px;background:var(--panel);border-radius:14px;padding:10px;margin:10px 0}
-.bul{max-width:82%;align-self:flex-start;background:#262422;border-radius:14px 14px 14px 4px;padding:7px 11px;white-space:pre-wrap;word-break:break-word}
-.bul.moi{align-self:flex-end;background:#2e86d4;color:#fff;border-radius:14px 14px 4px 14px}
-.bul small{display:block;font-size:11.5px;opacity:.7;margin-top:2px}
-.fil{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px}
-.fil .av{width:40px;height:40px;border-radius:50%;background:#12808a;color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}
+.wrap{max-width:980px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) 12px calc(40px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.ban{flex:1;min-width:0;height:48px;border-radius:12px;display:flex;align-items:center;gap:10px;padding:0 14px 0 0;color:#fff;background:linear-gradient(90deg,#0d2a47 0%,#0d2a47 30%,#12808a 100%);box-shadow:var(--shadow);overflow:hidden}
+.ban img{height:100%;aspect-ratio:1;border-radius:12px 0 0 12px;-webkit-mask-image:linear-gradient(90deg,#000 62%,transparent);mask-image:linear-gradient(90deg,#000 62%,transparent)}
+.ban b{font-size:17px;font-weight:800;white-space:nowrap}.ban span{font-size:12.5px;color:#d6e6f5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ban .t{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.sq{flex:none;width:48px;height:48px;border-radius:12px;border:1px solid var(--line);background:var(--panel);box-shadow:var(--shadow);display:grid;place-items:center;font-size:20px}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+@media (min-width:760px){.tiles{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.tl{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-height:92px;padding:11px 12px;border:1px solid var(--line);background:var(--panel);border-radius:14px;box-shadow:var(--shadow);text-align:left}
+.tl .ico{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;margin-bottom:6px;background:var(--tc);color:#fff}
+.tl .ico svg{width:17px;height:17px}
+.tl b{font-size:15px}.tl .st{font-size:12.5px;color:var(--muted)}
+.tl .num{position:absolute;right:12px;top:10px;font-weight:800;font-size:22px;color:var(--tc);font-variant-numeric:tabular-nums}
+@media (prefers-color-scheme:dark){.tl.nuit .num{color:#8ec3ef}}
+.sw{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px;margin-bottom:10px}
+.sw .tx{flex:1}.sw .tx b{display:block}.sw .tx span{font-size:13px;color:var(--muted)}
+.tog{flex:none;width:46px;height:28px;border-radius:14px;background:var(--line);position:relative}
+.tog::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left .15s}
+.tog.on{background:var(--canard)}.tog.on::after{left:21px}.tog.rouge.on{background:var(--nuit)}
+h2{font-size:15px;margin:22px 2px 8px;color:var(--muted);font-weight:600}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:11px 13px;margin-bottom:8px}
+.card .m{font-size:12.5px;color:var(--muted);margin-bottom:3px}.card .t{white-space:pre-wrap;word-break:break-word}
+.mail{color:var(--bleu);font-weight:600;word-break:break-all}
+.ok{color:var(--vert);font-weight:700}
+.note{color:var(--muted);font-size:13px;margin:10px 2px}
+.fil{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:11px 13px;margin-bottom:8px}
+.av{width:42px;height:42px;border-radius:50%;background:var(--canard);color:#fff;display:grid;place-items:center;font-weight:800;flex:none}
 .fil .tx{flex:1;min-width:0}.fil .tx b{display:block}.fil .tx span{display:block;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pas{background:#2e86d4;color:#fff;border-radius:10px;padding:1px 8px;font-size:12.5px;font-weight:700}
-textarea{font:inherit;font-size:16px;width:100%;min-height:80px;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
-.ok{color:var(--ok)}
+.pas{background:var(--bleu);color:#fff;border-radius:11px;min-width:22px;height:22px;padding:0 7px;display:grid;place-items:center;font-size:12.5px;font-weight:700}
+.conv{display:flex;flex-direction:column;gap:6px;padding:6px 2px 12px}
+.bul{max-width:80%;align-self:flex-start;background:var(--panel);border:1px solid var(--line);border-radius:16px 16px 16px 5px;padding:8px 12px;white-space:pre-wrap;word-break:break-word;box-shadow:var(--shadow)}
+.bul.moi{align-self:flex-end;background:var(--bleu);border-color:var(--bleu);color:#fff;border-radius:16px 16px 5px 16px}
+.bul small{display:block;font-size:11px;opacity:.7;margin-top:3px}
+.compose{position:sticky;bottom:0;background:var(--bg);padding:8px 0 calc(8px + env(safe-area-inset-bottom))}
+.prop{font-size:12.5px;color:var(--canard);font-weight:600;margin:0 2px 6px;display:flex;justify-content:space-between;align-items:center}
+.prop button{border:0;background:none;color:var(--bleu);font-weight:600;padding:0}
+textarea,input{font:inherit;font-size:16px;width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+textarea{min-height:90px;resize:vertical}
+.btn{border:0;border-radius:12px;padding:11px 18px;font-weight:700;background:var(--bleu);color:#fff}
+.btn.sec{background:var(--panel);color:var(--ink);border:1px solid var(--line)}
+.row{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+.err{color:var(--bleu);font-weight:600}
+.back{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.back h1{font-size:19px;margin:0;line-height:1.2}.back p{margin:0;font-size:13px;color:var(--muted)}
 </style>
 </head>
 <body>
 <div class="wrap" id="app"></div>
 <script>
-// Page privée de suivi : tout passe par la fonction Supabase admin_stats(cle) ; sans la bonne clé, rien n'est lisible.
+// Page privée : tout passe par des fonctions Supabase qui exigent la clé (admin-cle.txt) ; sans elle, rien n'est lisible.
 const SUPA_URL = "https://oysfbsdpdcjpufrfpmjx.supabase.co";
 const SUPA_KEY = "sb_publishable_qHE46e33ZJ-_AFLZkXG4YA_ty7QAaXx";
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt = (d, o) => new Date(d).toLocaleString("fr-FR", o || {day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"});
-const day = d => new Date(d + "T12:00").toLocaleDateString("fr-FR", {weekday:"short", day:"numeric", month:"short"});
-const tpLbl = t => !t ? "?" : t.replace("TP"," TP");   // garde l'année : S1 TP1, S3 TP4
-// répartition par année (S1, S3…) d'une liste qui porte un TP
-const parAn = l => { const n = {}; l.forEach(x => { const y = (String(x.tp||"").match(/^S\d/)||["?"])[0]; n[y] = (n[y]||0)+1; });
-  return Object.keys(n).sort().map(y => `${y} ${n[y]}`).join(" · "); };
+const tpLbl = t => !t ? "" : t.replace("TP"," TP");
+const cle = () => localStorage.getItem("adm.cle");
+const H = {apikey:SUPA_KEY, "Content-Type":"application/json"};
+const rpc = async (f, b) => { const r = await fetch(`${SUPA_URL}/rest/v1/rpc/${f}`, {method:"POST", headers:H, body:JSON.stringify(b)}); if(!r.ok) throw r.status; return r.json(); };
+const mailDe = (email, ok) => email ? `<span class="mail">${esc(email)}</span>${ok ? ' <span class="ok">✓</span>' : ""}` : `<span style="color:var(--muted)">pas d'e-mail</span>`;
+const IC = {
+  chat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+  charte:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l3 3v15H6z"/><path d="M9 13l2 2 4-4"/></svg>',
+  cens:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M6.5 6.5l11 11"/></svg>',
+  don:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-9.5A4 4 0 0 1 12 8a4 4 0 0 1 7 2.5C19 15.6 12 20 12 20z"/></svg>'};
 
 function askKey(msg){
-  $("app").innerHTML = `<header><img src="icon.png" alt=""><div><h1>Suivi de l'appli</h1><p>Page privée</p></div></header>
-    <p>Colle ta clé (fichier <b>admin-cle.txt</b> sur ton ordinateur). Elle reste enregistrée sur cet appareil seulement.</p>
+  $("app").innerHTML = `<header><div class="ban"><img src="icon.png" alt=""><div class="t"><b>Ma page perso</b><span>EDT · IUT La Rochelle</span></div></div></header>
+    <div class="card"><p style="margin-top:0">Colle ta clé (fichier <b>admin-cle.txt</b> sur ton ordinateur). Elle reste enregistrée sur cet appareil seulement.</p>
     <input id="k" type="password" autocomplete="off" placeholder="Clé" oninput="if(this.value.trim().length>=32) saveKey()" onkeydown="if(event.key==='Enter') saveKey()">
-    <button class="dark" onclick="saveKey()">Entrer</button> ${msg ? `<p class="err">${esc(msg)}</p>` : ""}`;
-  $("k").focus();   // la clé collée suffit : ça s'ouvre tout seul dès qu'elle est complète
+    <div class="row"><button class="btn" onclick="saveKey()">Entrer</button></div>${msg ? `<p class="err">${esc(msg)}</p>` : ""}</div>`;
+  $("k").focus();
 }
 function saveKey(){ const k = $("k").value.trim(); if(!k) return; localStorage.setItem("adm.cle", k); load(); }
 function forget(){ localStorage.removeItem("adm.cle"); askKey(); }
 
+let S = null, view = null;
 async function load(){
-  const cle = localStorage.getItem("adm.cle");
-  if(!cle) return askKey();
-  $("app").innerHTML = `<p class="note">Chargement…</p>`;
-  let r;
-  try{
-    r = await fetch(`${SUPA_URL}/rest/v1/rpc/admin_stats`, {method:"POST",
-      headers:{apikey:SUPA_KEY, "Content-Type":"application/json"}, body:JSON.stringify({cle})});
-  }catch{ return askKey("Pas de connexion internet."); }
-  if(!r.ok){ localStorage.removeItem("adm.cle"); return askKey("Clé refusée."); }
-  const s = await r.json();
+  if(!cle()) return askKey();
+  if(!S) $("app").innerHTML = `<p class="note">Chargement…</p>`;
+  let s;
+  try{ s = await rpc("admin_stats", {cle:cle()}); }
+  catch(e){ if(e===undefined || typeof e!=="number") return askKey("Pas de connexion internet."); localStorage.removeItem("adm.cle"); return askKey("Clé refusée."); }
   try{ const e = await fetch(`${SUPA_URL}/rest/v1/etat?select=maintenance,ferme&id=eq.1`, {headers:{apikey:SUPA_KEY}}); const [x] = await e.json(); s.maint = !!x?.maintenance; s.ferme = !!x?.ferme; }catch{}
-  try{ const c = await fetch(`${SUPA_URL}/rest/v1/rpc/admin_comptes`, {method:"POST", headers:{apikey:SUPA_KEY, "Content-Type":"application/json"}, body:JSON.stringify({cle})}); s.cpt = c.ok ? await c.json() : null; }catch{}
-  try{ const m = await fetch(`${SUPA_URL}/rest/v1/rpc/admin_retours`, {method:"POST", headers:{apikey:SUPA_KEY, "Content-Type":"application/json"}, body:JSON.stringify({cle})}); s.ret = m.ok ? await m.json() : []; }catch{ s.ret = []; }
-  show(s);
+  try{ s.cpt = await rpc("admin_comptes", {cle:cle()}); }catch{ s.cpt = {comptes:[], jours:[], blocages:[]}; }
+  try{ s.ret = await rpc("admin_retours", {cle:cle()}); }catch{ s.ret = []; }
+  S = s; draw();
 }
-// une conversation par compte (anciens messages sans compte : une chacun)
-const fils = () => { const g = {}; (S.ret||[]).forEach(m => { const k = m.compte_id ? "c"+m.compte_id : "r"+m.id; (g[k] ||= {k, compte:m.compte_id, pseudo:m.pseudo, email:m.email, email_ok:m.email_ok, tp:m.tp, l:[]}).l.push(m); });
+function go(v){ view = v; draw(); scrollTo(0,0); }
+
+// conversations : une par compte (anciens messages sans compte : une chacun)
+const fils = () => { const g = {}; (S.ret||[]).forEach(m => { const k = m.compte_id ? "c"+m.compte_id : "r"+m.id;
+  (g[k] ||= {k, compte:m.compte_id, pseudo:m.pseudo, email:m.email, email_ok:m.email_ok, tp:m.tp, l:[]}).l.push(m); });
   return Object.values(g).sort((a,b) => a.l.at(-1).created_at < b.l.at(-1).created_at ? 1 : -1); };
 const nonLus = f => f.l.filter(m => !m.du_createur && !m.lu).length;
-async function ouvrirFil(k){ view = "fil:"+k; draw(); scrollTo(0, document.body.scrollHeight);
-  const f = fils().find(x => x.k===k); if(f?.compte && nonLus(f)){ f.l.forEach(m => m.lu = true);
-    fetch(`${SUPA_URL}/rest/v1/rpc/admin_lu`, {method:"POST", headers:{apikey:SUPA_KEY, "Content-Type":"application/json"}, body:JSON.stringify({cle:localStorage.getItem("adm.cle"), p_compte:f.compte})}).catch(()=>{}); } }
+
+// réponse proposée : choisie selon le contenu du dernier message (pas d'IA, juste des règles) ; « Autre proposition » passe à la suivante
+const PROPS = [
+  [/\*{3,}|connard|pute|enculé|ta gueule|nique/i, p => [`Bonjour ${p}, ton message ne respecte pas la charte de l'appli. Merci de rester respectueux, sinon ton compte sera supprimé.`]],
+  [/bug|beug|marche pas|fonctionne pas|march(e|ait) plus|erreur|404|plant|crash|s'affiche pas|affiche pas|bloqu/i, p => [
+    `Salut ${p}, merci de m'avoir prévenu ! Je regarde le problème et je le corrige au plus vite. Je te tiens au courant.`,
+    `Salut ${p}, merci pour le signalement. Tu peux me dire sur quel appareil (iPhone, Android, PC) et à quel moment ça arrive ? Ça m'aidera à corriger.`]],
+  [/salle|horaire|heure|cours|prof|emploi du temps|edt|groupe|\btp\b|\btd\b|décal|annul/i, p => [
+    `Salut ${p}, merci pour l'info ! L'emploi du temps vient de GPU : je vérifie et je corrige si besoin. En cas de doute, l'ENT reste la référence.`,
+    `Salut ${p}, bien vu, merci ! Je regarde ça aujourd'hui.`]],
+  [/id[ée]e|serait bien|ajout|possible de|pourrai|pourrais|propos|option|fonction/i, p => [
+    `Salut ${p}, merci pour l'idée, je la note ! Je vais voir si je peux l'ajouter dans une prochaine mise à jour.`,
+    `Salut ${p}, super idée ! Je la garde de côté, je te préviens si je l'ajoute.`]],
+  [/merci|bravo|top|g[ée]nial|trop bien|styl[ée]|incroyable|goat/i, p => [
+    `Merci beaucoup ${p}, ça fait plaisir ! N'hésite pas si tu as une idée ou un souci.`,
+    `Merci ${p} ! Content que l'appli te serve.`]],
+  [/\?/, p => [`Salut ${p}, bonne question ! Je regarde et je te réponds au plus vite.`]],
+  [/./, p => [`Salut ${p}, merci pour ton message ! Je l'ai bien reçu, je regarde ça.`, `Salut ${p}, bien reçu, merci ! Je m'en occupe.`]]];
+let propN = 0;
+function proposer(f){
+  const der = [...f.l].reverse().find(m => !m.du_createur); if(!der) return "";
+  const p = f.pseudo || "", l = [];
+  PROPS.forEach(([re, fn]) => { if(re.test(der.texte)) l.push(...fn(p)); });
+  return l[propN % l.length] || "";
+}
+function autreProp(){ propN++; const f = fils().find(x => x.k===view.slice(4)); $("rep").value = proposer(f); }
+
+async function ouvrirFil(k){ view = "fil:"+k; propN = 0; draw(); scrollTo(0, document.body.scrollHeight);
+  const f = fils().find(x => x.k===k);
+  if(f?.compte && nonLus(f)){ f.l.forEach(m => m.lu = true); rpc("admin_lu", {cle:cle(), p_compte:f.compte}).catch(()=>{}); } }
 async function repondre(compte){
   const t = $("rep").value.trim(); if(!t) return; $("repgo").disabled = true;
-  try{ const r = await fetch(`${SUPA_URL}/functions/v1/mail`, {method:"POST", headers:{apikey:SUPA_KEY, "Content-Type":"application/json"}, body:JSON.stringify({action:"repondre", cle:localStorage.getItem("adm.cle"), compte, texte:t})});
+  try{ const r = await fetch(`${SUPA_URL}/functions/v1/mail`, {method:"POST", headers:H, body:JSON.stringify({action:"repondre", cle:cle(), compte, texte:t})});
     const j = await r.json(); if(!j.ok) throw 0;
-    alert(j.mail ? "Réponse envoyée par mail et visible dans son appli." : "Réponse visible dans son appli. Le mail n'est pas parti (envoi de mails pas encore branché, ou adresse refusée).");
     const k = view.slice(4); await load(); ouvrirFil(k);
+    if(!j.mail) alert("Réponse visible dans son appli, mais le mail n'est pas parti (pas d'e-mail confirmé ?).");
   }catch{ alert("Échec de l'envoi."); $("repgo").disabled = false; } }
 
-// accueil = 3 cartouches avec juste le nombre ; le détail s'ouvre en touchant un cartouche
-let S = null, view = null;
-function show(s){ S = s; draw(); }   // « Actualiser » garde la liste ouverte
-// avis « modifications en cours » : message montré une fois à tous, ne bloque rien ; à éteindre soi-même quand on a fini
+// avis « modifications en cours » : ne bloque rien
 async function toggleMaint(){
   const on = !S.maint;
   if(!confirm(on ? "Afficher à tout le monde « Modifications en cours : si quelque chose bug, pas d'inquiétude » ? Tout continue de fonctionner." : "Retirer l'avis ? Tout le monde verra « Modifications terminées ».")) return;
-  const r = await fetch(`${SUPA_URL}/rest/v1/rpc/set_maintenance`, {method:"POST", headers:{apikey:SUPA_KEY, "Content-Type":"application/json"}, body:JSON.stringify({cle:localStorage.getItem("adm.cle"), actif:on})});
-  if(!r.ok){ alert("Échec : clé refusée ?"); return; }
+  try{ await rpc("set_maintenance", {cle:cle(), actif:on}); }catch{ return alert("Échec : clé refusée ?"); }
   load();
 }
-// fermer le site : écran « Application fermée » pour tout le monde, plus rien ne marche (le serveur refuse aussi)
+// fermer le site : bloqué pour tout le monde SAUF toi (ton compte créateur continue de tout faire)
 async function toggleFerme(){
   const on = !S.ferme;
-  // double sécurité pour fermer : il faut taper FERMER (un toucher par erreur ne suffit pas) ; rouvrir = simple confirmation
-  if(on){ const t = prompt("Fermer le site pour TOUT LE MONDE ? Plus personne ne pourra l'utiliser jusqu'à ce que tu le rouvres. Pour confirmer, tape FERMER :");
+  if(on){ const t = prompt("Fermer le site pour tout le monde sauf toi ? Les autres verront « Application fermée » jusqu'à ce que tu rouvres. Pour confirmer, tape FERMER :");
     if((t||"").trim().toUpperCase() !== "FERMER"){ if(t!==null) alert("Pas fermé : il fallait taper FERMER."); return; } }
   else if(!confirm("Rouvrir le site pour tout le monde ?")) return;
-  const r = await fetch(`${SUPA_URL}/rest/v1/rpc/set_ferme`, {method:"POST", headers:{apikey:SUPA_KEY, "Content-Type":"application/json"}, body:JSON.stringify({cle:localStorage.getItem("adm.cle"), actif:on})});
-  if(!r.ok){ alert("Échec : clé refusée ?"); return; }
+  try{ await rpc("set_ferme", {cle:cle(), actif:on}); }catch{ return alert("Échec : clé refusée ?"); }
   load();
 }
-function go(v){ view = v; draw(); scrollTo(0,0); }
+
 function draw(){
-  const s = S, today = new Date().toISOString().slice(0,10);
-  const auj = s.jours.find(j => j.jour === today) || {personnes:0, nouvelles:0};
+  const s = S, c = s.cpt || {comptes:[], jours:[], blocages:[]}, fl = fils();
   const dons = s.dons.filter(d => !String(d.kofi_id).startsWith("00000000-1111"));   // dons de test Ko-fi exclus
   const total = dons.reduce((a,d) => a + Number(d.montant||0), 0).toLocaleString("fr-FR",{style:"currency",currency:"EUR"});
-  const head = (t, back) => `<header>${back ? `<button onclick="go(null)" aria-label="Retour">‹ Retour</button>` : `<img src="icon.png" alt="">`}
-      <div><h1>${t}</h1><p>Mis à jour ${fmt(new Date())}</p></div><button onclick="load()">Actualiser</button></header>`;
+  const chartes = c.comptes.filter(x => x.charte_le), nl = fl.reduce((a,f) => a + nonLus(f), 0);
+  const today = new Date().toISOString().slice(0,10), auj = (c.jours.find(j => j.jour===today)||{connexions:0}).connexions;
+  const back = (t, sous, vers) => `<div class="back"><button class="sq" onclick="go(${vers?`'${vers}'`:"null"})" aria-label="Retour">‹</button><div><h1>${t}</h1>${sous?`<p>${sous}</p>`:""}</div></div>`;
+  const tile = (col, ico, t, st, num, v, cls) => `<button class="tl ${cls||""}" style="--tc:${col}" onclick="go('${v}')"><span class="ico">${IC[ico]}</span><b>${t}</b><span class="st">${st}</span><span class="num">${num}</span></button>`;
   let h;
   if(!view){
-    h = head("Suivi de l'appli") + `<div class="tiles">
-      ${(()=>{ const fl = fils(), n = fl.reduce((a,f)=>a+nonLus(f),0); return `<button class="tile" onclick="go('messages')"><b>${n}</b><span>Message${n>1?"s":""} au créateur non lu${n>1?"s":""} · ${fl.length} conversation${fl.length>1?"s":""}</span><i>›</i></button>`; })()}
-      <button class="tile" onclick="go('alertes')"><b>${s.alertes.length}</b><span>Messages censurés${s.alertes.length ? " · "+parAn(s.alertes) : ""}</span><i>›</i></button>
-      <button class="tile" onclick="go('dons')"><b>${dons.length}</b><span>Dons · ${total}</span><i>›</i></button>
-      <button class="tile" onclick="go('appareils')"><b>${s.appareils.length}</b><span>Appareils${s.appareils.length ? " ("+parAn(s.appareils)+")" : ""} · ${auj.personnes} aujourd'hui${auj.nouvelles ? `, ${auj.nouvelles} nouveau${auj.nouvelles>1?"x":""}` : ""}</span><i>›</i></button>
-${s.cpt ? (()=>{ const c=s.cpt, j=c.jours.find(x=>x.jour===today)||{connexions:0}; const ch = c.comptes.filter(x=>x.charte_le).length; return `<button class="tile" onclick="go('comptes')"><b>${c.comptes.length}</b><span>Comptes · ${ch} charte${ch>1?"s":""} signée${ch>1?"s":""}${c.comptes.length ? " ("+parAn(c.comptes.map(x=>({tp:x.tp||x.annee})))+")" : ""} · ${j.connexions} connecté${j.connexions>1?"s":""} aujourd'hui${c.blocages.length ? ` · <b style="font-size:inherit;color:#e8833a">${c.blocages.length} blocage${c.blocages.length>1?"s":""}</b>` : ""}</span><i>›</i></button>`; })() : ""}
-<button class="tile" onclick="toggleMaint()"><b style="color:${s.maint?"#e8833a":"var(--ok)"}">${s.maint?"ON":"OFF"}</b><span>${s.maint?"Avis « Modifications en cours » affiché. Touche quand tu as fini pour le retirer":"Avis « Modifications en cours » : éteint. Touche pour prévenir tout le monde que tu travailles sur l'appli"}</span><i>›</i></button>
-<button class="tile" onclick="toggleFerme()"><b style="color:${s.ferme?"var(--accent)":"var(--ok)"}">${s.ferme?"FERMÉ":"OUVERT"}</b><span>${s.ferme?"Site fermé : personne ne peut l'utiliser. Touche pour le rouvrir":"Site ouvert. Touche pour le fermer (plus rien ne marche)"}</span><i>›</i></button>
-    </div>
-    <p style="margin-top:28px"><button onclick="forget()">Oublier la clé sur cet appareil</button></p>`;
-  }else if(view==="alertes"){
-    h = head(`Messages censurés (${s.alertes.length})`, 1) + (s.alertes.length
-      ? s.alertes.map(a => `<div class="al"><div class="m">${esc(fmt(a.created_at))} · ${esc(a.lieu)} · ${esc(tpLbl(a.tp))} · pseudo : ${esc(a.pseudo || "aucun")} · appareil ${esc(String(a.device||"?").slice(0,8))}</div><div class="t">${esc(a.texte)}</div></div>`).join("")
-      : `<p class="note">Aucun pour l'instant.</p>`)
-      + `<p class="note">Texte tel qu'il a été écrit, avant censure. Le pseudo et le numéro d'appareil permettent de repérer quelqu'un qui recommence ; son e-mail est dans la liste des comptes.</p>`;
+    h = `<header><div class="ban"><img src="icon.png" alt=""><div class="t"><b>Ma page perso</b><span>Mis à jour à ${fmt(new Date(),{hour:"2-digit",minute:"2-digit"})}</span></div></div>
+      <button class="sq" onclick="load()" aria-label="Actualiser">↻</button></header>
+      <div class="tiles">
+        ${tile("#2e86d4","chat","Discussion", `${nl ? nl+" non lu"+(nl>1?"s":"") : "tout est lu"} · ${fl.length} conv.`, nl, "messages")}
+        ${tile("#12808a","charte","Chartes signées", `${c.comptes.length} compte${c.comptes.length>1?"s":""} · ${auj} aujourd'hui`, chartes.length, "comptes")}
+        ${tile("#0d2a47","cens","Messages censurés", s.alertes.length ? "dernier le "+fmt(s.alertes[0].created_at,{day:"numeric",month:"short"}) : "aucun", s.alertes.length, "alertes", "nuit")}
+        ${tile("#2fbf6a","don","Dons", total, dons.length, "dons")}
+      </div>
+      <button class="sw" onclick="toggleMaint()"><span class="tx"><b>Avis « Modifications en cours »</b><span>${s.maint ? "Affiché à tout le monde. Touche quand tu as fini." : "Éteint. Touche pour prévenir que tu travailles sur l'appli."}</span></span><span class="tog ${s.maint?"on":""}"></span></button>
+      <button class="sw" onclick="toggleFerme()"><span class="tx"><b>Site fermé, sauf pour toi</b><span>${s.ferme ? "Fermé : les autres voient « Application fermée ». Toi, tu l'utilises normalement avec ton compte." : "Ouvert à tous. Touche pour le fermer pendant tes modifications : toi seul pourras l'utiliser."}</span></span><span class="tog rouge ${s.ferme?"on":""}"></span></button>
+      ${c.blocages.length ? `<h2>Comptes bloqués (5 mauvais codes)</h2>${c.blocages.slice(0,5).map(b => `<div class="card"><div class="m">${esc(fmt(b.created_at))}</div>« ${esc(b.pseudo)} » bloqué 5 minutes</div>`).join("")}` : ""}
+      <p class="note"><button class="btn sec" onclick="forget()">Oublier la clé sur cet appareil</button></p>`;
   }else if(view==="messages"){
-    const fl = fils();
-    h = head(`Messages au créateur (${fl.length})`, 1) + (fl.length ? fl.map(f => { const der = f.l.at(-1), n = nonLus(f);
+    h = back("Discussion", `${fl.length} conversation${fl.length>1?"s":""} · toi seul les vois`) + (fl.length ? fl.map(f => { const der = f.l.at(-1), n = nonLus(f);
       return `<button class="fil" onclick="ouvrirFil('${f.k}')"><span class="av">${esc((f.pseudo||"?")[0].toUpperCase())}</span><span class="tx"><b>${esc(f.pseudo||"Anonyme")} <small style="color:var(--muted);font-weight:400">${esc(tpLbl(f.tp))}</small></b><span>${der.du_createur?"Toi : ":""}${esc(der.texte)}</span></span>${n?`<span class="pas">${n}</span>`:`<small style="color:var(--muted)">${esc(fmt(der.created_at,{day:"numeric",month:"short"}))}</small>`}</button>`; }).join("")
-      : `<p class="note">Aucun message pour l'instant.</p>`) + `<p class="note">Toi seul vois ces messages. Ta réponse arrive dans son appli et dans sa boîte mail.</p>`;
-  }else if(view && view.startsWith("fil:")){
-    const f = fils().find(x => x.k===view.slice(4));
-    if(!f){ view = "messages"; return draw(); }
-    h = `<header><button onclick="go('messages')">‹ Retour</button><div><h1>${esc(f.pseudo||"Anonyme")}</h1><p>${f.email ? esc(f.email) + (f.email_ok ? " ✓" : "") : "pas d'e-mail"} · ${esc(tpLbl(f.tp))}</p></div></header>
-      <div class="conv">${f.l.map(m => `<div class="bul ${m.du_createur?"moi":""}">${esc(m.texte)}<small>${esc(fmt(m.created_at))}</small></div>`).join("")}</div>`
-      + (f.compte ? `<textarea id="rep" maxlength="4000" placeholder="Répondre à ${esc(f.pseudo||"")}…"></textarea><p><button class="dark" id="repgo" onclick="repondre(${f.compte})">Envoyer la réponse</button></p>`
+      : `<p class="note">Aucun message pour l'instant.</p>`) + `<p class="note">Ta réponse arrive dans son appli (Message au créateur) et dans sa boîte mail.</p>`;
+  }else if(view.startsWith("fil:")){
+    const f = fl.find(x => x.k===view.slice(4)); if(!f){ view = "messages"; return draw(); }
+    h = back(esc(f.pseudo||"Anonyme"), `${mailDe(f.email, f.email_ok)}${f.tp ? " · "+esc(tpLbl(f.tp)) : ""}`, "messages")
+      + `<div class="conv">${f.l.map(m => `<div class="bul ${m.du_createur?"moi":""}">${esc(m.texte)}<small>${esc(fmt(m.created_at))}</small></div>`).join("")}</div>`
+      + (f.compte ? `<div class="compose"><div class="prop"><span>Réponse proposée : modifie-la ou envoie-la telle quelle</span><button onclick="autreProp()">Autre proposition</button></div>
+          <textarea id="rep" maxlength="4000" placeholder="Répondre à ${esc(f.pseudo||"")}…">${esc(proposer(f))}</textarea>
+          <div class="row"><button class="btn sec" onclick="$('rep').value='';$('rep').focus()">Effacer</button><button class="btn" id="repgo" onclick="repondre(${f.compte})">Envoyer</button></div></div>`
         : `<p class="note">Ancien message envoyé sans compte : pas de réponse possible.</p>`);
-  }else if(view==="dons"){
-    h = head(`Dons (${dons.length} · ${total})`, 1) + (dons.length
-      ? `<table><tr><th>Date</th><th>Montant</th></tr>${dons.map(d => `<tr><td>${esc(fmt(d.created_at))}</td><td class="n">${esc(Number(d.montant).toLocaleString("fr-FR"))} ${esc(d.devise)}</td></tr>`).join("")}</table>`
-      : `<p class="note">Aucun don pour l'instant.</p>`)
-      + `<p class="note">Noms, messages et e-mails des donateurs : sur Ko-fi, <a href="https://ko-fi.com/manage/supportreceived" target="_blank" rel="noopener">Payments &amp; orders</a> et <a href="https://ko-fi.com/manage/supporters" target="_blank" rel="noopener">My supporters</a>. Virements vers ta banque : Stripe, rubrique Virements.</p>`;
   }else if(view==="comptes"){
-    const c = s.cpt || {comptes:[], jours:[], blocages:[]};
-    h = head(`Comptes (${c.comptes.length})`, 1)
-      + (c.blocages.length ? `<h2>Blocages (5 mauvais codes)</h2>${c.blocages.map(b => `<div class="al"><div class="m">${esc(fmt(b.created_at))}</div><div class="t">Compte « ${esc(b.pseudo)} » bloqué 5 minutes</div></div>`).join("")}` : "")
-      + `<h2>Par jour</h2><div class="scroll"><table><tr><th>Jour</th><th>Connectés</th><th>Comptes créés</th></tr>
-      ${c.jours.map(j => `<tr><td>${esc(day(j.jour))}</td><td class="n">${j.connexions}</td><td class="n">${j.creations}</td></tr>`).join("")}</table></div>
-      <h2>Liste</h2><div class="scroll"><table><tr><th>Pseudo</th><th>E-mail</th><th>TP</th><th>Charte</th><th>Créé le</th><th>Vu le</th></tr>
-      ${c.comptes.map(x => `<tr><td>${esc(x.pseudo)}</td><td>${x.email ? esc(x.email) + (x.email_ok ? ' <span class="ok">✓</span>' : c.mail_actif ? " (à confirmer)" : "") : '<span style="color:var(--muted)">pas encore donné</span>'}</td><td>${esc(x.tp ? tpLbl(x.tp) : x.annee || "?")}</td><td>${x.charte_le ? esc(fmt(x.charte_le,{day:"numeric",month:"short"})) : '<span style="color:var(--muted)">non</span>'}</td><td>${esc(fmt(x.created_at,{day:"numeric",month:"short"}))}</td><td>${esc(fmt(x.vu_le))}</td></tr>`).join("")}</table></div>
-      <p class="note">« Connectés » = comptes ouverts ce jour-là (code ou Face ID). Les codes sont chiffrés : personne ne peut les lire, même toi. Seuls les comptes apparaissent ici, pas les visiteurs sans compte. ✓ = e-mail confirmé par le code reçu.</p>`;
-  }else{
-    const max = Math.max(1, ...s.jours.map(j => j.personnes));
-    h = head(`Appareils (${s.appareils.length})`, 1) + (s.appareils.length ? `<p class="note">Par année : ${parAn(s.appareils)}</p>` : "")
-      + `<h2>Par jour</h2><div class="scroll"><table><tr><th>Jour</th><th>Appareils</th><th>Nouveaux</th><th style="width:40%"></th></tr>
-      ${s.jours.map(j => `<tr><td>${esc(day(j.jour))}</td><td class="n">${j.personnes}</td><td class="n">${j.nouvelles}</td><td><div class="bar" style="width:${Math.round(j.personnes/max*100)}%"></div></td></tr>`).join("")}</table></div>
-      <h2>Liste</h2><div class="scroll"><table><tr><th>Appareil</th><th>TP</th><th>Premier jour</th><th>Dernier jour</th><th>Jours</th></tr>
-      ${s.appareils.map(a => `<tr><td>${esc(String(a.device).slice(0,8))}</td><td>${esc(tpLbl(a.tp))}</td><td>${esc(day(a.premier))}</td><td>${esc(day(a.dernier))}</td><td class="n">${a.jours}</td></tr>`).join("")}</table></div>
-      <p class="note">Un appareil = un téléphone ou un navigateur. Quelqu'un qui utilise son téléphone et son PC compte pour 2.</p>`;
+    const l = [...c.comptes].sort((a,b) => (b.charte_le?1:0)-(a.charte_le?1:0) || (a.created_at<b.created_at?1:-1));
+    h = back("Chartes signées", `${chartes.length} sur ${c.comptes.length} compte${c.comptes.length>1?"s":""} · seulement les comptes, pas les visiteurs`)
+      + l.map(x => `<div class="card"><div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><b>${esc(x.pseudo)}</b><span class="m">${esc(tpLbl(x.tp) || x.annee || "")}</span></div>
+          <div>${mailDe(x.email, x.email_ok)}</div>
+          <div class="m">${x.charte_le ? "Charte signée le "+esc(fmt(x.charte_le,{day:"numeric",month:"short"})) : "Charte pas encore signée"} · vu le ${esc(fmt(x.vu_le))}</div></div>`).join("")
+      + `<p class="note">✓ = e-mail confirmé par le code reçu. Les codes des comptes sont chiffrés : personne ne peut les lire, même toi.</p>`;
+  }else if(view==="alertes"){
+    h = back("Messages censurés", `${s.alertes.length} · texte tel qu'il a été écrit, avant censure`)
+      + (s.alertes.length ? s.alertes.map(a => `<div class="card"><div class="m">${esc(fmt(a.created_at))} · ${esc(a.lieu)}${a.tp ? " · "+esc(tpLbl(a.tp)) : ""}</div>
+          <div style="margin-bottom:4px"><b>${esc(a.pseudo || "sans pseudo")}</b> · ${a.email ? mailDe(a.email, a.email_ok) : `<span style="color:var(--muted)">sans compte (appareil ${esc(String(a.device||"?").slice(0,8))})</span>`}</div>
+          <div class="t">${esc(a.texte)}</div></div>`).join("") : `<p class="note">Aucun pour l'instant.</p>`);
+  }else if(view==="dons"){
+    h = back("Dons", `${dons.length} · ${total}`)
+      + (dons.length ? dons.map(d => `<div class="card"><div style="display:flex;justify-content:space-between"><b>${esc(Number(d.montant).toLocaleString("fr-FR"))} ${esc(d.devise)}</b><span class="m">${esc(fmt(d.created_at))}</span></div>
+          <div>${d.email ? `<span class="mail">${esc(d.email)}</span>` : `<span style="color:var(--muted)">e-mail non transmis (don d'avant le 26/11)</span>`}</div></div>`).join("") : `<p class="note">Aucun don pour l'instant.</p>`)
+      + `<p class="note">Noms et messages des donateurs : sur Ko-fi, <a href="https://ko-fi.com/manage/supportreceived" target="_blank" rel="noopener">Payments &amp; orders</a>. Virements vers ta banque : Stripe, rubrique Virements.</p>`;
   }
   $("app").innerHTML = h;
 }
-// zoom bloqué comme dans l'appli (pincer, double-tap)
-addEventListener("gesturestart", e=>e.preventDefault());
+addEventListener("gesturestart", e => e.preventDefault());   // zoom bloqué comme dans l'appli
 load();
 </script>
 </body>
