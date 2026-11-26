@@ -192,6 +192,7 @@ html{touch-action:manipulation}
 .chrono .noel{position:absolute;inset:-1px;pointer-events:none;z-index:1}
 .chrono .flocons{position:absolute;inset:1px;overflow:hidden;border-radius:11px;z-index:0}
 .chrono .flocons i{position:absolute;top:-16px;display:block;animation:flocon linear infinite}.chrono .flocons svg{display:block;width:100%;height:100%}
+html.obs .psec.notifs{display:none!important}
 @keyframes vent{to{transform:translate(-60px,72px)}}
 @keyframes tic{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
 .chrono .flocons i.vent{top:-8px;animation-name:vent;animation-timing-function:linear}
@@ -505,7 +506,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-27c";
+const APP_V = "2026-11-27d";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -584,6 +585,7 @@ function tdOf(t){ for(const [td,l] of Object.entries(DATA?.groups||{})) if(l.inc
 /* ======== rendu ======== */
 function render(){
   now = new Date();
+  try{ document.documentElement.classList.toggle("obs", !membre()); }catch{}   // observateur : pas de bloc Notifications
   const app = $("app");
   if(ferme){ app.dataset.cv = ""; app.innerHTML = `<div class="pick"><img src="icon.png" width="72" style="border-radius:16px" alt=""><h1>Application fermée</h1><p>L'emploi du temps n'est pas disponible pour le moment. Reviens un peu plus tard.</p></div>`; return; }
   // compte : appareil connecté mais appli rouverte = code ; jamais choisi = accueil (créer / se connecter / sans compte)
@@ -895,7 +897,7 @@ function openParams(){
     : actif ? notifToggles()
     : `<button class="btn dark" style="width:100%;height:44px" onclick="notifActiver().then(ok=>ok?openNotifChoix():openParams())">Activer les notifications</button>`;
   sheetOpen(`<h3>Paramètres</h3><div class="psec"><h4>Thème</h4><div class="themes"><button class="${theme==="dark"?"on":""}" onclick="setTheme('dark')">Sombre</button><button class="${theme!=="dark"?"on":""}" onclick="setTheme('light')">Clair</button></div></div>
-    <div class="psec"><h4>Notifications</h4>${nt}<p class="note" style="margin:8px 0 0">Sur iPhone, les notifications marchent seulement dans l'appli installée sur l'écran d'accueil (iOS 16.4 ou plus récent), pas dans le site ouvert dans Safari.</p></div>
+    <div class="psec notifs"><h4>Notifications</h4>${nt}<p class="note" style="margin:8px 0 0">Sur iPhone, les notifications marchent seulement dans l'appli installée sur l'écran d'accueil (iOS 16.4 ou plus récent), pas dans le site ouvert dans Safari.</p></div>
     <div id="cptbloc" class="psec"><h4>Ton compte</h4></div>
     <div class="psec"><h4>La charte</h4><p>Les règles de l'appli et ce que tu peux faire avec.</p>
       <button class="btn" onclick="openCharte()">Relire la charte</button></div>`);
@@ -1516,7 +1518,7 @@ $("veil").onclick=closeSheet;
   $("veil").addEventListener("touchmove", e=>{ if(e.cancelable) e.preventDefault(); }, {passive:false});
 })();
 
-/* ======== compte (facultatif) : pseudo + code PIN, Face ID / empreinte ; suit coches, annonces vues, année, TP, thème, pseudo ======== */
+/* ======== compte (facultatif) : pseudo + code + e-mail ; connecté une fois sur un appareil = ouvert directement ensuite, sans Face ID ni empreinte ; suit coches, annonces vues, année, TP, thème, pseudo ======== */
 // session ouverte = sessionStorage : survit au rechargement (F5, tirer vers le bas), disparaît quand on ferme l'appli -> le code est redemandé
 const CPT_SYNC = ["done","annSeen","theme","view","pseudo","charteCpt","notes"];
 let cpt = store.get("cpt", null);
