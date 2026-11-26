@@ -2,9 +2,9 @@ name: Mise a jour EDT
 
 on:
   schedule:
-    # 3 fois par jour seulement (l'emploi du temps change rarement) : matin, midi, soir.
-    # GitHub compte en heure UTC : 6h30, 11h30, 17h30 UTC = 7h30, 12h30, 18h30 a Paris l'hiver (8h30, 13h30, 19h30 l'ete).
-    - cron: '30 6,11,17 * * *'
+    # 1 fois par jour (l'emploi du temps change rarement) : le matin.
+    # GitHub compte en heure UTC : 6h30 UTC = 7h30 a Paris l'hiver (8h30 l'ete) ; avant 7h30 l'etape Horaires bloquerait.
+    - cron: '30 6 * * *'
   workflow_dispatch:          # bouton "Run workflow" pour lancer a la main (toujours autorise)
 
 permissions:
