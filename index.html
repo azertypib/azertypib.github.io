@@ -505,7 +505,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-27a";
+const APP_V = "2026-11-27b";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -527,7 +527,7 @@ async function loadData(){
 
 /* ======== devoirs (Supabase REST) ======== */
 const HW_ON = !!(SUPA_URL && SUPA_KEY);
-function hdr(extra){ const h={apikey:SUPA_KEY,"Content-Type":"application/json",...extra}; if(!SUPA_KEY.startsWith("sb_")) h.Authorization="Bearer "+SUPA_KEY; return h; }
+function hdr(extra){ const h={apikey:SUPA_KEY,"Content-Type":"application/json",...extra}; try{ if(cpt?.jeton) h["x-jeton"] = cpt.jeton; }catch{} if(!SUPA_KEY.startsWith("sb_")) h.Authorization="Bearer "+SUPA_KEY; return h; }
 async function loadHw(){
   if(!HW_ON || !tp) return;
   try{
@@ -568,7 +568,7 @@ function hwBadge(key){
 // note perso sur un cours (visible par soi seul ; suit le compte)
 let notes = store.get("notes", {});
 const noteBadge = key => notes[key] ? `<span class="hw me${hwFor(key).length?" sh":""}" title="Ma note">${ICO_PEN}</span>` : "";
-function saveNote(v){ if(!sheetKey) return; v = v.trim().slice(0, 1000); notes[sheetKey] = v; store.set("notes", notes); }   // "" = note effacée (se propage aux autres appareils)
+function saveNote(v){ if(!sheetKey || !membre()) return; v = v.trim().slice(0, 1000); notes[sheetKey] = v; store.set("notes", notes); }   // "" = note effacée (se propage aux autres appareils)
 function setCourseDone(v){ hwFor(sheetKey).forEach(x=>{ if(v) done[x.id]=true; else delete done[x.id]; }); store.set("done", done); render(); openSheet(sheetKey,true); }
 function toggleDone(id, v){ if(v) done[id]=true; else delete done[id]; store.set("done", done); render(); if(sheetKey) openSheet(sheetKey,true); }
 
@@ -592,7 +592,7 @@ function render(){
   const vueCpt = () => { if(app.dataset.cv===cptVue) return; app.dataset.cv = cptVue; renderCpt(); };   // pas de redessin pendant la saisie
   if(cptVue) return vueCpt();
   // charte : avec compte = signée une fois par compte (suit le compte sur tous les appareils) ; sans compte = une fois par appareil
-  if(cpt ? !store.get("charteCpt") : !charteOk()){ app.dataset.cv = ""; return renderWelcome(); }
+  if(cpt ? !store.get("charteCpt") : !store.get("obsVu")){ app.dataset.cv = ""; return renderWelcome(); }
   app.dataset.cv = "";
   if(!RAW){ app.innerHTML = `<div class="skel" aria-busy="true" aria-label="Chargement"><div class="r"><i style="flex:1"></i><i class="q"></i><i class="q"></i><i class="q"></i></div><div class="r"><i style="flex:1"></i><i style="width:140px"></i></div><i class="b"></i><div class="r"><i style="flex:1"></i><i style="flex:1"></i><i style="flex:1"></i></div></div>`; return; }
   if(!annee || pickYear) return renderYear();
@@ -921,6 +921,7 @@ const notifEnvoyer = sub => { const j = sub.toJSON(); return rpc("notif_abonner"
 async function notifMaj(){ try{ if(!notifOk() || Notification.permission!=="granted" || !store.get("notifOn")) return; const sub = await notifAbonnement(false); if(sub) await notifEnvoyer(sub); }catch{} }
 // toujours après un toucher (obligatoire sur iPhone)
 async function notifActiver(){
+  if(!membre()){ toast(OBS_MSG); return false; }
   if(iosHorsAppli()){ toast("Installe d'abord l'appli sur l'écran d'accueil"); return false; }
   if(!notifOk()){ toast("Ce navigateur ne gère pas les notifications"); return false; }
   const p = await Notification.requestPermission();
@@ -935,7 +936,7 @@ function openNotifChoix(){ sheetOpen(`<h3>Quelles notifications ?</h3>${notifTog
 // demande au démarrage : une seule fois, et seulement là où ça peut marcher (iPhone : appli installée)
 // renvoie true quand c'est réglé (affichée, ou rien à demander) ; false = réessayer plus tard
 function notifDemande(){
-  if($("ntf").classList.contains("on") || store.get("notifDemande") || !notifOk() || iosHorsAppli() || Notification.permission!=="default") return true;
+  if(!membre() || $("ntf").classList.contains("on") || store.get("notifDemande") || !notifOk() || iosHorsAppli() || Notification.permission!=="default") return true;
   if(!tp || cptVue || ferme || $("app").querySelector(".wel") || document.querySelector("#inst.on,#maint.on,#warn.on,.sheet.open")) return false;
   $("ntf").classList.add("on"); return true;
 }
@@ -1047,6 +1048,7 @@ function setAnnWho(g){ if(g!==annWho) annCkey=null; annWho=g; document.querySele
 // Publier reste grise tant que le public et le texte ne sont pas remplis
 function annCheck(){ const b=$("annpub"); if(b) b.disabled = !annWho || !$("anntx").value.trim(); }
 function openAnn(id){
+  if(!canWrite()) return;
   sheetKey = null; annOpen = true; chatOpen = false;
   const a = id ? annonces.find(x=>x.id===id) : null, today = ymd(new Date());
   annWho = a ? a.grp : null; annCkey = a?.ckey || null;  // formulaire remis a zero a chaque nouvelle annonce
@@ -1089,20 +1091,15 @@ async function delAnn(id){
   catch{ toast("Erreur"); }
 }
 
-/* ======== messages au createur : table Supabase "retours", lisibles par tous ; supprimes (dans Supabase) une fois l'idee mise en place ======== */
-let retours = store.get("ret", []);
-// pastille = messages pas encore vus sur ce telephone (s'efface quand on ouvre la fiche)
-let retSeen = store.get("retSeen", 0);
-const retNew = () => retours.filter(m=>m.id>retSeen).length;
+/* ======== messages au créateur : privés (seul le créateur les lit) ; il répond depuis sa page perso, la réponse arrive ici et par mail ======== */
+let retours = store.get("retMes", []);
+let retSeen = store.get("retSeen2", 0);   // pastille = réponses du créateur pas encore lues
+const retNew = () => retours.filter(m=>m.du_createur && m.id>retSeen).length;
+let fbOpen = false;
 async function loadFb(){
-  if(!HW_ON) return;
-  try{
-    // messages au créateur : communs à tous les semestres
-    const r = await fetch(`${SUPA_URL}/rest/v1/retours?select=id,created_at,contact,tp,texte&order=created_at.desc`, {headers:hdr()});
-    if(!r.ok) throw 0;
-    const nv = await r.json(); if(pareil("ret", nv)) return;
-    retours = nv; store.set("ret", retours); if(!sheetKey && !annOpen) render();
-  }catch{}
+  if(!HW_ON || !cpt?.jeton) return;
+  try{ const nv = await rpc("retour_mes", {p_jeton:cpt.jeton}); if(!Array.isArray(nv) || pareil("retMes", nv)) return;
+    retours = nv; store.set("retMes", retours); if(fbOpen) renderFbList(); else if(!sheetKey && !annOpen) render(); }catch{}
 }
 // dons Ko-fi : la fonction Supabase "kofi-webhook" enregistre seulement les montants (table "soutiens")
 let soutiens = store.get("sout", []);
@@ -1113,51 +1110,36 @@ async function loadSupport(){
 const supCount = v => soutiens.filter(s=>Number(s.montant)===v).length;
 const supLbl = n => n ? `<em>${n} personne${n>1?"s ont":" a"} fait ce geste</em>` : "";
 function openFeedback(){
-  retSeen = Math.max(retSeen, ...retours.map(m=>m.id), 0); store.set("retSeen", retSeen);
-  sheetKey = null; annOpen = true;
+  sheetKey = null; annOpen = true; fbOpen = true;
   const KOFI = "https://ko-fi.com/azertyip";
-  // d'abord a quoi sert ce carre (signaler un probleme / proposer une idee), le soutien vient en dernier, discret
   let h = `<div class="grab"></div><h3>Message au créateur</h3>
-    <p class="note" style="font-size:14px">Tu as repéré un bug, une erreur dans l'emploi du temps, ou tu as une idée pour l'appli ? Écris-le ici. Ton message sera <b>visible par tout le monde</b> et disparaîtra une fois le problème réglé.</p>
-    <button class="btn dark" style="width:100%;height:44px;margin:4px 0 14px" onclick="newFeedback()">Écrire un message</button>
-    <div class="ann"><div class="head"><b>Messages en attente${retours.length?` (${retours.length})`:""}</b></div>`;
-  // un seul message affiché ici (sinon le soutien et la charte descendent trop bas) ; tous en touchant « Voir les N messages »
-  if(!retours.length) h += `<div class="note" style="margin:0 2px 4px">Aucun message pour l'instant.</div>`;
-  else h += fbBox(retours[0]) + (retours.length>1 ? `<button class="btn more" onclick="openFbList()">Voir les ${retours.length} messages</button>` : "");
-  h += `</div>
-    <div class="support"><b>Envie de soutenir l'appli ?</b><p>Rien d'obligatoire, mais ça fait toujours plaisir.</p>
+    <p class="note" style="font-size:14px">Un bug, une erreur dans l'emploi du temps, une idée pour l'appli ? Écris au créateur : <b>lui seul lit ton message</b>, et il peut te répondre ici et par mail.</p>`;
+  if(membre()) h += `<div class="chatlist" id="fblist" style="height:auto;max-height:42vh;min-height:90px"></div>
+    <div class="chatsend"><div class="chatrow"><textarea id="fbtx" maxlength="2000" rows="2" placeholder="Ton message au créateur…" oninput="$('fbsend').disabled=!this.value.trim()"></textarea>
+    <button class="btn dark" id="fbsend" disabled onclick="sendFeedback()">Envoyer</button></div></div>`;
+  else h += `<p class="note" style="margin:6px 0 12px">Mode observateur : crée un compte pour écrire au créateur.</p>
+    <button class="btn" style="width:100%;margin-bottom:14px" onclick="closeSheet(); store.set('sansCompte', false); cptGo(cpt ? 'email' : 'accueil')">${cpt ? "Ajouter mon e-mail" : "Créer un compte ou me connecter"}</button>`;
+  h += `<div class="support"><b>Envie de soutenir l'appli ?</b><p>Rien d'obligatoire, mais ça fait toujours plaisir.</p>
       <a class="btn" href="${KOFI}" target="_blank" rel="noopener"><b>1 €</b><span>Un repas au resto U</span>${supLbl(supCount(1))}</a>
       <a class="btn" href="${KOFI}" target="_blank" rel="noopener"><b>3 €</b><span>T'es vraiment le GOAT</span>${supLbl(supCount(3))}</a>${(()=>{const o=soutiens.length-supCount(1)-supCount(3); return o?`<p style="grid-column:1/-1;margin:0;font-size:12.5px;color:var(--muted)">+ ${o} autre${o>1?"s":""} don${o>1?"s":""}, merci !</p>`:"";})()}</div>`;
   $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
+  renderFbList(); loadFb();
 }
-function fbBox(m){
-  const d = new Date(m.created_at);
-  return `<div class="annbox" style="cursor:default"><div class="d">${esc(fmtD(d,{day:"numeric",month:"short"}))}<span>${esc((m.tp||"S1").replace(/^(S\d)/,"$1 "))}</span><em>${esc(m.contact||"Anonyme")}</em></div>
-      <div class="tx">${esc(m.texte)}</div></div>`;
-}
-function openFbList(){
-  $("sheet").innerHTML = `<div class="grab"></div><h3>Messages en attente (${retours.length})</h3>${retours.map(fbBox).join("")}
-    <div class="row"><button class="btn" onclick="openParams()">Retour</button></div>`;
-  $("sheet").scrollTop = 0;
-}
-function newFeedback(){
-  $("sheet").innerHTML = `<div class="grab"></div><h3>Message au créateur</h3>
-    <p class="note">Une idée, un bug, une erreur dans l'emploi du temps ? Ton message sera <b>visible par tout le monde</b> dans l'appli.</p>
-    <label class="lbl">Message</label>
-    <textarea id="fbtx" maxlength="2000" style="min-height:120px" oninput="$('fbsend').disabled=!this.value.trim()" placeholder="Ex : ce serait bien d'avoir les salles libres"></textarea>
-    <label class="lbl">Ton prénom <small>(facultatif, visible par tous)</small></label>
-    <input id="fbwho" maxlength="200" class="field" placeholder="Ex : Léa">
-    <div class="row"><button class="btn" onclick="openFeedback()">Annuler</button><button class="btn dark" id="fbsend" disabled onclick="sendFeedback()">Envoyer</button></div>`;
+function renderFbList(){
+  const box = $("fblist"); if(!box) return;
+  retSeen = Math.max(retSeen, ...retours.map(m=>m.id), 0); store.set("retSeen2", retSeen);
+  box.innerHTML = retours.length ? retours.map(m=>{ const d = new Date(m.created_at);
+    return `<div class="msg ${m.du_createur?"mcrea":"me"}"><div class="who">${m.du_createur ? CREA : "Toi"} <span>${esc(fmtD(d,{day:"numeric",month:"short"}))} ${hm(d)}</span></div><div class="tx">${esc(m.texte)}</div></div>`; }).join("")
+    : `<div class="note" style="text-align:center;margin:20px 0">Aucun message pour l'instant.</div>`;
+  box.scrollTop = box.scrollHeight;
 }
 async function sendFeedback(){
   if(!canWrite()) return;
-  const texte = clean($("fbtx").value.trim(), "message au créateur"), contact = clean($("fbwho").value.trim(), "contact") || null;
-  if(!texte) return;
+  const texte = clean($("fbtx").value.trim(), "message au créateur"); if(!texte) return;
   $("fbsend").disabled = true;
-  try{
-    const r = await fetch(`${SUPA_URL}/rest/v1/retours`, {method:"POST", headers:hdr({Prefer:"return=minimal"}), body:JSON.stringify({texte, contact, tp})});
-    if(!r.ok) throw 0;
-    toast("Merci, message envoyé"); await loadFb(); render(); openFeedback();
+  try{ const s = await rpc("retour_envoyer", {p_jeton:cpt.jeton, p_texte:texte});
+    if(!s.ok){ toast(s.err==="trop" ? "Trop de messages d'un coup : réessaie plus tard" : s.err==="email" ? OBS_MSG : "Erreur : message non envoyé"); $("fbsend").disabled = false; return; }
+    $("fbtx").value = ""; toast("Message envoyé au créateur"); await loadFb(); renderFbList();
   }catch{ toast("Erreur : message non envoyé"); $("fbsend").disabled = false; }
 }
 
@@ -1193,7 +1175,7 @@ function openChat(g){
     <div class="chathead"><b>Discussion</b><small>Ouverte à tous · chaque message s'efface 1 semaine après</small></div>
     <div class="chattabs" id="chattabs"></div>
     <div class="chatlist" id="chatlist"></div>
-    <div class="chatsend">
+    ${!membre() ? `<p class="note" style="text-align:center;margin:10px 0 0">Mode observateur : crée un compte pour écrire dans la discussion.</p>` : ""}<div class="chatsend" ${membre()?"":"hidden"}>
       ${estCreateur() ? `<div class="moicrea">Tu écris en tant que ${CREA}</div>` : `<input id="chatwho" class="field" maxlength="40" placeholder="Ton prénom (facultatif)" value="${esc(store.get("pseudo",""))}">`}
       <div class="chatrow"><textarea id="chattx" maxlength="1000" rows="1" placeholder="Écrire un message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&matchMedia('(pointer:fine)').matches){event.preventDefault();sendChat();}" oninput="$('chatgo').disabled=!this.value.trim()"></textarea>
       <button class="btn dark" id="chatgo" disabled onclick="sendChat()">Envoyer</button></div>
@@ -1297,7 +1279,7 @@ const CHARTE = `<ul>
     <li style="--c:#2e86d4"><b>Confiance</b>On écrit seulement ce qu'on sait vraiment : la bonne date, la bonne consigne. Les autres comptent sur toi.</li>
     <li style="--c:#8e6bd8"><b>Esprit critique</b>N'écoute pas tout le monde : en cas de doute, vérifie auprès du prof ou sur l'ENT.</li>
     <li style="--c:#12808a"><b>Entraide</b>Quelqu'un est perdu ? On l'aide. Pas de dérapage, on reste entre gens bien.</li></ul>
-    <p class="info"><b>Bon à savoir</b>Ta connexion à l'appli est anonyme. Tu peux donner ton prénom si tu le souhaites (dans la discussion ou dans un message au créateur). Tout ce qui est publié et l'activité de l'appli remontent au créateur, qui veille au respect de la charte. Le compte est facultatif : un pseudo et un code, pas d'e-mail ; ton code est chiffré, personne ne peut le lire.</p>
+    <p class="info"><b>Bon à savoir</b>Ta connexion à l'appli est anonyme. Tu peux donner ton prénom si tu le souhaites dans la discussion. Tout ce qui est publié et l'activité de l'appli remontent au créateur, qui veille au respect de la charte. Sans compte, tu peux seulement regarder. Le compte demande un pseudo, un code et ton e-mail : ton e-mail n'est visible que par le créateur (pour te répondre), ton code est chiffré, personne ne peut le lire.</p>
     <p class="info essai"><b>Version d'essai</b>Cette application est expérimentale : c'est un essai, encore en cours de développement. Elle peut contenir des erreurs (horaires, salles, devoirs). Garde ta vigilance et ne t'y fie pas à 100 % : en cas de doute, la référence reste l'emploi du temps officiel de l'IUT.</p>`;
 const ASTUCES = `<ul>
     <li><b>Changer de jour ou de semaine</b>Glisse à gauche ou à droite, ou utilise les flèches. Touche le cartouche « Semaine » pour aller à une date précise.</li>
@@ -1308,6 +1290,12 @@ const ASTUCES = `<ul>
     <li><b>Une idée, un bug ?</b>Écris un message au créateur, il lit tout.</li></ul>`;
 const GUIDE = `<div class="wcard guide"><h2>Mode d'emploi</h2><p>À lire aussi : ce n'est pas la charte, c'est ce que l'appli te permet de faire.</p>${ASTUCES}</div>`;
 function renderWelcome(){
+  if(!cpt){ const essai = (CHARTE.match(/<p class="info essai">[\s\S]*?<\/p>/)||[""])[0];
+    $("app").innerHTML = `<div class="wel"><div class="hd"><img src="icon.png" alt=""><h1>Bonjour à tous !</h1><p>Voici votre nouvel emploi du temps, fait par un étudiant pour tous les étudiants.</p></div>
+    <div class="wcard"><h2>Mode observateur</h2><p>Sans compte, tu peux tout regarder : emploi du temps, devoirs, annonces et discussion. Pour ajouter ou modifier quelque chose, écrire, prendre des notes ou recevoir des notifications, il faut un compte (pseudo, code et e-mail).</p>${essai}</div>
+    ${GUIDE}
+    <button class="btn dark go" onclick="store.set('obsVu',1); track(true); render(); scrollTo(0,0)">Entrer</button>
+    <button class="alink" style="display:block;margin:10px auto" onclick="store.set('sansCompte', false); cptGo('accueil')">Créer un compte</button></div>`; return; }
   const ok = $("welok")?.checked;
   $("app").innerHTML = `<div class="wel"><div class="hd"><img src="icon.png" alt=""><h1>Bonjour à tous !</h1><p>Voici votre nouvel emploi du temps, fait par un étudiant pour tous les étudiants.</p></div>
   <div class="wcard"><h2>La charte</h2><p>Cette application a été créée par un étudiant pour les étudiants. C'est un objet de solidarité : elle marche seulement si chacun joue le jeu.</p>${CHARTE}</div>
@@ -1501,12 +1489,12 @@ function openSheet(key, keep){
     });
     if(editing==="new") h+=`<div class="hwbig"><textarea id="newhw" maxlength="1000" placeholder="Le devoir… (ex : exercices 3 à 5 p. 42)"></textarea>
         <div class="act"><button onclick="editing=null;openSheet(sheetKey,true)">Annuler</button><button class="on" onclick="saveNew()">Enregistrer</button></div></div>`;
-    else h+=`<button class="addhw" onclick="editing='new';openSheet(sheetKey,true);$('newhw').focus()">+ ${l.length?"Ajouter un autre devoir":"Ajouter un devoir"}</button>`;
+    else h+=`<button class="addhw" onclick="if(!canWrite()) return; editing='new';openSheet(sheetKey,true);$('newhw').focus()">+ ${l.length?"Ajouter un autre devoir":"Ajouter un devoir"}</button>`;
   }
-  h+=`<h4>Ma note perso <small>visible par toi seul</small></h4><textarea class="mynote" maxlength="1000" placeholder="Ex : ramener le compas…" oninput="saveNote(this.value);grandir(this)" onblur="render()">${esc(notes[key]||"")}</textarea>`;
+  h+=`<h4>Ma note perso <small>visible par toi seul</small></h4><textarea class="mynote" maxlength="1000" ${membre() ? 'placeholder="Ex : ramener le compas…"' : 'readonly placeholder="Mode observateur : crée un compte pour prendre des notes" onclick="canWrite()"'} oninput="saveNote(this.value);grandir(this)" onblur="render()">${esc(notes[key]||"")}</textarea>`;
   $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
 }
-function closeSheet(){ const wasPanel=annOpen; sheetKey=null; editing=null; annOpen=false; chatOpen=false; $("sheet").classList.remove("open"); $("veil").style.display="none"; if(wasPanel) render(); }
+function closeSheet(){ const wasPanel=annOpen; sheetKey=null; editing=null; annOpen=false; chatOpen=false; fbOpen=false; $("sheet").classList.remove("open"); $("veil").style.display="none"; if(wasPanel) render(); }
 async function saveNew(){
   const t=$("newhw").value.trim(); if(!t) return;
   const e=events().find(x=>x.key===sheetKey); if(!e) return;
@@ -1531,7 +1519,10 @@ $("veil").onclick=closeSheet;
 /* ======== compte (facultatif) : pseudo + code PIN, Face ID / empreinte ; suit coches, annonces vues, année, TP, thème, pseudo ======== */
 // session ouverte = sessionStorage : survit au rechargement (F5, tirer vers le bas), disparaît quand on ferme l'appli -> le code est redemandé
 const CPT_SYNC = ["done","annSeen","theme","view","pseudo","charteCpt","notes"];
-let cpt = store.get("cpt", null);                 // {ps, jeton, n (longueur du code), h (empreinte locale, hors ligne), face (id Face ID)}
+let cpt = store.get("cpt", null);
+let cptMail = store.get("cptMail", null);   // {email, ok, actif}
+const membre = () => !!cpt?.jeton && !!cptMail?.email && (cptMail.ok || !cptMail.actif);
+const OBS_MSG = "Mode observateur : crée un compte avec ton e-mail pour participer";                 // {ps, jeton, n (longueur du code), h (empreinte locale, hors ligne), face (id Face ID)}
 let cptVue = sessionStorage.getItem("edt.cptVue"); sessionStorage.removeItem("edt.cptVue");
 let cptPin = "", cptErr = "", cptTimer = null, cptBusy = false, cptPush = 0;
 const cptOuvert = () => !!cpt?.jeton && sessionStorage.getItem("edt.ouvert")===cpt.jeton;
@@ -1571,26 +1562,29 @@ function cptGo(v){ $("app").dataset.cv = ""; cptVue = v; cptPin = ""; cptErr = "
 function sansCompte(){ store.set("sansCompte", true); cptGo(null); }
 // changer de compte / se déconnecter : on vide ce qui appartient au compte sur cet appareil
 function cptOubli(vers){ if(cpt?.jeton) rpc("compte_sortir", {p_jeton:cpt.jeton}).catch(()=>{});
-  ["cpt","tp","annee","done","annSeen","pseudo","hw","ann","chat","sansCompte","charteCpt"].forEach(k=>localStorage.removeItem("edt."+k));
+  ["cpt","tp","annee","done","annSeen","pseudo","hw","ann","chat","sansCompte","charteCpt","cptMail","retMes"].forEach(k=>localStorage.removeItem("edt."+k));
   sessionStorage.removeItem("edt.ouvert"); if(vers) sessionStorage.setItem("edt.cptVue", vers); location.reload(); }
 // ouverture directe : l'appareil est déjà verrouillé par Face ID / empreinte / code du téléphone ; on ne redemande rien
 const cptDirect = () => !!cpt?.jeton;   // connecté une fois sur cet appareil = l'appli s'ouvre directement (le code ne sert qu'à se connecter sur un nouvel appareil)
 // compte supprimé (remise à zéro du 24/11) : retour à l'accueil (créer / se connecter / sans compte) en gardant année et TP
 function cptPerdu(){ ["cpt","charteCpt","sansCompte"].forEach(k=>localStorage.removeItem("edt."+k)); sessionStorage.removeItem("edt.ouvert"); sessionStorage.setItem("edt.cptVue","accueil"); location.reload(); }
 if(cpt?.jeton && cptDirect() && !cptOuvert()){ sessionStorage.setItem("edt.ouvert", cpt.jeton); setTimeout(()=>cptTirer(true)); }
+if(cpt?.jeton) setTimeout(()=>cptMailMaj());
 else if(cpt?.jeton && !cptOuvert()) rpc("compte_lire", {p_jeton:cpt.jeton}).then(s=>{ if(s.ok===false && s.err==="jeton") cptPerdu(); }).catch(()=>{});   // écran du code : vérifie que le compte existe encore
 // après inscription : compte neuf = rattaché à aucun groupe -> l'appli demande l'année puis le TP
 function cptFin(){ cptVue = null; cptSave(); render(); }
 async function cptInscrire(){
   const ps = $("cps").value.trim(), a = $("cp1").value, b = $("cp2").value;
   if(!/^[A-Za-z0-9À-ÖØ-öø-ÿ_.-]{3,20}$/.test(ps)){ cptErr = "Pseudo : 3 à 20 caractères (lettres, chiffres, . _ -), sans espace."; return cptMaj(); }
+  const em0 = $("cem0").value.trim().toLowerCase();
+  if(!MAIL_RE.test(em0)){ cptErr = "Adresse e-mail incorrecte."; return cptMaj(); }
   if(!/^\d{4,6}$/.test(a)){ cptErr = "Le code doit faire 4 à 6 chiffres."; return cptMaj(); }
   if(a!==b){ cptErr = "Les deux codes ne sont pas pareils."; return cptMaj(); }
   let s; try{ s = await rpc("compte_creer", {p_pseudo:ps, p_pin:a}); }catch{ cptErr = "Pas de connexion internet."; return cptMaj(); }
   if(!s.ok){ cptErr = {pris:"Ce pseudo est déjà pris, choisis-en un autre.", pseudo:"Ce pseudo n'est pas accepté, choisis-en un autre.", pin:"Le code doit faire 4 à 6 chiffres.", trop:"Trop d'inscriptions en ce moment : réessaie dans une minute."}[s.err] || "Erreur, réessaie."; return cptMaj(); }
   cpt = {ps:s.pseudo, jeton:s.jeton, n:a.length, h:await pinHash(s.pseudo, a)}; store.set("cpt", cpt); sessionStorage.setItem("edt.ouvert", cpt.jeton);
   store.set("sansCompte", false); annee = null; tp = null; ["annee","tp","charteCpt"].forEach(k=>localStorage.removeItem("edt."+k));   // compte neuf : charte à signer, aucun groupe
-  toast("Compte créé !"); cptFin();   // puis charte, puis année et TP
+  toast("Compte créé !"); cptSave(); cptMailSaisi = em0; cptGo("email"); cptEmail();   // puis e-mail, charte, année et TP
 }
 async function cptConnecter(){
   const ps = $("cps").value.trim(), p = $("cp1").value;
@@ -1629,15 +1623,47 @@ function cptMaj(secoue){
   const d = $("cdots"); if(d){ d.innerHTML = Array.from({length:cpt?.n||4}, (_,i)=>`<i class="${i<cptPin.length?"f":""}"></i>`).join("");
     if(secoue){ d.classList.remove("shake"); void d.offsetWidth; d.classList.add("shake"); } }
 }
+const MAIL_RE = /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i;
+const MAIL_ERR = {format:"Adresse e-mail incorrecte.", pris:"Cette adresse est déjà utilisée par un autre compte.", attends:"Attends une minute avant de redemander un code.",
+  code:"Code incorrect.", expire:"Code expiré : redemande un code.", essais:"Trop d'essais : redemande un code.", jeton:"Compte introuvable : reconnecte-toi.", envoi:"Le mail n'a pas pu partir : réessaie plus tard."};
+let cptCodeEnvoye = false, cptMailSaisi = "";
+// compte sans e-mail (ou e-mail pas confirmé) : on le demande ; « Plus tard » = observateur jusqu'à la prochaine ouverture
+async function cptMailMaj(){ if(!cptOuvert()) return;
+  try{ const s = await rpc("compte_email", {p_jeton:cpt.jeton}); if(!s.ok) return;
+    cptMail = {email:s.email, ok:!!s.email_ok, actif:!!s.mail_actif}; store.set("cptMail", cptMail);
+    if(!membre() && !cptVue && !sessionStorage.getItem("edt.mailPlusTard")){ closeSheet(); cptGo("email"); } }catch{} }
+async function cptEmail(){
+  const em = ($("cem")?.value || "").trim().toLowerCase();
+  if(!MAIL_RE.test(em)){ cptErr = MAIL_ERR.format; return cptMaj(); }
+  try{
+    const st = await rpc("compte_email", {p_jeton:cpt.jeton}), actif = !!st.mail_actif; let s;
+    if(actif){ const r = await fetch(`${SUPA_URL}/functions/v1/mail`, {method:"POST", headers:hdr(), body:JSON.stringify({action:"code", jeton:cpt.jeton, email:em})}); s = await r.json(); }
+    else s = await rpc("email_definir", {p_jeton:cpt.jeton, p_email:em});
+    if(!s.ok){ cptErr = MAIL_ERR[s.err] || "Erreur, réessaie."; return cptMaj(); }
+    cptMail = {email:em, ok:false, actif}; store.set("cptMail", cptMail); cptMailSaisi = em;
+    if(actif){ cptCodeEnvoye = true; cptErr = ""; $("app").dataset.cv = ""; renderCpt(); toast("Code envoyé à " + em); }
+    else { toast("E-mail enregistré"); cptGo(null); }
+  }catch{ cptErr = "Pas de connexion internet."; cptMaj(); }
+}
+async function cptCode(){
+  const c = ($("ccode")?.value || "").trim();
+  if(!/^\d{6}$/.test(c)){ cptErr = "Le code fait 6 chiffres."; return cptMaj(); }
+  try{ const s = await rpc("email_valider", {p_jeton:cpt.jeton, p_code:c});
+    if(!s.ok){ cptErr = (MAIL_ERR[s.err] || "Erreur, réessaie.") + (s.reste>0 ? ` (${s.reste} essai${s.reste>1?"s":""} restant${s.reste>1?"s":""})` : ""); return cptMaj(); }
+    cptMail = {...cptMail, ok:true}; store.set("cptMail", cptMail); cptCodeEnvoye = false; toast("E-mail confirmé"); cptGo(null);
+  }catch{ cptErr = "Pas de connexion internet."; cptMaj(); }
+}
+function cptPlusTard(){ sessionStorage.setItem("edt.mailPlusTard", "1"); cptCodeEnvoye = false; cptGo(null); }
 function renderCpt(){
   const top = `<div class="acc"><img src="icon.png" width="64" style="border-radius:15px" alt="">`;
   let h = "";
   if(cptVue==="accueil") h = `${top}<h1>Bienvenue !</h1><p class="sub">Ton emploi du temps, tes devoirs et ceux de ton TP.</p>
     <div class="arow"><button class="abtn dark" onclick="cptGo('inscription')">Créer un compte</button><button class="abtn" onclick="cptGo('connexion')">Se connecter</button></div>
     <button class="abtn big" onclick="sansCompte()">Utiliser l'appli sans compte</button>
-    <p class="small"><em>Le compte est facultatif. Il relie tes appareils : tes devoirs cochés, tes annonces vues, ton année et ton TP sont les mêmes sur ton téléphone et ton ordinateur. Pas d'e-mail : juste un pseudo et un code.</em></p></div>`;
+    <p class="small"><em>Le compte est facultatif. Il relie tes appareils : tes devoirs cochés, tes annonces vues, ton année et ton TP sont les mêmes sur ton téléphone et ton ordinateur. Il demande un pseudo, un code et ton e-mail (visible seulement par le créateur). Sans compte, tu peux tout regarder, mais pas participer.</em></p></div>`;
   else if(cptVue==="inscription") h = `${top}<h1>Créer mon compte</h1><p class="sub">Choisis un pseudo et un code.</p>
     <label>Pseudo</label><input id="cps" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Ex : Tom17">
+    <label>Adresse e-mail <small>(visible seulement par le créateur)</small></label><input id="cem0" type="email" maxlength="200" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="prenom.nom@etudiant.univ-lr.fr">
     <label>Code (4 à 6 chiffres)</label><input id="cp1" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="new-password">
     <label>Retape le code</label><input id="cp2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="new-password" onkeydown="if(event.key==='Enter') cptInscrire()">
     <p class="cerr" id="cerr">${esc(cptErr)}</p>
@@ -1659,6 +1685,14 @@ function renderCpt(){
     const tick = () => { const s = Math.max(0, Math.ceil(((cptBloque?.fin||0)-Date.now())/1000)); const c = $("ccd"); if(c) c.textContent = `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`; if(!s){ clearInterval(cptTimer); cptGo(cpt ? "verrou" : "connexion"); } };
     clearInterval(cptTimer); cptTimer = setInterval(tick, 1000); setTimeout(tick);
   }
+  else if(cptVue==="email") h = `${top}<h1>Ton adresse e-mail</h1><p class="sub">Pour participer (devoirs, discussion, annonces, notes, notifications), ton compte <b>${esc(cpt?.ps||"")}</b> a besoin d'une adresse e-mail. Elle n'est visible que par le créateur, pour pouvoir te répondre.</p>
+    <label>Adresse e-mail</label><input id="cem" type="email" maxlength="200" autocomplete="email" autocapitalize="off" spellcheck="false" value="${esc(cptMailSaisi || cptMail?.email || "")}" ${cptCodeEnvoye?"readonly":""} onkeydown="if(event.key==='Enter') cptEmail()">
+    ${cptCodeEnvoye ? `<label>Code reçu par mail (6 chiffres)</label><input id="ccode" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" onkeydown="if(event.key==='Enter') cptCode()">
+    <p class="small">Regarde aussi dans les courriers indésirables.</p>` : ""}
+    <p class="cerr" id="cerr">${esc(cptErr)}</p>
+    <button class="abtn dark" onclick="${cptCodeEnvoye ? "cptCode()" : "cptEmail()"}">${cptCodeEnvoye ? "Valider le code" : "Continuer"}</button>
+    ${cptCodeEnvoye ? `<button class="alink" onclick="cptCodeEnvoye=false; $('app').dataset.cv=''; renderCpt()">Changer d'adresse ou renvoyer le code</button>` : ""}
+    <button class="alink" onclick="cptPlusTard()">Plus tard : seulement regarder (observateur)</button></div>`;
   else {   // verrou : appareil déjà connecté
     cptVue = "verrou";
     h = `<div class="acc lockscr"><div class="av">${esc((cpt.ps[0]||"?").toUpperCase())}</div><h1>Bonjour ${esc(cpt.ps)} !</h1><p class="sub">Entre ton code</p>
@@ -1674,10 +1708,12 @@ function renderCpt(){
 addEventListener("keydown", e=>{ if(cptVue!=="verrou" || !cpt) return; if(/^[0-9]$/.test(e.key)) cptTape(e.key); else if(e.key==="Backspace") cptTape("<"); });
 // bloc « Mon compte » de la fiche Messages
 async function cptBloc(){
-  if(!cpt) return `<div class="psec"><h4>Ton compte</h4><p>Facultatif : il relie tes appareils (devoirs cochés, annonces vues, année et TP). Juste un pseudo et un code.</p>
+  if(!cpt) return `<div class="psec"><h4>Ton compte</h4><p>Sans compte, tu peux seulement regarder. Avec un compte (pseudo, code et e-mail), tu peux ajouter des devoirs, écrire, publier des annonces, prendre des notes, recevoir les notifications, et tes appareils sont reliés.</p>
     <button class="btn" onclick="closeSheet(); store.set('sansCompte', false); cptGo('accueil')">Créer un compte ou me connecter</button></div>`;
   return `<div class="psec"><h4>Ton compte · ${esc(cpt.ps)}</h4><p>À quoi il sert :</p>
     <ul class="cptuse"><li>tes devoirs cochés, les mêmes sur tous tes appareils</li><li>les annonces que tu as déjà vues</li><li>ton année et ton TP, retrouvés en te connectant ailleurs</li><li>ton thème et ton pseudo de discussion</li></ul>
+    <p>E-mail : <b>${esc(cptMail?.email || "pas encore donné")}</b>${cptMail?.email && cptMail.actif && !cptMail.ok ? " (à confirmer)" : ""}</p>
+    <button class="btn" onclick="closeSheet(); sessionStorage.removeItem('edt.mailPlusTard'); cptGo('email')">${cptMail?.email ? "Changer d'e-mail" : "Ajouter mon e-mail"}</button>
     <button class="btn" onclick="if(confirm('Te déconnecter de cet appareil ?')) cptOubli('accueil')">Me déconnecter de cet appareil</button></div>`;
 }
 
@@ -1718,7 +1754,7 @@ setInterval(()=>{ if(!document.hidden){ loadHw(); loadAnn(); loadFb(); loadChat(
 /* ======== avis « modifications en cours » et fermeture du site : interrupteurs de la page perso (table etat), jamais automatiques ======== */
 // avis : ne bloque rien, montré une fois quand il s'allume et une fois quand il s'éteint ; fermé : écran « Application fermée », plus rien ne marche (le serveur refuse aussi)
 let maint = false, ferme = store.get("ferme", false);
-function canWrite(){ if(!ferme) return true; toast("L'application est fermée pour le moment"); return false; }
+function canWrite(){ if(ferme){ toast("L'application est fermée pour le moment"); return false; } if(!membre()){ toast(OBS_MSG); return false; } return true; }
 function showMaint(on){ $("mainth").textContent = on ? "Modifications en cours" : "Modifications terminées";
   $("maintp").textContent = on ? "Le créateur est en train d'améliorer l'appli. Si quelque chose bug ou s'affiche bizarrement, pas d'inquiétude : c'est temporaire. Tu peux continuer à tout utiliser normalement." : "L'appli est à jour. Merci de ta patience !";
   $("maint").classList.add("on"); }
