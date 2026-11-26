@@ -505,7 +505,7 @@ function events(){
   return DATA.events[tp].map(e=>({...e, s:new Date(e.start), e:new Date(e.end), key:e.code+"|"+e.start, name:DATA.names?.[e.code]||""}));
 }
 // Pages garde la page 10 min en cache : on compare avec la version en ligne et on recharge si elle a change.
-const APP_V = "2026-11-27d";
+const APP_V = "2026-11-27e";
 async function checkUpdate(){
   try{
     const t = await (await fetch(location.pathname+"?check="+Date.now(), {cache:"no-store"})).text();
@@ -1092,15 +1092,8 @@ async function delAnn(id){
 }
 
 /* ======== messages au créateur : privés (seul le créateur les lit) ; il répond depuis sa page perso, la réponse arrive ici et par mail ======== */
-let retours = store.get("retMes", []);
-let retSeen = store.get("retSeen2", 0);   // pastille = réponses du créateur pas encore lues
-const retNew = () => retours.filter(m=>m.du_createur && m.id>retSeen).length;
-let fbOpen = false;
-async function loadFb(){
-  if(!HW_ON || !cpt?.jeton) return;
-  try{ const nv = await rpc("retour_mes", {p_jeton:cpt.jeton}); if(!Array.isArray(nv) || pareil("retMes", nv)) return;
-    retours = nv; store.set("retMes", retours); if(fbOpen) renderFbList(); else if(!sheetKey && !annOpen) render(); }catch{}
-}
+const retNew = () => 0;   // plus de pastille : les réponses arrivent par mail
+async function loadFb(){}
 // dons Ko-fi : la fonction Supabase "kofi-webhook" enregistre seulement les montants (table "soutiens")
 let soutiens = store.get("sout", []);
 async function loadSupport(){
@@ -1110,11 +1103,11 @@ async function loadSupport(){
 const supCount = v => soutiens.filter(s=>Number(s.montant)===v).length;
 const supLbl = n => n ? `<em>${n} personne${n>1?"s ont":" a"} fait ce geste</em>` : "";
 function openFeedback(){
-  sheetKey = null; annOpen = true; fbOpen = true;
+  sheetKey = null; annOpen = true;
   const KOFI = "https://ko-fi.com/azertyip";
   let h = `<div class="grab"></div><h3>Message au créateur</h3>
-    <p class="note" style="font-size:14px">Un bug, une erreur dans l'emploi du temps, une idée pour l'appli ? Écris au créateur : <b>lui seul lit ton message</b>, et il peut te répondre ici et par mail.</p>`;
-  if(membre()) h += `<div class="chatlist" id="fblist" style="height:auto;max-height:42vh;min-height:90px"></div>
+    <p class="note" style="font-size:14px">Un bug, une erreur dans l'emploi du temps, une idée pour l'appli ? Écris au créateur : <b>lui seul lit ton message</b>, et il te répond par mail.</p>`;
+  if(membre()) h += `<p class="note" style="margin:6px 0 10px">Il te répondra par mail, à <b>${esc(cptMail?.email||"")}</b>.</p>
     <div class="chatsend"><div class="chatrow"><textarea id="fbtx" maxlength="2000" rows="2" placeholder="Ton message au créateur…" oninput="$('fbsend').disabled=!this.value.trim()"></textarea>
     <button class="btn dark" id="fbsend" disabled onclick="sendFeedback()">Envoyer</button></div></div>`;
   else h += `<p class="note" style="margin:6px 0 12px">Mode observateur : crée un compte pour écrire au créateur.</p>
@@ -1123,15 +1116,6 @@ function openFeedback(){
       <a class="btn" href="${KOFI}" target="_blank" rel="noopener"><b>1 €</b><span>Un repas au resto U</span>${supLbl(supCount(1))}</a>
       <a class="btn" href="${KOFI}" target="_blank" rel="noopener"><b>3 €</b><span>T'es vraiment le GOAT</span>${supLbl(supCount(3))}</a>${(()=>{const o=soutiens.length-supCount(1)-supCount(3); return o?`<p style="grid-column:1/-1;margin:0;font-size:12.5px;color:var(--muted)">+ ${o} autre${o>1?"s":""} don${o>1?"s":""}, merci !</p>`:"";})()}</div>`;
   $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
-  renderFbList(); loadFb();
-}
-function renderFbList(){
-  const box = $("fblist"); if(!box) return;
-  retSeen = Math.max(retSeen, ...retours.map(m=>m.id), 0); store.set("retSeen2", retSeen);
-  box.innerHTML = retours.length ? retours.map(m=>{ const d = new Date(m.created_at);
-    return `<div class="msg ${m.du_createur?"mcrea":"me"}"><div class="who">${m.du_createur ? CREA : "Toi"} <span>${esc(fmtD(d,{day:"numeric",month:"short"}))} ${hm(d)}</span></div><div class="tx">${esc(m.texte)}</div></div>`; }).join("")
-    : `<div class="note" style="text-align:center;margin:20px 0">Aucun message pour l'instant.</div>`;
-  box.scrollTop = box.scrollHeight;
 }
 async function sendFeedback(){
   if(!canWrite()) return;
@@ -1139,7 +1123,7 @@ async function sendFeedback(){
   $("fbsend").disabled = true;
   try{ const s = await rpc("retour_envoyer", {p_jeton:cpt.jeton, p_texte:texte});
     if(!s.ok){ toast(s.err==="trop" ? "Trop de messages d'un coup : réessaie plus tard" : s.err==="email" ? OBS_MSG : "Erreur : message non envoyé"); $("fbsend").disabled = false; return; }
-    $("fbtx").value = ""; toast("Message envoyé au créateur"); await loadFb(); renderFbList();
+    $("fbtx").value = ""; $("fbsend").disabled = true; toast("Message envoyé : le créateur te répondra par mail");
   }catch{ toast("Erreur : message non envoyé"); $("fbsend").disabled = false; }
 }
 
@@ -1494,7 +1478,7 @@ function openSheet(key, keep){
   if(membre()) h+=`<h4>Ma note perso <small>visible par toi seul</small></h4><textarea class="mynote" maxlength="1000" ${membre() ? 'placeholder="Ex : ramener le compas…"' : 'readonly placeholder="Mode observateur : crée un compte pour prendre des notes" onclick="canWrite()"'} oninput="saveNote(this.value);grandir(this)" onblur="render()">${esc(notes[key]||"")}</textarea>`;
   $("sheet").innerHTML=h; $("sheet").classList.add("open"); $("veil").style.display="block";
 }
-function closeSheet(){ const wasPanel=annOpen; sheetKey=null; editing=null; annOpen=false; chatOpen=false; fbOpen=false; $("sheet").classList.remove("open"); $("veil").style.display="none"; if(wasPanel) render(); }
+function closeSheet(){ const wasPanel=annOpen; sheetKey=null; editing=null; annOpen=false; chatOpen=false;  $("sheet").classList.remove("open"); $("veil").style.display="none"; if(wasPanel) render(); }
 async function saveNew(){
   const t=$("newhw").value.trim(); if(!t) return;
   const e=events().find(x=>x.key===sheetKey); if(!e) return;
